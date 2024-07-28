@@ -1,4 +1,4 @@
-// Generated from java-escape by ANTLR 4.11.0-SNAPSHOT
+// Generated from Sysy.g4 by ANTLR 4.12.0
 
 package top.voidc.frontend.parser;
 
@@ -13,7 +13,7 @@ import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue"})
 public class SysyParser extends Parser {
-	static { RuntimeMetaData.checkVersion("4.11.0-SNAPSHOT", RuntimeMetaData.VERSION); }
+	static { RuntimeMetaData.checkVersion("4.12.0", RuntimeMetaData.VERSION); }
 
 	protected static final DFA[] _decisionToDFA;
 	protected static final PredictionContextCache _sharedContextCache =
@@ -95,7 +95,7 @@ public class SysyParser extends Parser {
 	}
 
 	@Override
-	public String getGrammarFileName() { return "java-escape"; }
+	public String getGrammarFileName() { return "Sysy.g4"; }
 
 	@Override
 	public String[] getRuleNames() { return ruleNames; }
@@ -138,12 +138,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_compUnit; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterCompUnit(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitCompUnit(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitCompUnit(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -157,7 +154,7 @@ public class SysyParser extends Parser {
 			setState(58);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (((_la) & ~0x3f) == 0 && ((1L << _la) & 51539615794L) != 0) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 51539615794L) != 0)) {
 				{
 				setState(56);
 				_errHandler.sync(this);
@@ -218,12 +215,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_decl; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitDecl(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitDecl(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -280,12 +274,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_constDecl; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterConstDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitConstDecl(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitConstDecl(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -340,12 +331,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_bType; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterBType(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitBType(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitBType(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -396,12 +384,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_constDef; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterConstDef(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitConstDef(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitConstDef(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -465,12 +450,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_constInitVal; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterConstInitVal(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitConstInitVal(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitConstInitVal(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -504,7 +486,7 @@ public class SysyParser extends Parser {
 				setState(102);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (((_la) & ~0x3f) == 0 && ((1L << _la) & 1030799493632L) != 0) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1030799493632L) != 0)) {
 					{
 					setState(94);
 					constInitVal();
@@ -562,12 +544,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_varDecl; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterVarDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitVarDecl(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitVarDecl(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -630,12 +609,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_varDef; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterVarDef(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitVarDef(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitVarDef(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -730,12 +706,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_initVal; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterInitVal(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitInitVal(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitInitVal(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -769,7 +742,7 @@ public class SysyParser extends Parser {
 				setState(152);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (((_la) & ~0x3f) == 0 && ((1L << _la) & 1030799493632L) != 0) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1030799493632L) != 0)) {
 					{
 					setState(144);
 					initVal();
@@ -828,12 +801,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_funcDef; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterFuncDef(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitFuncDef(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitFuncDef(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -884,12 +854,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_funcType; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterFuncType(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitFuncType(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitFuncType(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -902,7 +869,7 @@ public class SysyParser extends Parser {
 			{
 			setState(166);
 			_la = _input.LA(1);
-			if ( !(((_la) & ~0x3f) == 0 && ((1L << _la) & 8240L) != 0) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 8240L) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -936,12 +903,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_funcFParams; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterFuncFParams(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitFuncFParams(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitFuncFParams(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1000,12 +964,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_funcFParam; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterFuncFParam(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitFuncFParam(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitFuncFParam(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1076,12 +1037,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_block; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterBlock(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitBlock(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitBlock(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1097,7 +1055,7 @@ public class SysyParser extends Parser {
 			setState(195);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (((_la) & ~0x3f) == 0 && ((1L << _la) & 1082340100666L) != 0) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1082340100666L) != 0)) {
 				{
 				{
 				setState(192);
@@ -1138,12 +1096,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_blockItem; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterBlockItem(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitBlockItem(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitBlockItem(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1238,12 +1193,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_stmt; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterStmt(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitStmt(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitStmt(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1274,7 +1226,7 @@ public class SysyParser extends Parser {
 				setState(212);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (((_la) & ~0x3f) == 0 && ((1L << _la) & 1030799493120L) != 0) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1030799493120L) != 0)) {
 					{
 					setState(211);
 					exp();
@@ -1360,7 +1312,7 @@ public class SysyParser extends Parser {
 				setState(237);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (((_la) & ~0x3f) == 0 && ((1L << _la) & 1030799493120L) != 0) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1030799493120L) != 0)) {
 					{
 					setState(236);
 					exp();
@@ -1406,12 +1358,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_exp; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterExp(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitExp(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitExp(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1465,12 +1414,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_cond; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterCond(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitCond(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitCond(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1509,12 +1455,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_lVal; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterLVal(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitLVal(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitLVal(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1575,12 +1518,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_primaryExp; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterPrimaryExp(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitPrimaryExp(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitPrimaryExp(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1648,12 +1588,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_number; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterNumber(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitNumber(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitNumber(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1707,12 +1644,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_unaryExp; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterUnaryExp(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitUnaryExp(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitUnaryExp(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1741,7 +1675,7 @@ public class SysyParser extends Parser {
 				setState(278);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (((_la) & ~0x3f) == 0 && ((1L << _la) & 1030799493120L) != 0) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1030799493120L) != 0)) {
 					{
 					setState(277);
 					funcRParams();
@@ -1781,12 +1715,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_unaryOp; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterUnaryOp(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitUnaryOp(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitUnaryOp(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1799,7 +1730,7 @@ public class SysyParser extends Parser {
 			{
 			setState(286);
 			_la = _input.LA(1);
-			if ( !(((_la) & ~0x3f) == 0 && ((1L << _la) & 7340032L) != 0) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 7340032L) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -1833,12 +1764,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_funcRParams; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterFuncRParams(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitFuncRParams(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitFuncRParams(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1887,12 +1815,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_operator; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterOperator(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitOperator(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitOperator(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1905,7 +1830,7 @@ public class SysyParser extends Parser {
 			{
 			setState(296);
 			_la = _input.LA(1);
-			if ( !(((_la) & ~0x3f) == 0 && ((1L << _la) & 17174626304L) != 0) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 17174626304L) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -1936,12 +1861,9 @@ public class SysyParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_constExp; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).enterConstExp(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SysyListener ) ((SysyListener)listener).exitConstExp(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SysyVisitor ) return ((SysyVisitor<? extends T>)visitor).visitConstExp(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 

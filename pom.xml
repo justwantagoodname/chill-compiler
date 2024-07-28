@@ -18,13 +18,7 @@
         <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4</artifactId>
-            <version>4.11.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>RELEASE</version>
-            <scope>test</scope>
+            <version>4.12.0</version>
         </dependency>
     </dependencies>
 
@@ -33,7 +27,7 @@
             <plugin>
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4-maven-plugin</artifactId>
-                <version>4.11.0</version>
+                <version>4.12.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -44,6 +38,8 @@
                 <configuration>
                     <sourceDirectory>src/main/antlr4</sourceDirectory>
                     <outputDirectory>src/main/java/top/voidc/frontend/parser</outputDirectory>
+                    <visitor>true</visitor>
+                    <listener>false</listener>
                 </configuration>
             </plugin>
         </plugins>

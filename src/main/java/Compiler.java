@@ -1,6 +1,5 @@
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.RecognitionException;
 import top.voidc.frontend.parser.SysyLexer;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.misc.AssemblyBuilder;
