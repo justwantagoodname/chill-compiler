@@ -43,12 +43,6 @@ public interface SysyVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitConstDef(SysyParser.ConstDefContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link SysyParser#constInitVal}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitConstInitVal(SysyParser.ConstInitValContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link SysyParser#varDecl}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

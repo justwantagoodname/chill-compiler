@@ -12,18 +12,14 @@ constDecl: 'const' primitiveType constDef (',' constDef)* ';' ;
 
 primitiveType: 'int' | 'float' ;
 
-constDef: Ident ('[' constExp ']')* '=' constInitVal ;
-
-constInitVal: constExp
-            | '{' (constInitVal (',' constInitVal)*)? '}' ;
+constDef: Ident ('[' constExp ']')* '=' initVal ;
 
 varDecl: primitiveType varDef (',' varDef)* ';' ;
 
-varDef: Ident ('[' constExp ']')*
-       | Ident ('[' constExp ']')* '=' initVal ;
+varDef: Ident ('[' constExp ']')* ('=' initVal)? ;
 
 initVal: exp
-        | '{' (initVal (',' initVal)*)? '}' ;
+       | '{' (initVal (',' initVal)*)? '}' ;
 
 funcDef: funcType Ident '(' (funcFParams)? ')' block ;
 
