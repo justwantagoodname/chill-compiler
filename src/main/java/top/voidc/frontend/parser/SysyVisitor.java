@@ -31,11 +31,11 @@ public interface SysyVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitConstDecl(SysyParser.ConstDeclContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link SysyParser#bType}.
+	 * Visit a parse tree produced by {@link SysyParser#primitiveType}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBType(SysyParser.BTypeContext ctx);
+	T visitPrimitiveType(SysyParser.PrimitiveTypeContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link SysyParser#constDef}.
 	 * @param ctx the parse tree
@@ -103,6 +103,18 @@ public interface SysyVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitBlockItem(SysyParser.BlockItemContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link SysyParser#lVal}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLVal(SysyParser.LValContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SysyParser#number}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNumber(SysyParser.NumberContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link SysyParser#stmt}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -115,53 +127,17 @@ public interface SysyVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExp(SysyParser.ExpContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link SysyParser#cond}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitCond(SysyParser.CondContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link SysyParser#lVal}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitLVal(SysyParser.LValContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link SysyParser#primaryExp}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPrimaryExp(SysyParser.PrimaryExpContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link SysyParser#number}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitNumber(SysyParser.NumberContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link SysyParser#unaryExp}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitUnaryExp(SysyParser.UnaryExpContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link SysyParser#unaryOp}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitUnaryOp(SysyParser.UnaryOpContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link SysyParser#funcRParams}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitFuncRParams(SysyParser.FuncRParamsContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link SysyParser#operator}.
+	 * Visit a parse tree produced by {@link SysyParser#cond}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitOperator(SysyParser.OperatorContext ctx);
+	T visitCond(SysyParser.CondContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link SysyParser#constExp}.
 	 * @param ctx the parse tree

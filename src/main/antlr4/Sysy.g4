@@ -8,16 +8,16 @@ compUnit: (decl | funcDef | COMMENT | LINE_COMMENT)* ;
 
 decl: constDecl | varDecl ;
 
-constDecl: 'const' bType constDef (',' constDef)* ';' ;
+constDecl: 'const' primitiveType constDef (',' constDef)* ';' ;
 
-bType: 'int' | 'float' ;
+primitiveType: 'int' | 'float' ;
 
 constDef: Ident ('[' constExp ']')* '=' constInitVal ;
 
 constInitVal: constExp
             | '{' (constInitVal (',' constInitVal)*)? '}' ;
 
-varDecl: bType varDef (',' varDef)* ';' ;
+varDecl: primitiveType varDef (',' varDef)* ';' ;
 
 varDef: Ident ('[' constExp ']')*
        | Ident ('[' constExp ']')* '=' initVal ;
@@ -27,15 +27,19 @@ initVal: exp
 
 funcDef: funcType Ident '(' (funcFParams)? ')' block ;
 
-funcType: 'void' | 'int' | 'float' ;
+funcType: 'void' | primitiveType ;
 
 funcFParams: funcFParam (',' funcFParam)* ;
 
-funcFParam: bType Ident ('[' ']' ('[' exp ']')*)? ;
+funcFParam: primitiveType Ident ('[' ']' ('[' exp ']')*)? ;
 
 block: '{' (blockItem)* '}' ;
 
 blockItem: decl | stmt | COMMENT | LINE_COMMENT ;
+
+lVal: Ident ('[' exp ']')* ;
+
+number: IntConst | FloatConst ;
 
 stmt: lVal '=' exp ';'
     | (exp)? ';'
@@ -46,35 +50,24 @@ stmt: lVal '=' exp ';'
     | 'continue' ';'
     | 'return' (exp)? ';' ;
 
-//exp: primaryExp (op=operator exp)* ;
-exp: unaryExp (operator exp)* ;
 
-cond: exp ;
-
-lVal: Ident ('[' exp ']')* ;
-
-primaryExp: '(' exp ')'
-          | lVal
-          | number
-          | StringLiteral ;
-
-number: IntConst | FloatConst ;
-
-unaryExp: primaryExp
-        | Ident '(' (funcRParams)? ')' // 函数调用
-        | unaryOp unaryExp ;
-
-unaryOp: '+' | '-' | '!' ;
+exp: ('+' | '-') exp
+   | '!' exp
+   | exp ('*' | '/' | '%') exp
+   | exp ('+' | '-') exp
+   | exp ('<' | '<=' | '>' | '>=') exp
+   | exp ('==' | '!=') exp
+   | exp '&&' exp
+   | exp '||' exp
+   | '(' exp ')'
+   | number
+   | lVal
+   | StringLiteral
+   | Ident '(' (funcRParams)? ')' // 函数调用
+   ;
 
 funcRParams: exp (',' exp)* ;
-
-operator: '*' | '/' | '%'
-        | '+' | '-'
-        | '<' | '>' | '<=' | '>='
-        | '==' | '!='
-        | '&&'
-        | '||' ;
-
+cond: exp ;
 constExp: exp ;
 
 COMMENT: '/*' .*? '*/' -> skip ;
