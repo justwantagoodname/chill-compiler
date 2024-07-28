@@ -2,6 +2,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import top.voidc.frontend.parser.SysyLexer;
 import top.voidc.frontend.parser.SysyParser;
+import top.voidc.frontend.translator.IRGenerator;
 import top.voidc.misc.AssemblyBuilder;
 import top.voidc.misc.Flag;
 
@@ -18,6 +19,9 @@ public class Compiler {
         final var tokenStream = new CommonTokenStream(lexer);
         final var parser = new SysyParser(tokenStream);
         final var tree = parser.compUnit();
+
+        IRGenerator irGen = new IRGenerator();
+        irGen.visit(tree);
 
 
 //        System.out.println(tree.toStringTree());
