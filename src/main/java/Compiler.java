@@ -1,5 +1,6 @@
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.RecognitionException;
 import top.voidc.frontend.parser.SysyLexer;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.misc.AssemblyBuilder;
@@ -13,13 +14,14 @@ public class Compiler {
         final String sourcePath = Flag.get("source");
         System.out.println(sourcePath);
         // open filestream from filepath
-        final var input = CharStreams.fromString("hello world");
+        final var input = CharStreams.fromFileName(sourcePath);
         final var lexer = new SysyLexer(input);
         final var tokenStream = new CommonTokenStream(lexer);
         final var parser = new SysyParser(tokenStream);
-        final var tree = parser.s();
+        final var tree = parser.compUnit();
 
-        System.out.println(tree.toStringTree());
+
+//        System.out.println(tree.toStringTree());
         final String outputPath = Flag.get("-o");
 
         AssemblyBuilder assemblyBuilder = new AssemblyBuilder(outputPath);
