@@ -25,4 +25,11 @@ public class Log {
         String message = String.format(format, args);
         System.out.printf("[%s][%s.%s() at: %sL%d] %s%n", level, className, methodName, fileName, lineNumber, message);
     }
+
+    public static void should(boolean condition, String format, Object... args) {
+        if (!condition) {
+            String message = String.format(format, args);
+            throw new AssertionError(message);
+        }
+    }
 }

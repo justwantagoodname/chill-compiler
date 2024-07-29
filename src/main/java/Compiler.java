@@ -15,6 +15,7 @@ public class Compiler {
     public static void main(String[] args) throws IOException {
         Flag.init(args);
         final String sourcePath = Flag.get("source");
+        Log.should(sourcePath != null, "source file not specified");
         Log.d("sourcePath: %s", sourcePath);
 
         final var input = CharStreams.fromFileName(sourcePath);
@@ -24,12 +25,13 @@ public class Compiler {
         final var tree = parser.compUnit();
 
         IRGenerator irGen = new IRGenerator();
-//        irGen.visit(tree);
+        irGen.visit(tree);
         writeFake();
     }
 
     public static void writeFake() throws IOException {
         final String outputPath = Flag.get("-o");
+        Log.should(outputPath != null, "output file not specified");
         Log.d("outputPath: %s", outputPath);
 
         AssemblyBuilder assemblyBuilder = new AssemblyBuilder(outputPath);
