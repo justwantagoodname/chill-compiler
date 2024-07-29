@@ -5,15 +5,18 @@ import top.voidc.frontend.parser.SysyParser;
 import top.voidc.frontend.translator.IRGenerator;
 import top.voidc.misc.AssemblyBuilder;
 import top.voidc.misc.Flag;
+import top.voidc.misc.Log;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 public class Compiler {
+    private static final Logger LOGGER = Logger.getLogger(Log.class.getName());
     public static void main(String[] args) throws IOException {
         Flag.init(args);
         final String sourcePath = Flag.get("source");
-        System.out.println(sourcePath);
-        // open filestream from filepath
+        Log.d("sourcePath: %s", sourcePath);
+
         final var input = CharStreams.fromFileName(sourcePath);
         final var lexer = new SysyLexer(input);
         final var tokenStream = new CommonTokenStream(lexer);
@@ -21,11 +24,13 @@ public class Compiler {
         final var tree = parser.compUnit();
 
         IRGenerator irGen = new IRGenerator();
-        irGen.visit(tree);
+//        irGen.visit(tree);
+        writeFake();
+    }
 
-
-//        System.out.println(tree.toStringTree());
+    public static void writeFake() throws IOException {
         final String outputPath = Flag.get("-o");
+        Log.d("outputPath: %s", outputPath);
 
         AssemblyBuilder assemblyBuilder = new AssemblyBuilder(outputPath);
 
