@@ -4,8 +4,10 @@ import top.voidc.ir.type.IceArrayType;
 import top.voidc.ir.type.IceType;
 import top.voidc.misc.Tool;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.stream.Stream;
 
 /**
@@ -81,20 +83,20 @@ public class IceConstantDataArray extends IceConstantData {
     }
 
     public IceConstantData get(List<Integer> arrayRef) {
-        return get(arrayRef.stream());
+        return get(new ArrayDeque<>(arrayRef));
     }
 
 
-    private IceConstantData get(Stream<Integer> arrayRef) {
+    private IceConstantData get(Queue<Integer> arrayRef) {
         // consume the first element
-        var first = arrayRef.findFirst();
-        if (first.isEmpty()) {
+        var first = arrayRef.poll();
+        if (first == null) {
             return null;
         }
         int currentIndex = 0;
         for (var elementPair: elements) {
             currentIndex += elementPair.repeat;
-            if (currentIndex > first.get()) {
+            if (currentIndex > first) {
                 if (elementPair.element instanceof IceConstantDataArray) {
                     return ((IceConstantDataArray) elementPair.element).get(arrayRef);
                 } else {
