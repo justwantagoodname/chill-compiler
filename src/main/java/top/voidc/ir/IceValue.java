@@ -1,5 +1,73 @@
 package top.voidc.ir;
 
+import top.voidc.ir.type.IceType;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
 public class IceValue {
 
+    private int operandId;
+
+    private String name;
+
+    protected IceType type;
+
+    private final List<IceUse> uses;
+
+    public IceValue() {
+        this.name = null;
+        this.uses = new ArrayList<>();
+        this.type = null;
+    }
+
+    public IceValue(IceType type) {
+        this.name = null;
+        this.uses = new ArrayList<>();
+        this.type = type;
+    }
+
+    public IceValue(String name, IceType type) {
+        this.name = name;
+        this.uses = new ArrayList<>();
+        this.type = type;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    protected void setType(IceType type) {
+        this.type = type;
+    }
+
+    public IceType getType() {
+        return type;
+    }
+
+    public void addUse(IceUser user) {
+        if (uses.stream()
+                .noneMatch((use) -> use.getUser() == user)) {
+            uses.add(new IceUse(user, this));
+        }
+    }
+
+    public List<IceUse> getUses() {
+        return uses;
+    }
+
+    @Override
+    public String toString() {
+        if (name != null) {
+            return String.format("%%%s", name);
+        } else {
+            return String.format("%%%d", operandId);
+        }
+    }
 }
+

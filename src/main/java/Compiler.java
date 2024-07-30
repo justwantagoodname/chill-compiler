@@ -25,7 +25,10 @@ public class Compiler {
         final var tree = parser.compUnit();
 
         IRGenerator irGen = new IRGenerator();
-        irGen.visit(tree);
+        final var ir = irGen.visit(tree);
+
+        Log.should(ir != null, "ir is null");
+
         writeFake();
     }
 

@@ -46,20 +46,22 @@ stmt: lVal '=' exp ';'
     | 'continue' ';'
     | 'return' (exp)? ';' ;
 
+string: StringLiteral;
+funcCall: Ident '(' (funcRParams)? ')' ;
 
-exp: ('+' | '-') exp
-   | '!' exp
-   | exp ('*' | '/' | '%') exp
-   | exp ('+' | '-') exp
-   | exp ('<' | '<=' | '>' | '>=') exp
-   | exp ('==' | '!=') exp
-   | exp '&&' exp
-   | exp '||' exp
+exp: unaryOp=('+' | '-') exp
+   | unaryOp='!' exp
+   | exp arithOp=('*' | '/' | '%') exp
+   | exp arithOp=('+' | '-') exp
+   | exp relOp=('<' | '<=' | '>' | '>=') exp
+   | exp relOp=('==' | '!=') exp
+   | exp logicOp='&&' exp
+   | exp logicOp='||' exp
    | '(' exp ')'
    | number
    | lVal
-   | StringLiteral
-   | Ident '(' (funcRParams)? ')' // 函数调用
+   | string
+   | funcCall
    ;
 
 funcRParams: exp (',' exp)* ;
