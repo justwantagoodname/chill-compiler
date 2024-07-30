@@ -20,6 +20,7 @@ public class IceConstantFloat extends IceConstantData {
         return "IceConstantFloat with value: " + value;
     }
 
+    @Override
     public IceConstantData castTo(IceType targetType) {
         return switch (targetType) {
             case I32 -> new IceConstantInt(this.getName(), (long) value);

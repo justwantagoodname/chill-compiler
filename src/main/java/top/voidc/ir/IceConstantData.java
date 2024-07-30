@@ -1,8 +1,10 @@
 package top.voidc.ir;
 
+import top.voidc.ir.type.IceType;
+
 import static top.voidc.misc.Tool.TODO;
 
-public class IceConstantData extends IceConstant {
+public abstract class IceConstantData extends IceConstant {
     public IceConstantData(String name) {
         super(name);
     }
@@ -10,6 +12,8 @@ public class IceConstantData extends IceConstant {
     public static IceConstantData create(String name, long value) {
         return new IceConstantInt(name, value);
     }
+
+    public abstract IceConstantData castTo(IceType type);
 
     /**
      * Sysy目前只支持匿名字符串

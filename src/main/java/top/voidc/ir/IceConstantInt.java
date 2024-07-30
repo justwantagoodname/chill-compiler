@@ -24,6 +24,7 @@ public class IceConstantInt extends IceConstantData {
         return String.format("@%s = constant %s %d", getName(), getType(), value);
     }
 
+    @Override
     public IceConstantData castTo(IceType targetType) {
         return switch (targetType) {
             case I32 -> this;

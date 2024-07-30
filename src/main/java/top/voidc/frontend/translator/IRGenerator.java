@@ -7,6 +7,7 @@ import top.voidc.frontend.parser.SysyParser;
 import top.voidc.ir.IceUnit;
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
+import top.voidc.misc.Tool;
 
 public class IRGenerator extends SysyBaseVisitor<IceUnit> {
     @Override
@@ -18,10 +19,17 @@ public class IRGenerator extends SysyBaseVisitor<IceUnit> {
         final var globalVariableEmitter = new GlobalDeclEmitter();
         for (var child : ctx.children) {
             if (child instanceof SysyParser.DeclContext) {
-                child.accept(globalVariableEmitter);
+                final var globalDecl = child.accept(globalVariableEmitter);
+                SymbolTable.current().put(globalDecl.getName(), globalDecl);
+                unit.globalVariables.add(globalDecl);
+            }
+
+            if (child instanceof SysyParser.FuncDefContext) {
+                Tool.TODO();
             }
         }
-        Log.d(ctx.children.toString());
+
+        Log.d(unit.toString());
         return unit;
     }
 }

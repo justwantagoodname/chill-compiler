@@ -4,7 +4,6 @@ import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.ir.IceConstant;
 import top.voidc.ir.IceConstantData;
-import top.voidc.ir.IceGlobalVariable;
 import top.voidc.ir.type.IceType;
 import top.voidc.misc.Log;
 import top.voidc.misc.Tool;
@@ -14,6 +13,15 @@ import top.voidc.misc.Tool;
  */
 
 public class GlobalDeclEmitter extends SysyBaseVisitor<IceConstant> {
+
+    @Override
+    protected IceConstant aggregateResult(IceConstant aggregate, IceConstant nextResult) {
+        if (aggregate == null) {
+            return nextResult;
+        }
+        return aggregate;
+    }
+
     @Override
     public IceConstant visitDecl(SysyParser.DeclContext ctx) {
         Log.should(ctx.parent instanceof SysyParser.CompUnitContext, "This can only handle global variable");
@@ -39,11 +47,13 @@ public class GlobalDeclEmitter extends SysyBaseVisitor<IceConstant> {
 
         final var constExp = ctx.initVal().exp();
 
-        final var constValue = constExp.accept(new ExpEvaluator());
+        var constValue = constExp.accept(new ExpEvaluator());
 
         Log.should(constValue instanceof IceConstantData, "Const value should be constant");
+        if (constType != constValue.getType()) {
+            constValue = ((IceConstantData) constValue).castTo(constType);
+        }
         constValue.setName(name);
-
         return (IceConstantData) constValue;
     }
 }

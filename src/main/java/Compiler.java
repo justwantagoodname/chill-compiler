@@ -28,6 +28,7 @@ public class Compiler {
         final var ir = irGen.visit(tree);
 
         Log.should(ir != null, "ir is null");
+        Log.d('\n' + ir.toString());
 
         writeFake();
     }
