@@ -1,5 +1,7 @@
 package top.voidc.ir;
 
+import top.voidc.ir.type.IceType;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +15,10 @@ public class IceUser extends IceValue {
 
     public IceUser(String name) {
         this.operands = new ArrayList<>();
+    }
+
+    public IceUser(String name, IceType iceType) {
+        super(name, iceType);
     }
 
     public void addOperand(IceValue operand) {
