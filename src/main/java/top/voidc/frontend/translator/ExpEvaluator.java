@@ -25,7 +25,7 @@ public class ExpEvaluator extends SysyBaseVisitor<IceValue> {
     }
 
     public IceConstantData evaluate(String op, IceConstantData exp) {
-        return switch (exp.getType()) {
+        return switch (exp.getType().getTypeEnum()) {
             case I32 -> {
                 final var value = ((IceConstantInt) exp).getValue();
                 yield switch (op) {
@@ -61,7 +61,7 @@ public class ExpEvaluator extends SysyBaseVisitor<IceValue> {
             }
         }
 
-        return switch (lhsType) {
+        return switch (lhsType.getTypeEnum()) {
             case I32 -> {
                 long lhsValue = ((IceConstantInt) lhs).getValue();
                 long rhsValue = ((IceConstantInt) rhs).getValue();

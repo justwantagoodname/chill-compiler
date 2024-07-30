@@ -6,7 +6,6 @@ import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.ir.IceUnit;
 import top.voidc.misc.Flag;
-import top.voidc.misc.Log;
 import top.voidc.misc.Tool;
 
 public class IRGenerator extends SysyBaseVisitor<IceUnit> {
@@ -29,7 +28,6 @@ public class IRGenerator extends SysyBaseVisitor<IceUnit> {
             }
         }
 
-        Log.d(unit.toString());
         return unit;
     }
 }

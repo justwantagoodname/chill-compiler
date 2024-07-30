@@ -12,7 +12,7 @@ public class IceConstantString extends IceConstantData {
 
     @Override
     public IceConstantData castTo(IceType type) {
-        return switch (type) {
+        return switch (type.getTypeEnum()) {
             case STRING -> this;
             default -> throw new IllegalStateException("Unexpected value: " + type);
         };
