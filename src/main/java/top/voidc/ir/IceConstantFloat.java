@@ -28,4 +28,11 @@ public class IceConstantFloat extends IceConstantData {
             default -> throw new IllegalStateException("Unexpected value: " + type);
         };
     }
+
+    @Override
+    public IceConstantData clone() {
+        return new IceConstantFloat(null, value);
+    }
+
+
 }

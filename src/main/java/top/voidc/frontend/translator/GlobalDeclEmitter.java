@@ -47,9 +47,12 @@ public class GlobalDeclEmitter extends SysyBaseVisitor<IceConstant> {
             if (initValItem.initVal().isEmpty() && initValItem.exp() != null) {
                 if (arraySize.get(depth + 1) == 1) {
                     // 内部是一个表达式，这个表达式应该是一个常量表达式
-                    final var constValue = initValItem.exp().accept(new ExpEvaluator());
+                    var constValue = initValItem.exp().accept(new ExpEvaluator());
                     Log.should(constValue instanceof IceConstantData, "Const value should be constant");
                     // 最后一维度，直接添加到数组中
+                    if (!constValue.getType().equals(arrayDecl.getInsideType())) {
+                        constValue = ((IceConstantData) constValue).castTo(arrayDecl.getInsideType());
+                    }
                     arrayDecl.addElement((IceConstantData) constValue);
                     currentArraySize--;
                 } else {

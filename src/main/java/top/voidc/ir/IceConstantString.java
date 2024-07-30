@@ -18,6 +18,11 @@ public class IceConstantString extends IceConstantData {
         };
     }
 
+    @Override
+    public IceConstantData clone() {
+        return new IceConstantString(content);
+    }
+
     public String getContent() {
         return content;
     }

@@ -60,6 +60,12 @@ public class IceConstantDataArray extends IceConstantData {
 
     }
 
+    @Override
+    public IceConstantData clone() {
+        Tool.TODO();
+        return null;
+    }
+
     public List<IceConstantData> getElements() {
         final var result = new ArrayList<IceConstantData>();
         elements.forEach(e -> {

@@ -32,4 +32,9 @@ public class IceConstantInt extends IceConstantData {
             default -> throw new IllegalStateException("Unexpected value: " + type);
         };
     }
+
+    @Override
+    public IceConstantData clone() {
+        return new IceConstantInt(null, value);
+    }
 }

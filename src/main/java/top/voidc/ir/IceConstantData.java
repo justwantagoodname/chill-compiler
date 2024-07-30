@@ -15,6 +15,7 @@ public abstract class IceConstantData extends IceConstant {
 
     public abstract IceConstantData castTo(IceType type);
 
+    public abstract IceConstantData clone();
     /**
      * Sysy目前只支持匿名字符串
      */

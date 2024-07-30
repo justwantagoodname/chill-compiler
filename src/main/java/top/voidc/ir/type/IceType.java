@@ -55,4 +55,13 @@ public class IceType {
     public static IceType F32() {
         return F32;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof IceType) {
+            return ((IceType) obj).getTypeEnum() == this.getTypeEnum();
+        } else {
+            return false;
+        }
+    }
 }

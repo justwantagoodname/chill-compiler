@@ -1,11 +1,14 @@
 package top.voidc.frontend.translator;
 
+import top.voidc.frontend.helper.SymbolTable;
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.ir.*;
 import top.voidc.ir.type.IceType;
 import top.voidc.misc.Log;
 import top.voidc.misc.Tool;
+
+import java.util.ArrayList;
 
 /**
  * 表达式翻译器，会尝试做初步的变量折叠，如果是纯常量表达式，那么保证化简至常数（不包括函数调用）
@@ -179,9 +182,32 @@ public class ExpEvaluator extends SysyBaseVisitor<IceValue> {
         return null;
     }
 
+    public IceValue fetchConstValue(IceConstantData target, SysyParser.LValContext ctx) {
+        if (target instanceof IceConstantDataArray) {
+            Log.should(!ctx.exp().isEmpty(), "Array access should have one index");
+            final var arrayRefValues = ctx.exp().stream().map(this::visit).toList();
+            if (arrayRefValues.stream().anyMatch(exp -> !isConst(exp))) {
+                Tool.TODO(); // generate code
+            }
+            final var constArrayRef = arrayRefValues.stream()
+                    .map(exp -> (int) ((IceConstantInt) exp).getValue()).toList();
+            return ((IceConstantDataArray) target).get(constArrayRef).clone();
+        } else {
+            return target.clone();
+        }
+    }
+
     @Override
     public IceValue visitLVal(SysyParser.LValContext ctx) {
-        Tool.TODO();
-        return null;
+        final var target = ctx.Ident().getText();
+        final var symbol = SymbolTable.current().get(target);
+
+        if (symbol instanceof IceConstantData) {
+            return fetchConstValue((IceConstantData) symbol, ctx);
+        } else {
+            // variable generate code
+            Tool.TODO();
+            return null;
+        }
     }
 }
