@@ -20,11 +20,14 @@ public class IRGenerator extends SysyBaseVisitor<IceUnit> {
             if (child instanceof SysyParser.DeclContext) {
                 final var globalDecl = child.accept(globalVariableEmitter);
                 SymbolTable.current().put(globalDecl.getName(), globalDecl);
-                unit.globalVariables.add(globalDecl);
+                unit.addGlobalDecl(globalDecl);
             }
 
             if (child instanceof SysyParser.FuncDefContext) {
-                Tool.TODO();
+                final var functionEmitter = new FunctionEmitter();
+                final var functionEntity = child.accept(functionEmitter);
+                SymbolTable.putFunction(functionEntity.getName(), functionEntity);
+                unit.addFunction(functionEntity);
             }
         }
 

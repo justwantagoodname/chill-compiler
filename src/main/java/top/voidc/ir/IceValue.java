@@ -1,15 +1,13 @@
 package top.voidc.ir;
 
 import top.voidc.ir.type.IceType;
+import top.voidc.misc.Log;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class IceValue {
-
-    private int operandId;
-
     private String name;
 
     protected IceType type;
@@ -57,11 +55,10 @@ public class IceValue {
 
     @Override
     public String toString() {
-        if (name != null) {
-            return String.format("%%%s", name);
-        } else {
-            return String.format("%%%d", operandId);
+        if (name == null) {
+            return getType().toString() + "unnamed";
         }
+        return String.format("%s %%%s", getType(), name);
     }
 }
 

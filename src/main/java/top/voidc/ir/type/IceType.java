@@ -15,6 +15,7 @@ public class IceType {
         STRING,
         ARRAY,
         FUNCTION,
+        PTR
     }
 
     private final TypeEnum typeEnum;
@@ -36,6 +37,7 @@ public class IceType {
             case STRING -> "str";
             case ARRAY -> "array";
             case FUNCTION -> "func";
+            case PTR -> "ptr";
         };
     }
 

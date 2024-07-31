@@ -1,5 +1,7 @@
-int a;
-int b = 1;
-int c[2][2];
+void f(int a, float b, int c[], int d[][2], float e[][2][3]) {
 
-int d[2][2] = {1,2,3};
+}
+
+int main() {
+
+}

@@ -27,7 +27,9 @@ funcType: 'void' | primitiveType ;
 
 funcFParams: funcFParam (',' funcFParam)* ;
 
-funcFParam: primitiveType Ident ('[' ']' ('[' exp ']')*)? ;
+funcFParam: primitiveType Ident ('[' ']' funcFParamArrayItem*)? ;
+
+funcFParamArrayItem: '[' exp ']';
 
 block: '{' (blockItem)* '}' ;
 
