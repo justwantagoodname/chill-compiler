@@ -98,8 +98,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
         }
 
         if (ctx.initVal() != null) {
-            // TODO: Handle variable initialization
-            Tool.TODO();
+            final var initVal = (IceBlock) ctx.initVal().accept(new ExpEvaluator());
             return null;
         }
 
