@@ -4,6 +4,8 @@ import top.voidc.frontend.helper.SymbolTable;
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.ir.*;
+import top.voidc.ir.instruction.IceLoadInstruction;
+import top.voidc.ir.type.IcePtrType;
 import top.voidc.ir.type.IceType;
 import top.voidc.misc.Log;
 import top.voidc.misc.Tool;
@@ -206,7 +208,17 @@ public class ExpEvaluator extends SysyBaseVisitor<IceValue> {
             return fetchConstValue((IceConstantData) symbol, ctx);
         } else {
             // variable generate code
-            Tool.TODO();
+            if (ctx.exp().isEmpty()) {
+                // load variable
+                final var targetValue = SymbolTable.current().get(target);
+                Log.should(targetValue.getType() instanceof IcePtrType<?>, "Variable should be a pointer");
+
+                final var loadInst = new IceLoadInstruction(target, targetValue);
+
+                return loadInst;
+            } else {
+                Tool.TODO();
+            }
             return null;
         }
     }

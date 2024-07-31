@@ -18,10 +18,6 @@ public class IceUser extends IceValue {
         this.operands = new ArrayList<>();
     }
 
-    public IceUser(String name, IceType iceType) {
-        super(name, iceType);
-    }
-
     public void addOperand(IceValue operand) {
         operand.addUse(this);
         operands.add(operand);

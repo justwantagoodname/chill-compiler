@@ -1,5 +1,6 @@
 package top.voidc.ir;
 
+import top.voidc.ir.type.IcePtrType;
 import top.voidc.ir.type.IceType;
 
 public class IceConstantInt extends IceConstantData {
@@ -7,7 +8,7 @@ public class IceConstantInt extends IceConstantData {
 
     public IceConstantInt(String name, long value) {
         super(name);
-        this.setType(IceType.I32());
+        this.setType(new IcePtrType<>(IceType.I32));
         this.value = value;
     }
 
