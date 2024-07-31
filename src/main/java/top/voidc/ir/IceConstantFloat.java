@@ -17,7 +17,11 @@ public class IceConstantFloat extends IceConstantData {
 
     @Override
     public String toString() {
-        return "IceConstantFloat with value: " + value;
+        if (getName() == null) {
+            return '(' + getType().toString() + ' ' + value + ')';
+        }
+
+        return String.format("@%s = constant %s %d", getName(), getType(), value);
     }
 
     @Override

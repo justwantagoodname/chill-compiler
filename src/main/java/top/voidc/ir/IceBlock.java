@@ -1,67 +1,40 @@
 package top.voidc.ir;
 
-import top.voidc.ir.inst.IceInstruction;
+import top.voidc.ir.instruction.IceInstruction;
 import top.voidc.ir.type.IceType;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class IceBlock extends IceValue {
-    private final List<IceInstruction> instructions = new ArrayList<>();
-    private final List<IceBlock> predecessors = new ArrayList<>();
-    private final List<IceBlock> successors = new ArrayList<>();
-    private final IceFunction parent;
+    private final Set<IceBlock> predecessors;
+    private final Set<IceBlock> successors;
 
-    public IceBlock(String name, IceFunction parent) {
+    private final List<IceInstruction> instructions;
+
+    public IceBlock(String name) {
         super(name, IceType.VOID);
-        this.parent = parent;
-    }
-
-    public void addInstruction(IceInstruction instruction) {
-        instructions.add(instruction);
-    }
-
-    public void removeInstruction(IceInstruction instruction) {
-        instructions.remove(instruction);
-    }
-
-    public List<IceInstruction> getInstructions() {
-        return instructions;
+        this.predecessors = new HashSet<>();
+        this.successors = new HashSet<>();
+        this.instructions = new ArrayList<>();
     }
 
     public void addPredecessor(IceBlock block) {
         predecessors.add(block);
     }
 
-    public void removePredecessor(IceBlock block) {
-        predecessors.remove(block);
-    }
-
-    public List<IceBlock> getPredecessors() {
-        return predecessors;
-    }
-
     public void addSuccessor(IceBlock block) {
         successors.add(block);
     }
 
-    public void removeSuccessor(IceBlock block) {
-        successors.remove(block);
+    public void addInstruction(IceInstruction instruction) {
+        instructions.add(instruction);
     }
 
-    public List<IceBlock> getSuccessors() {
-        return successors;
+    public void addInstructions(List<IceInstruction> instructions) {
+        this.instructions.addAll(instructions);
     }
 
-    public IceInstruction getEntry() {
-        return instructions.get(0);
-    }
-
-    public IceInstruction getExit() {
-        return instructions.get(instructions.size() - 1);
-    }
-
-    public IceFunction getFunction() {
-        return parent;
-    }
 }

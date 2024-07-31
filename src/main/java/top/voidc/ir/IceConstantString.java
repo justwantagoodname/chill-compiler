@@ -4,10 +4,11 @@ import top.voidc.ir.type.IceType;
 
 public class IceConstantString extends IceConstantData {
     private static int stringCounter = 0;
-    private String content;
+    private final String value;
     public IceConstantString(String value) {
         super("str" + stringCounter++);
-        this.content = value;
+        this.setType(IceType.STRING);
+        this.value = value;
     }
 
     @Override
@@ -20,10 +21,10 @@ public class IceConstantString extends IceConstantData {
 
     @Override
     public IceConstantData clone() {
-        return new IceConstantString(content);
+        return new IceConstantString(value);
     }
 
-    public String getContent() {
-        return content;
+    public String getValue() {
+        return value;
     }
 }

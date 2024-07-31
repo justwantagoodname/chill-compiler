@@ -21,6 +21,13 @@ public class IceUnit extends IceValue {
         globalVariables.add(decl);
     }
 
+    public void addFunction(IceFunction function) {
+        if (functions.stream().anyMatch(f -> f.getName().equals(function.getName()))) {
+            throw new RuntimeException("Duplicate function declaration: " + function.getName());
+        }
+        functions.add(function);
+    }
+
     @Override
     public String toString() {
         final var sb = new StringBuffer();

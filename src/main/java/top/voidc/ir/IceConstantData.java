@@ -6,7 +6,7 @@ import static top.voidc.misc.Tool.TODO;
 
 public abstract class IceConstantData extends IceConstant {
     public IceConstantData(String name) {
-        super(name);
+        super(name, IceType.VOID);
     }
 
     public static IceConstantData create(String name, long value) {

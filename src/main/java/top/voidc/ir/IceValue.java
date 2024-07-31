@@ -4,12 +4,9 @@ import top.voidc.ir.type.IceType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class IceValue {
-
-    private int operandId;
-
+    private int align = 4;
     private String name;
 
     protected IceType type;
@@ -19,13 +16,7 @@ public class IceValue {
     public IceValue() {
         this.name = null;
         this.uses = new ArrayList<>();
-        this.type = null;
-    }
-
-    public IceValue(IceType type) {
-        this.name = null;
-        this.uses = new ArrayList<>();
-        this.type = type;
+        this.type = IceType.VOID;
     }
 
     public IceValue(String name, IceType type) {
@@ -63,11 +54,18 @@ public class IceValue {
 
     @Override
     public String toString() {
-        if (name != null) {
-            return String.format("%%%s", name);
-        } else {
-            return String.format("%%%d", operandId);
+        if (name == null) {
+            return getType().toString() + "unnamed";
         }
+        return String.format("%s %%%s", getType(), name);
+    }
+
+    public void setAlign(int align) {
+        this.align = align;
+    }
+
+    public int getAlign() {
+        return this.align;
     }
 }
 

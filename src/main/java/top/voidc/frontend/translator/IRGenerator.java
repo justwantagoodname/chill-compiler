@@ -4,8 +4,10 @@ package top.voidc.frontend.translator;
 import top.voidc.frontend.helper.SymbolTable;
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
+import top.voidc.ir.IceFunction;
 import top.voidc.ir.IceUnit;
 import top.voidc.misc.Flag;
+import top.voidc.misc.Log;
 import top.voidc.misc.Tool;
 
 public class IRGenerator extends SysyBaseVisitor<IceUnit> {
@@ -20,11 +22,14 @@ public class IRGenerator extends SysyBaseVisitor<IceUnit> {
             if (child instanceof SysyParser.DeclContext) {
                 final var globalDecl = child.accept(globalVariableEmitter);
                 SymbolTable.current().put(globalDecl.getName(), globalDecl);
-                unit.globalVariables.add(globalDecl);
+                unit.addGlobalDecl(globalDecl);
             }
 
             if (child instanceof SysyParser.FuncDefContext) {
-                Tool.TODO();
+                final var functionEmitter = new FunctionEmitter();
+                final var functionEntity = (IceFunction) child.accept(functionEmitter);
+                SymbolTable.putFunction(functionEntity.getName(), functionEntity);
+                unit.addFunction(functionEntity);
             }
         }
 
