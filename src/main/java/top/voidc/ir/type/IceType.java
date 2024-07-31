@@ -5,7 +5,6 @@ public class IceType {
     public static final IceType F32 = new IceType(TypeEnum.F32);
     public static final IceType VOID = new IceType(TypeEnum.VOID);
     public static final IceType STRING = new IceType(TypeEnum.STRING);
-    public static final IceType ARRAY = new IceType(TypeEnum.ARRAY);
     public static final IceType FUNCTION = new IceType(TypeEnum.FUNCTION);
 
     public enum TypeEnum {

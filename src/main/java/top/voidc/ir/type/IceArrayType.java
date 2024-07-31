@@ -33,4 +33,9 @@ public class IceArrayType extends IceType {
     public String toString() {
         return String.format("[%d x %s]", numElements, elementType);
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj) && elementType.equals(((IceArrayType) obj).elementType) && numElements == ((IceArrayType) obj).numElements;
+    }
 }

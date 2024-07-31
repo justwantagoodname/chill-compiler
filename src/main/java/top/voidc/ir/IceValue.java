@@ -1,13 +1,12 @@
 package top.voidc.ir;
 
 import top.voidc.ir.type.IceType;
-import top.voidc.misc.Log;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class IceValue {
+    private int align = 4;
     private String name;
 
     protected IceType type;
@@ -59,6 +58,14 @@ public class IceValue {
             return getType().toString() + "unnamed";
         }
         return String.format("%s %%%s", getType(), name);
+    }
+
+    public void setAlign(int align) {
+        this.align = align;
+    }
+
+    public int getAlign() {
+        return this.align;
     }
 }
 
