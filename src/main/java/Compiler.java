@@ -16,7 +16,7 @@ public class Compiler {
         Flag.init(args);
         final String sourcePath = Flag.get("source");
         Log.should(sourcePath != null, "source file not specified");
-        Log.d("sourcePath: %s", sourcePath);
+        Log.d("sourcePath: " + sourcePath);
 
         final var input = CharStreams.fromFileName(sourcePath);
         final var lexer = new SysyLexer(input);
@@ -36,7 +36,7 @@ public class Compiler {
     public static void writeFake() throws IOException {
         final String outputPath = Flag.get("-o");
         Log.should(outputPath != null, "output file not specified");
-        Log.d("outputPath: %s", outputPath);
+        Log.d("outputPath: " + outputPath);
 
         AssemblyBuilder assemblyBuilder = new AssemblyBuilder(outputPath);
 

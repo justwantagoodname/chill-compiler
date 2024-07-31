@@ -31,7 +31,7 @@ public class SymbolTable {
 
     public void put(String name, IceValue value) {
         Log.should(!table.containsKey(name),
-                "Variable %s already defined in scope %s", name, scopeName);
+                "Variable " + name + " already defined in scope " + scopeName);
         table.put(name, value);
     }
 
@@ -55,7 +55,7 @@ public class SymbolTable {
 
     public static void putFunction(String name, IceFunction function) {
         Log.should(!functionMap.containsKey(name),
-                "Function %s already defined", name);
+                "Function" + name + " already defined");
         functionMap.put(name, function);
     }
 

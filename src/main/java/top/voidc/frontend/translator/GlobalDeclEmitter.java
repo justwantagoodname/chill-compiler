@@ -2,10 +2,7 @@ package top.voidc.frontend.translator;
 
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
-import top.voidc.ir.IceConstant;
-import top.voidc.ir.IceConstantData;
-import top.voidc.ir.IceConstantDataArray;
-import top.voidc.ir.IceConstantInt;
+import top.voidc.ir.*;
 import top.voidc.ir.type.IceArrayType;
 import top.voidc.ir.type.IceType;
 import top.voidc.misc.Log;
@@ -57,19 +54,11 @@ public class GlobalDeclEmitter extends SysyBaseVisitor<IceConstant> {
                     currentArraySize--;
                 } else {
                     // 还有下一维度，递归填充
-                    final var subArrayType = ((IceArrayType) arrayDecl.getType()).getElementType();
-                    final var nestedArray = new IceConstantDataArray(null, (IceArrayType) subArrayType, new ArrayList<>());
-                    fillArray(nestedArray, initVal, arraySize, depth + 1);
-                    arrayDecl.addElement(nestedArray);
-                    currentArraySize--;
+                    currentArraySize = fillSubArray(arrayDecl, arraySize, depth, currentArraySize, initVal);
                 }
             } else {
                 // 内部是一个数组，递归填充
-                final var subArrayType = ((IceArrayType) arrayDecl.getType()).getElementType();
-                final var nestedArray = new IceConstantDataArray(null, (IceArrayType) subArrayType, new ArrayList<>());
-                fillArray(nestedArray, initValItem, arraySize, depth + 1);
-                arrayDecl.addElement(nestedArray);
-                currentArraySize--;
+                currentArraySize = fillSubArray(arrayDecl, arraySize, depth, currentArraySize, initValItem);
             }
             visited.add(initValItem);
         }
@@ -87,6 +76,15 @@ public class GlobalDeclEmitter extends SysyBaseVisitor<IceConstant> {
                 }
             }
         }
+    }
+
+    private Integer fillSubArray(IceConstantDataArray arrayDecl, ArrayList<Integer> arraySize, int depth, Integer currentArraySize, SysyParser.InitValContext initValItem) {
+        final var subArrayType = ((IceArrayType) arrayDecl.getType()).getElementType();
+        final var nestedArray = new IceConstantDataArray(null, (IceArrayType) subArrayType, new ArrayList<>());
+        fillArray(nestedArray, initValItem, arraySize, depth + 1);
+        arrayDecl.addElement(nestedArray);
+        currentArraySize--;
+        return currentArraySize;
     }
 
     public IceConstantDataArray visitConstArrayDef(SysyParser.ConstDefContext ctx) {
@@ -134,10 +132,69 @@ public class GlobalDeclEmitter extends SysyBaseVisitor<IceConstant> {
         var constValue = constExp.accept(new ExpEvaluator());
 
         Log.should(constValue instanceof IceConstantData, "Const value should be constant");
-        if (constType != constValue.getType()) {
+        if (!constType.equals(constValue.getType())) {
             constValue = ((IceConstantData) constValue).castTo(constType);
         }
         constValue.setName(name);
         return (IceConstantData) constValue;
+    }
+
+    private IceConstant visitVarArrayDecl(SysyParser.VarDefContext ctx) {
+        final var typeLiteral = ((SysyParser.VarDeclContext) ctx.parent).primitiveType().getText();
+        final var elementType = IceType.fromSysyLiteral(typeLiteral);
+        final var name = ctx.Ident().getText();
+        final var arraySize = new ArrayList<Integer>();
+
+        for (var exp : ctx.constExp()) {
+            var constValue = exp.accept(new ExpEvaluator());
+            Log.should(constValue instanceof IceConstantInt, "index value should be constant");
+            arraySize.add((int) ((IceConstantInt) constValue).getValue());
+        }
+        final var arrayType = IceArrayType.buildNestedArrayType(arraySize, elementType);
+        final var globalVarArray = new IceGlobalVariable(name, arrayType, null);
+
+        if (ctx.initVal() != null) {
+            final var initVal = ctx.initVal();
+            final var initArray = new IceConstantDataArray(name, arrayType, new ArrayList<>());
+            // compute dimension size
+            arraySize.add(1);
+
+            visited.clear();
+            fillArray(initArray, initVal, arraySize, 0);
+            visited.clear();
+
+            globalVarArray.setInitializer(initArray);
+        }
+        return globalVarArray;
+    }
+
+    @Override
+    public IceConstant visitVarDef(SysyParser.VarDefContext ctx) {
+        final boolean isArray = !ctx.constExp().isEmpty();
+
+        if (isArray) {
+            return visitVarArrayDecl(ctx);
+        }
+
+        final var typeLiteral = ((SysyParser.VarDeclContext) ctx.parent).primitiveType().getText();
+        final var varType = IceType.fromSysyLiteral(typeLiteral);
+        final var name = ctx.Ident().getText();
+        final var globalVarDecl = new IceGlobalVariable(name, varType, null);
+
+        if (ctx.initVal() != null) {
+            final var initExp = ctx.initVal().exp(); // initExp must be a constExp and is optional
+            IceConstantData initValue = null;
+
+            if (initExp != null) {
+                initValue = (IceConstantData) initExp.accept(new ExpEvaluator());
+                Log.should(initValue != null, "Const value should be constant");
+                if (!varType.equals(initValue.getType())) {
+                    initValue = initValue.castTo(varType);
+                }
+                globalVarDecl.setInitializer(initValue);
+            }
+        }
+
+        return globalVarDecl;
     }
 }

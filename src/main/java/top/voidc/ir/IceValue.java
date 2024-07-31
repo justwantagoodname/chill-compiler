@@ -19,13 +19,7 @@ public class IceValue {
     public IceValue() {
         this.name = null;
         this.uses = new ArrayList<>();
-        this.type = null;
-    }
-
-    public IceValue(IceType type) {
-        this.name = null;
-        this.uses = new ArrayList<>();
-        this.type = type;
+        this.type = IceType.VOID;
     }
 
     public IceValue(String name, IceType type) {
