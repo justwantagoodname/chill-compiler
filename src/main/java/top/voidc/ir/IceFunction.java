@@ -42,10 +42,8 @@ public class IceFunction extends IceConstant {
     public String toString() {
         final var sb = new StringBuilder();
         sb.append("define ").append(returnType).append(" @").append(getName()).append("(");
-
-        for (final var parameter: parameters) {
-            sb.append(parameter.getType()).append(' ').append(parameter.getName()).append(", ");
-        }
+        sb.append(String.join(", ", parameters.stream()
+                            .map(p -> p.getType() + " %" + p.getName()).toArray(String[]::new)));
         sb.append(')').append(" {").append('}');
         return sb.toString();
     }

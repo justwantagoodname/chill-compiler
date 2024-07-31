@@ -1,5 +1,6 @@
 package top.voidc.frontend.translator;
 
+import top.voidc.frontend.helper.SymbolTable;
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.ir.IceConstantInt;
@@ -13,7 +14,7 @@ import top.voidc.misc.Log;
 import java.util.ArrayList;
 
 public class FunctionEmitter extends SysyBaseVisitor<IceFunction> {
-    private int valueCounter;
+    private int valueCounter = 0;
     private String functionName;
     private IceFunction functionEntity;
 
@@ -45,13 +46,16 @@ public class FunctionEmitter extends SysyBaseVisitor<IceFunction> {
         type = !arraySize.isEmpty() ? IceArrayType.buildNestedArrayType(arraySize, type) : type;
         type = isArray ? new IcePtrType<>(type) : type;
         Log.should(!type.equals(IceType.VOID), "Function parameter cannot be void");
-        return new IceValue(name, type);
+        final var paramValue = new IceValue(generateValueName(), type);
+        SymbolTable.current().put(name, paramValue);
+        return paramValue;
     }
 
     @Override
     public IceFunction visitFuncDef(SysyParser.FuncDefContext ctx) {
         functionName = ctx.Ident().getText();
         functionEntity = new IceFunction(functionName);
+        SymbolTable.createScope(functionName + ":scope");
 
         final var retTypeLiteral = ctx.funcType().getText();
         final var retType = IceType.fromSysyLiteral(retTypeLiteral);
@@ -63,6 +67,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceFunction> {
             }
         }
 
+        SymbolTable.exitScope();
         return functionEntity;
     }
 
