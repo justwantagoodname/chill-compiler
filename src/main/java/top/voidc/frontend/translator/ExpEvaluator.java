@@ -4,6 +4,8 @@ import top.voidc.frontend.helper.SymbolTable;
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.ir.*;
+import top.voidc.ir.instruction.IceBinaryInstruction;
+import top.voidc.ir.instruction.IceInstruction;
 import top.voidc.ir.instruction.IceLoadInstruction;
 import top.voidc.ir.type.IcePtrType;
 import top.voidc.ir.type.IceType;
@@ -18,6 +20,23 @@ import java.util.ArrayList;
  * 若包含变量引用那么会返回一个基本块
  */
 public class ExpEvaluator extends SysyBaseVisitor<IceValue> {
+
+    private IceFunction function;
+
+    private IceBlock currentBlock;
+
+    public ExpEvaluator() {
+        currentBlock = new IceBlock("temp:block");
+    }
+
+    public ExpEvaluator(IceFunction function, IceBlock block) {
+        this.function = function;
+        this.currentBlock = block;
+    }
+
+    public IceBlock getCurrentBlock() {
+        return currentBlock;
+    }
 
     /**
      * 判断是否是常量表达式, 用于常量折叠
@@ -53,6 +72,35 @@ public class ExpEvaluator extends SysyBaseVisitor<IceValue> {
         };
     }
 
+    public IceInstruction codegen(String op, IceValue exp) {
+        return switch (op) {
+            case "-" -> {
+                switch (exp.getType().getTypeEnum()) {
+                    case I32 -> {
+                        final var instr = IceBinaryInstruction.createAdd(function.generateLocalValueName(),
+                                                        IceConstantData.create(null, 0), exp);
+                        instr.addNSW();
+                        yield instr;
+                    }
+                    case F32 -> {
+                        Tool.TODO();
+                        yield null;
+                    }
+                    default -> throw new IllegalStateException("Unexpected value: " + exp.getType());
+                }
+            }
+            case "+" -> {
+                Log.should(exp instanceof IceInstruction, "跑到这里的exp应该是指令，不是话那就是常量折叠出错了");
+                yield (IceInstruction) exp;
+            }
+            case "!" -> {
+                Tool.TODO();
+                yield null;
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + op);
+        };
+    }
+
     public IceConstantData evaluate(String op, IceConstantData lhs, IceConstantData rhs) {
         final var lhsType = lhs.getType();
         final var rhsType = rhs.getType();
@@ -60,9 +108,9 @@ public class ExpEvaluator extends SysyBaseVisitor<IceValue> {
         if (lhsType != rhsType) {
             // cast
             if (lhsType == IceType.I32()) {
-                lhs = ((IceConstantInt) lhs).castTo(IceType.F32());
+                lhs = lhs.castTo(IceType.F32());
             } else {
-                rhs = ((IceConstantInt) rhs).castTo(IceType.F32());
+                rhs = rhs.castTo(IceType.F32());
             }
         }
 
@@ -119,14 +167,15 @@ public class ExpEvaluator extends SysyBaseVisitor<IceValue> {
 
     @Override
     public IceValue visitExp(SysyParser.ExpContext ctx) {
+        // 判断表达式类型
         if (ctx.unaryOp != null) {
             // one operands
             final var exp = visit(ctx.exp(0));
             if (isConst(exp)) {
                 return evaluate(ctx.unaryOp.getText(), (IceConstantData) exp);
             } else {
-                // generate instruction
-                Tool.TODO();
+                currentBlock.addInstruction(codegen(ctx.unaryOp.getText(), exp));
+                return currentBlock;
             }
         }
 
@@ -157,6 +206,7 @@ public class ExpEvaluator extends SysyBaseVisitor<IceValue> {
             }
         }
 
+        // 其他情况向下遍历
         return super.visitExp(ctx);
     }
 
@@ -214,9 +264,11 @@ public class ExpEvaluator extends SysyBaseVisitor<IceValue> {
                 Log.should(targetValue.getType() instanceof IcePtrType<?>, "Variable should be a pointer");
 
                 final var loadInst = new IceLoadInstruction(target, targetValue);
+                currentBlock.addInstruction(loadInst);
 
                 return loadInst;
             } else {
+                // gen GEP instruction
                 Tool.TODO();
             }
             return null;

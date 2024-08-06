@@ -3,7 +3,9 @@ package top.voidc.ir;
 import top.voidc.ir.type.IceType;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class IceValue {
     private int align = 4;
@@ -12,6 +14,8 @@ public class IceValue {
     protected IceType type;
 
     private final List<IceUse> uses;
+
+    private Map<String, Object> metadata = null;
 
     public IceValue() {
         this.name = null;
@@ -66,6 +70,20 @@ public class IceValue {
 
     public int getAlign() {
         return this.align;
+    }
+
+    public void setMetadata(String key, Object metadata) {
+        if (this.metadata == null) {
+            this.metadata = new HashMap<>();
+        }
+        this.metadata.put(key, metadata);
+    }
+
+    public <T> T getMetadata(String key) {
+        if (this.metadata == null) {
+            return null;
+        }
+        return (T) this.metadata.get(key);
     }
 }
 

@@ -11,7 +11,6 @@ public class IceLoadInstruction extends IceInstruction {
         setInstructionType(InstructionType.LOAD);
         this.source = source;
 
-        source.addUse(this);
         this.addOperand(source);
     }
 

@@ -7,12 +7,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class IceFunction extends IceConstant {
+    private int valueCounter = 0;
     private final List<IceType> parameterTypes;
     private IceType returnType;
 
     private final List<IceValue> parameters;
 
     private final List<IceInstruction> instructions;
+
+    private IceBlock entryBlock = null;
 
     public IceFunction(String name) {
         super(name, IceType.FUNCTION);
@@ -48,6 +51,10 @@ public class IceFunction extends IceConstant {
 
     public void addInstruction(IceInstruction instruction) {
         instructions.add(instruction);
+    }
+
+    public String generateLocalValueName() {
+        return String.valueOf(valueCounter++);
     }
 
     @Override

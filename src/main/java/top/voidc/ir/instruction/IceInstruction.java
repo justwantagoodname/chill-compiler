@@ -7,7 +7,22 @@ public class IceInstruction extends IceUser {
     public enum InstructionType {
         ALLOCA,
         LOAD,
-        STORE;
+        STORE,
+        BINARY,
+        ADD,
+        SUB,
+        MUL,
+        DIV,
+        MOD,
+        SHL,
+        SHR,
+        AND,
+        OR,
+        XOR,
+        FADD,
+        FSUB,
+        FMUL,
+        FDIV;
 
         @Override
         public String toString() {
@@ -15,6 +30,21 @@ public class IceInstruction extends IceUser {
                 case ALLOCA -> "alloca";
                 case LOAD -> "load";
                 case STORE -> "store";
+                case BINARY -> "binary";
+                case ADD -> "add";
+                case SUB -> "sub";
+                case MUL -> "mul";
+                case DIV -> "div";
+                case MOD -> "mod";
+                case SHL -> "shl";
+                case SHR -> "shr";
+                case AND -> "and";
+                case OR -> "or";
+                case XOR -> "xor";
+                case FADD -> "fadd";
+                case FMUL -> "fmul";
+                case FSUB -> "fsub";
+                case FDIV -> "fdiv";
             };
         }
     }

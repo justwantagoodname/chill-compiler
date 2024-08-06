@@ -23,6 +23,10 @@ public class IceUser extends IceValue {
         operands.add(operand);
     }
 
+    public IceValue getOperand(int i) {
+        return operands.get(i);
+    }
+
     public List<IceValue> getOperands() {
         return operands;
     }

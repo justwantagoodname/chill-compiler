@@ -17,13 +17,7 @@ import top.voidc.misc.Tool;
 import java.util.ArrayList;
 
 public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
-    private int valueCounter = 0;
-    private String functionName;
     private IceFunction functionEntity;
-
-    private String generateValueName() {
-        return String.valueOf(valueCounter++);
-    }
 
     @Override
     public IceValue visitFuncFParam(SysyParser.FuncFParamContext ctx) {
@@ -46,7 +40,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
         type = !arraySize.isEmpty() ? IceArrayType.buildNestedArrayType(arraySize, type) : type;
         type = isArray ? new IcePtrType<>(type) : type;
         Log.should(!type.equals(IceType.VOID), "Function parameter cannot be void");
-        final var paramValue = new IceAllocaInstruction(generateValueName(), type);
+        final var paramValue = new IceAllocaInstruction(functionEntity.generateLocalValueName(), type);
         SymbolTable.current().put(name, paramValue);
         functionEntity.insertInstructionFirst(paramValue);
         return paramValue;
@@ -81,7 +75,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
             arraySize.add((int) ((IceConstantInt) result).getValue());
         }
         varType = IceArrayType.buildNestedArrayType(arraySize, varType);
-        final var alloca = new IceAllocaInstruction(generateValueName(), varType);
+        final var alloca = new IceAllocaInstruction(functionEntity.generateLocalValueName(), varType);
         functionEntity.insertInstructionFirst(alloca);
         SymbolTable.current().put(name, alloca);
         return alloca;
@@ -104,7 +98,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
 
 
         // For non-array type, generate an IceAllocaInstruction
-        final var alloca = new IceAllocaInstruction(generateValueName(), varType);
+        final var alloca = new IceAllocaInstruction(functionEntity.generateLocalValueName(), varType);
         functionEntity.insertInstructionFirst(alloca);
         SymbolTable.current().put(name, alloca);
         return alloca;
@@ -112,7 +106,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
 
     @Override
     public IceFunction visitFuncDef(SysyParser.FuncDefContext ctx) {
-        functionName = ctx.Ident().getText();
+        String functionName = ctx.Ident().getText();
         functionEntity = new IceFunction(functionName);
         SymbolTable.createScope(functionName + ":scope");
 
