@@ -151,16 +151,21 @@ public class CompilerTester {
         final var originalErr = System.err;
         testResults.forEach(result -> {
             try (final var logFileStream = new PrintStream(result.getCompilerOutput())) {
-                System.setOut(logFileStream);
                 System.setErr(logFileStream);
-                compileSysySource(result.getTestcase(), result.getAsm());
+                System.setOut(logFileStream);
 
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                if (!result.getAsm().exists()) {
-                    result.setStatus(ResultStatus.CE);
+                try {
+                    compileSysySource(result.getTestcase(), result.getAsm());
+                } catch (Exception e) {
+                    // NOTE: Redirect System.err here. shouldn't move out.
+                    e.printStackTrace();
+                } finally {
+                    if (!result.getAsm().exists()) {
+                        result.setStatus(ResultStatus.CE);
+                    }
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         });
 
