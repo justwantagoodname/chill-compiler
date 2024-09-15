@@ -111,7 +111,7 @@ public class CompilerTester {
         SY_COMPILER_MAIN.invoke(null, (Object) args);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         System.out.println("Starting Testing...");
         assert args.length == 2;
 
@@ -170,7 +170,10 @@ public class CompilerTester {
         final var CESize = testResults.parallelStream()
                 .filter(testResult -> testResult.getStatus() == ResultStatus.CE).count();
 
-        System.out.println(CESize + " testcase(s) compile failed.");
+        System.out.println();
 
+        if (CESize > 0) {
+            throw new Exception(CESize + " testcase(s) compile failed. Abort.");
+        }
     }
 }
