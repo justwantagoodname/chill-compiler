@@ -5,11 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="update grammar">
-      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ci/CompilerTester.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/Compiler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Compiler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ci/CompilerTester.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ci/CompilerTester.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,12 +35,15 @@
     }
   }
 }</component>
-  <component name="GitLabMergeRequestsSettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "first": "https://gitlab.eduxiji.net/T202411065203807/compiler2024-chillcompiler4j.git",
-    "second": "ca76d990-8e30-4111-9c3d-44392061420b"
+  <component name="GitLabMergeRequestsSettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;first&quot;: &quot;https://gitlab.eduxiji.net/T202411065203807/compiler2024-chillcompiler4j.git&quot;,
+    &quot;second&quot;: &quot;ca76d990-8e30-4111-9c3d-44392061420b&quot;
   }
-}]]></component>
+}</component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7
 }</component>
@@ -50,30 +52,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Maven.chillcompiler [clean].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.chillcompiler [compile].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.chillcompiler [package].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.chillcompiler [test].executor&quot;: &quot;Debug&quot;,
-    &quot;Maven.chillcompiler [validate].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.chillcompiler [verify].executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/MARKSET/IdeaProjects/compiler2024-chillcompiler4j&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;模块&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;,
-    &quot;应用程序.Compiler.executor&quot;: &quot;Run&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Maven.chillcompiler [clean].executor": "Run",
+    "Maven.chillcompiler [compile].executor": "Run",
+    "Maven.chillcompiler [package].executor": "Run",
+    "Maven.chillcompiler [test].executor": "Run",
+    "Maven.chillcompiler [validate].executor": "Run",
+    "Maven.chillcompiler [verify].executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/MARKSET/IdeaProjects/compiler2024-chillcompiler4j",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "模块",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "vue.rearranger.settings.migration": "true",
+    "应用程序.Compiler.executor": "Debug",
+    "应用程序.CompilerTester.executor": "Run"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Maven.chillcompiler [test]">
     <configuration name="Compiler" type="Application" factoryName="Application" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="Compiler" />
@@ -81,6 +84,19 @@
       <option name="PROGRAM_PARAMETERS" value="-S -o - testcase.sy" />
       <option name="VM_PARAMETERS" value="-Xss8M" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/testcases" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="CompilerTester" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="top.voidc.ci.CompilerTester" />
+      <module name="chillcompiler" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="top.voidc.ci.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
@@ -120,7 +136,13 @@
     <list>
       <item itemvalue="Maven.chillcompiler [test]" />
       <item itemvalue="应用程序.Compiler" />
+      <item itemvalue="应用程序.CompilerTester" />
     </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="应用程序.CompilerTester" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -146,7 +168,18 @@
       <workItem from="1725853056283" duration="2781000" />
       <workItem from="1725891345463" duration="1631000" />
       <workItem from="1725893055260" duration="248000" />
+      <workItem from="1726233405187" duration="231000" />
+      <workItem from="1726375061904" duration="9401000" />
     </task>
+    <task id="LOCAL-00001" summary="update grammar">
+      <option name="closed" value="true" />
+      <created>1726233526781</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1726233526781</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -163,15 +196,8 @@
       </map>
     </option>
   </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/ci/CompilerTester.java</url>
-          <line>37</line>
-          <option name="timeStamp" value="4" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="update grammar" />
+    <option name="LAST_COMMIT_MESSAGE" value="update grammar" />
   </component>
 </project>
