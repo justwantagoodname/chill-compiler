@@ -4,11 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="update grammar">
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+    <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="add functional testcases">
+      <change beforePath="$PROJECT_DIR$/.github/workflows/maven.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/maven.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/Compiler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Compiler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ci/CompilerTester.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ci/CompilerTester.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,7 +23,14 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="HARD" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "nullnan"
+  }
+}]]></component>
   <component name="GitLabMergeRequestFiltersHistory">{
   &quot;lastFilter&quot;: {
     &quot;state&quot;: &quot;OPENED&quot;,
@@ -41,6 +47,12 @@
     &quot;second&quot;: &quot;ca76d990-8e30-4111-9c3d-44392061420b&quot;
   }
 }</component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/nullnan/chill-compiler.git",
+    "accountId": "0d003728-1739-4972-8c2b-b7c7b0465b39"
+  }
+}]]></component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -52,31 +64,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Maven.chillcompiler [clean].executor": "Run",
-    "Maven.chillcompiler [compile].executor": "Run",
-    "Maven.chillcompiler [package].executor": "Run",
-    "Maven.chillcompiler [test].executor": "Run",
-    "Maven.chillcompiler [validate].executor": "Run",
-    "Maven.chillcompiler [verify].executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/MARKSET/IdeaProjects/compiler2024-chillcompiler4j",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "模块",
-    "project.structure.proportion": "0.0",
-    "project.structure.side.proportion": "0.0",
-    "vue.rearranger.settings.migration": "true",
-    "应用程序.Compiler.executor": "Debug",
-    "应用程序.CompilerTester.executor": "Run"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Maven.chillcompiler [clean].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.chillcompiler [compile].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.chillcompiler [package].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.chillcompiler [test].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.chillcompiler [validate].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.chillcompiler [verify].executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/MARKSET/IdeaProjects/compiler2024-chillcompiler4j&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;模块&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;,
+    &quot;应用程序.Compiler.executor&quot;: &quot;Debug&quot;,
+    &quot;应用程序.CompilerTester.executor&quot;: &quot;Run&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Maven.chillcompiler [test]">
     <configuration name="Compiler" type="Application" factoryName="Application" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="Compiler" />
@@ -120,7 +132,7 @@
             <option name="pomFileName" />
             <option name="profilesMap">
               <map>
-                <entry key="code-generator" value="true" />
+                <entry key="arm-test" value="true" />
               </map>
             </option>
             <option name="projectsCmdOptionValues">
@@ -170,6 +182,7 @@
       <workItem from="1725893055260" duration="248000" />
       <workItem from="1726233405187" duration="231000" />
       <workItem from="1726375061904" duration="9401000" />
+      <workItem from="1726389297753" duration="190000" />
     </task>
     <task id="LOCAL-00001" summary="update grammar">
       <option name="closed" value="true" />
@@ -179,7 +192,23 @@
       <option name="project" value="LOCAL" />
       <updated>1726233526781</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="add functional testcases">
+      <option name="closed" value="true" />
+      <created>1726389384235</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1726389384235</updated>
+    </task>
+    <task id="LOCAL-00003" summary="add functional testcases">
+      <option name="closed" value="true" />
+      <created>1726389393961</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1726389393961</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -198,6 +227,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="update grammar" />
-    <option name="LAST_COMMIT_MESSAGE" value="update grammar" />
+    <MESSAGE value="add functional testcases" />
+    <option name="LAST_COMMIT_MESSAGE" value="add functional testcases" />
   </component>
 </project>

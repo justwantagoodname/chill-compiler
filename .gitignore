@@ -37,4 +37,6 @@ build/
 ### Mac OS ###
 .DS_Store
 
-testcases/
+testcases/**/*.log
+testcases/**/*.actual.out
+testcases/**/*.s
