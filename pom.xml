@@ -93,7 +93,7 @@
 
     <profiles>
         <profile>
-            <id>code-generator</id>
+            <id>arm-test</id>
             <build>
                 <plugins>
                     <plugin>
@@ -110,7 +110,7 @@
                                     <mainClass>top.voidc.ci.CompilerTester</mainClass>
                                     <arguments>
                                         <argument>arm</argument>
-                                        <argument>D:\MARKSET\IdeaProjects\compiler2024-chillcompiler4j\testcases\functional</argument>
+                                        <argument>testcases/functional</argument>
                                     </arguments>
                                 </configuration>
                             </execution>
