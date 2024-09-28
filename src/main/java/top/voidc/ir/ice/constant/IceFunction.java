@@ -6,24 +6,24 @@ import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IceType;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class IceFunction extends IceConstant {
-    private int valueCounter = 0;
+    private int tempValueCounter = 0;
     private final List<IceType> parameterTypes;
     private IceType returnType;
 
     private final List<IceValue> parameters;
 
-    private final List<IceInstruction> instructions;
-
-    private IceBlock entryBlock = null;
+    private final IceBlock entryBlock;
 
     public IceFunction(String name) {
         super(name, IceType.FUNCTION);
+        this.entryBlock = new IceBlock("entry");
         this.parameterTypes = new ArrayList<>();
         this.parameters = new ArrayList<>();
-        this.instructions = new ArrayList<>();
     }
 
     public void setReturnType(IceType returnType) {
@@ -47,16 +47,24 @@ public class IceFunction extends IceConstant {
         parameterTypes.add(parameter.getType());
     }
 
-    public void insertInstructionFirst(IceInstruction instruction) {
-        instructions.add(0, instruction);
-    }
-
-    public void addInstruction(IceInstruction instruction) {
-        instructions.add(instruction);
-    }
-
     public String generateLocalValueName() {
-        return String.valueOf(valueCounter++);
+        return String.valueOf(tempValueCounter++);
+    }
+
+    public Iterable<IceBlock> blocks() {
+        final var blocks = new ArrayList<IceBlock>();
+        blocks.add(entryBlock);
+
+        for (var i = 0; i < blocks.size(); i++) {
+            final var currentBlock = blocks.get(i);
+            currentBlock.successors().forEach(block -> {
+                if (!blocks.contains(block)) {
+                    blocks.add(block);
+                }
+            });
+        }
+
+        return blocks;
     }
 
     @Override
@@ -65,13 +73,13 @@ public class IceFunction extends IceConstant {
         sb.append("define ").append(returnType).append(" @").append(getName()).append("(");
         sb.append(String.join(", ", parameters.stream()
                             .map(p -> p.getType() + " %" + p.getName()).toArray(String[]::new)));
-        sb.append(')').append(" {\n");
-
-        for (final var instr: instructions) {
-            sb.append('\t').append(instr).append('\n');
-        }
-
+        sb.append(") {\n");
+        blocks().forEach(sb::append);
         sb.append('}');
         return sb.toString();
+    }
+
+    public IceBlock getEntryBlock() {
+        return entryBlock;
     }
 }

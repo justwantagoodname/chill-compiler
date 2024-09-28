@@ -35,6 +35,14 @@ public class Compiler {
         generator.generateIR();
 
         Log.d('\n' + context.getCurrentIR().toString());
+
+        final String outputPath = Flag.get("-o");
+        Log.should(outputPath != null, "output file not specified");
+        Log.d("outputPath: " + outputPath);
+
+        AssemblyBuilder assemblyBuilder = new AssemblyBuilder(outputPath);
+
+        assemblyBuilder.writeRaw(context.getCurrentIR().toString());
     }
 
     public static void parseSource(IceContext context) throws IOException {
@@ -45,7 +53,7 @@ public class Compiler {
         context.setAst(parser.compUnit());
     }
 
-    public static void writeFake() throws IOException {
+    public static void writeIR() throws IOException {
         final String outputPath = Flag.get("-o");
         Log.should(outputPath != null, "output file not specified");
         Log.d("outputPath: " + outputPath);

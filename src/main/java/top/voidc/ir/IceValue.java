@@ -2,10 +2,7 @@ package top.voidc.ir;
 
 import top.voidc.ir.ice.type.IceType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class IceValue {
     private int align = 4;
@@ -13,19 +10,19 @@ public class IceValue {
 
     protected IceType type;
 
-    private final List<IceUse> uses;
+    private final Set<IceUser> uses; // 使用者
 
     private Map<String, Object> metadata = null;
 
     public IceValue() {
         this.name = null;
-        this.uses = new ArrayList<>();
+        this.uses = new HashSet<>();
         this.type = IceType.VOID;
     }
 
     public IceValue(String name, IceType type) {
         this.name = name;
-        this.uses = new ArrayList<>();
+        this.uses = new HashSet<>();
         this.type = type;
     }
 
@@ -46,13 +43,10 @@ public class IceValue {
     }
 
     public void addUse(IceUser user) {
-        if (uses.stream()
-                .noneMatch((use) -> use.getUser() == user)) {
-            uses.add(new IceUse(user, this));
-        }
+        uses.add(user);
     }
 
-    public List<IceUse> getUses() {
+    public Iterable<? extends IceUser> getUsers() {
         return uses;
     }
 

@@ -1,9 +1,14 @@
 package top.voidc.ir.ice.instruction;
 
+import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceUser;
 import top.voidc.ir.ice.type.IceType;
 
 public class IceInstruction extends IceUser {
+    public IceBlock getParent() {
+        return parent;
+    }
+
     public enum InstructionType {
         ALLOCA,
         LOAD,
@@ -49,10 +54,12 @@ public class IceInstruction extends IceUser {
         }
     }
 
+    private final IceBlock parent;
     InstructionType type;
 
-    public IceInstruction(String name, IceType type) {
+    public IceInstruction(IceBlock parent, String name, IceType type) {
         super(name, type);
+        this.parent = parent;
     }
 
     public InstructionType getInstructionType() {

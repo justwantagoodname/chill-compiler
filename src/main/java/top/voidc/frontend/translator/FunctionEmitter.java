@@ -57,6 +57,8 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
 
         this.visitBlock(ctx.block());
         context.getSymbolTable().exitScope();
+        context.getSymbolTable().putFunction(functionEntity.getName(), functionEntity);
+
         return functionEntity;
     }
 
@@ -86,25 +88,15 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
         type = !arraySize.isEmpty() ? IceArrayType.buildNestedArrayType(arraySize, type) : type;
         type = isArray ? new IcePtrType<>(type) : type;
         Log.should(!type.equals(IceType.VOID), "Function parameter cannot be void");
-        final var paramValue = new IceAllocaInstruction(functionEntity.generateLocalValueName(), type);
+        final var paramValue = new IceAllocaInstruction(functionEntity.getEntryBlock(), name, type);
         context.getSymbolTable().put(name, paramValue);
-        functionEntity.insertInstructionFirst(paramValue);
+        functionEntity.getEntryBlock().addInstructionsAtFront(paramValue);
         return paramValue;
     }
 
     @Override
     public IceBlock visitBlock(SysyParser.BlockContext ctx) {
-        if (!(ctx.parent instanceof SysyParser.FuncDefContext)) {
-            context.getSymbolTable().createScope("unnamed:block");
-        }
 
-        for (final var blockItem : ctx.blockItem()) {
-            blockItem.accept(this);
-        }
-
-        if (!(ctx.parent instanceof SysyParser.FuncDefContext)) {
-            context.getSymbolTable().exitScope();
-        }
 
         return null;
     }

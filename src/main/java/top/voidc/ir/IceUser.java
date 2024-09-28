@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class IceUser extends IceValue {
-    private List<IceValue> operands;
+    private final List<IceValue> operands;
 
     public IceUser() {
         super();
@@ -27,7 +27,7 @@ public class IceUser extends IceValue {
         return operands.get(i);
     }
 
-    public List<IceValue> getOperands() {
+    public Iterable<? extends IceValue> getOperands() {
         return operands;
     }
 

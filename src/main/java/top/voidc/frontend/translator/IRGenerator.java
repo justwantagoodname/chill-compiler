@@ -33,7 +33,6 @@ public class IRGenerator extends SysyBaseVisitor<Void> {
             } else if (child instanceof SysyParser.FuncDefContext) {
                 final var functionEmitter = new FunctionEmitter(context);
                 final var functionEntity = (IceFunction) functionEmitter.visit(child);
-                context.getSymbolTable().putFunction(functionEntity.getName(), functionEntity);
                 unit.addFunction(functionEntity);
             }
         }

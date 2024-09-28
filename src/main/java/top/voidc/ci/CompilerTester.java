@@ -175,9 +175,13 @@ public class CompilerTester {
         final var CESize = testResults.parallelStream()
                 .filter(testResult -> testResult.getStatus() == ResultStatus.CE).count();
 
-        System.out.println();
+
 
         if (CESize > 0) {
+            testResults.parallelStream()
+                    .filter(testResult -> testResult.getStatus() == ResultStatus.CE).forEach(
+                            System.out::println
+                    );
             throw new Exception(CESize + " testcase(s) compile failed. Abort.");
         }
 

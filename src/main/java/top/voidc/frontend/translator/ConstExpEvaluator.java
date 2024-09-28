@@ -70,7 +70,7 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
             }
         }
 
-        return switch (lhsType.getTypeEnum()) {
+        return switch (lhs.getType().getTypeEnum()) {
             case I32 -> {
                 long lhsValue = ((IceConstantInt) lhs).getValue();
                 long rhsValue = ((IceConstantInt) rhs).getValue();
@@ -156,7 +156,11 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
     public IceConstantData visitNumber(SysyParser.NumberContext ctx) {
         final var literal = ctx.getText();
         if (ctx.IntConst() != null) {
-            return IceConstantData.create(null, Long.parseLong(literal));
+            if (literal.startsWith("0x") || literal.startsWith("0X")) {
+                return IceConstantData.create(null, Long.decode(literal));
+            } else {
+                return IceConstantData.create(null, Long.parseLong(literal));
+            }
         } else if (ctx.FloatConst() != null) {
             return IceConstantData.create(null, Double.parseDouble(literal));
         }

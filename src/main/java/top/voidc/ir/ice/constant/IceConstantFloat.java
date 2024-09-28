@@ -22,7 +22,7 @@ public class IceConstantFloat extends IceConstantData {
             return '(' + getType().toString() + ' ' + value + ')';
         }
 
-        return String.format("@%s = constant %s %d", getName(), getType(), value);
+        return String.format("@%s = constant %s %f", getName(), getType(), value);
     }
 
     @Override

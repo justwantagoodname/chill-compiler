@@ -1,3 +1,1 @@
-//test domain of global var define and local define
-const int a = 1, b = a + 1;
-int c, d;
+int f(int a, float b) {}

@@ -1,25 +1,23 @@
 package top.voidc.ir.ice.instruction;
 
+import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.IceValue;
 
 public class IceLoadInstruction extends IceInstruction {
-    private final IceValue source;
 
-    public IceLoadInstruction(String name, IceValue source) {
-        super(name, ((IcePtrType<?>)source.getType()).getPointTo());
+    public IceLoadInstruction(IceBlock parent, String name, IceValue source) {
+        super(parent, name, ((IcePtrType<?>)source.getType()).getPointTo());
         setInstructionType(InstructionType.LOAD);
-        this.source = source;
-
         this.addOperand(source);
     }
 
     public IceValue getSource() {
-        return source;
+        return getOperand(0);
     }
 
     @Override
     public String toString() {
-        return String.format("%%%s = load %s, %%%s", getName(), source.getType(), source.getName());
+        return String.format("%%%s = load %s, %%%s", getName(), getSource().getType(), getSource().getName());
     }
 }
