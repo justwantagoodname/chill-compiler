@@ -4,37 +4,25 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="update maven.yml">
-      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/BlockEmitter.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/misc/annotation/NotNull.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="更新改进了组织结构修复全局数组的问题">
+      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/misc/annotation/Use.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/Compiler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Compiler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ci/CompilerTester.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ci/CompilerTester.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/helper/SymbolTable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/helper/SymbolTable.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ExpEvaluator.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/BlockEmitter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/BlockEmitter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ConstExpEvaluator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ConstExpEvaluator.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/FunctionEmitter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/FunctionEmitter.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/GlobalDeclEmitter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ConstDeclEmitter.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/IRGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/IRGenerator.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceBlock.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceBlock.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceConstant.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceConstantData.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceConstantDataArray.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceConstantFloat.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceConstantInt.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceConstantString.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceFunction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceFunction.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceGlobalVariable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceGlobalVariable.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUnit.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUnit.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUse.java" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUser.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceValue.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceValue.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/instruction/IceAllocaInstruction.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/instruction/IceBinaryInstruction.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/instruction/IceInstruction.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/instruction/IceLoadInstruction.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/type/IceArrayType.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/type/IcePtrType.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/type/IceType.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceConstantFloat.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceConstantFloat.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceFunction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceFunction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceAllocaInstruction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceAllocaInstruction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceBinaryInstruction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceBinaryInstruction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceInstruction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceInstruction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceLoadInstruction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceLoadInstruction.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/testcases/testcase.sy" beforeDir="false" afterPath="$PROJECT_DIR$/testcases/testcase.sy" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -45,12 +33,18 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="AnnotationType" />
         <option value="Class" />
+        <option value="AnnotationType" />
       </list>
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="PUSH_TAGS">
+      <GitPushTagMode>
+        <option name="argument" value="--follow-tags" />
+        <option name="title" value="Current Branch" />
+      </GitPushTagMode>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
     <option name="RESET_MODE" value="HARD" />
   </component>
@@ -79,7 +73,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/nullnan/chill-compiler.git&quot;,
-    &quot;accountId&quot;: &quot;0d003728-1739-4972-8c2b-b7c7b0465b39&quot;
+    &quot;accountId&quot;: &quot;0b366240-02f5-4d51-91d6-78663580f0d2&quot;
   }
 }</component>
   <component name="ProblemsViewState">
@@ -119,11 +113,11 @@
     &quot;应用程序.CompilerTester.executor&quot;: &quot;Run&quot;
   }
 }</component>
-  <component name="RunManager" selected="应用程序.Compiler">
+  <component name="RunManager" selected="Maven.chillcompiler [test]">
     <configuration name="Compiler" type="Application" factoryName="Application" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="Compiler" />
       <module name="chillcompiler" />
-      <option name="PROGRAM_PARAMETERS" value="-S -o - testcase.sy" />
+      <option name="PROGRAM_PARAMETERS" value="-S -o - functional/95_float.sy" />
       <option name="VM_PARAMETERS" value="-Xss8M" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/testcases" />
       <method v="2">
@@ -203,6 +197,9 @@
       <workItem from="1727442207167" duration="1487000" />
       <workItem from="1727516186196" duration="356000" />
       <workItem from="1727516962042" duration="3609000" />
+      <workItem from="1727521148836" duration="628000" />
+      <workItem from="1727522310952" duration="5695000" />
+      <workItem from="1727529329799" duration="5359000" />
     </task>
     <task id="LOCAL-00001" summary="update grammar">
       <option name="closed" value="true" />
@@ -276,7 +273,15 @@
       <option name="project" value="LOCAL" />
       <updated>1726392393063</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="更新改进了组织结构修复全局数组的问题">
+      <option name="closed" value="true" />
+      <created>1727521272654</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1727521272654</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -287,7 +292,19 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="main" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
@@ -299,29 +316,21 @@
     <MESSAGE value="add README.md" />
     <MESSAGE value="update test class" />
     <MESSAGE value="update maven.yml" />
-    <option name="LAST_COMMIT_MESSAGE" value="update maven.yml" />
+    <MESSAGE value="更新改进了组织结构修复全局数组的问题" />
+    <option name="LAST_COMMIT_MESSAGE" value="更新改进了组织结构修复全局数组的问题" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/IRGenerator.java</url>
-          <line>39</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ConstDeclEmitter.java</url>
           <line>40</line>
           <option name="timeStamp" value="4" />
         </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-method">
-          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ConstExpEvaluator.java</url>
-          <line>202</line>
-          <properties class="top.voidc.frontend.translator.ConstExpEvaluator" method="visitLVal">
-            <option name="EMULATED" value="true" />
-            <option name="WATCH_EXIT" value="false" />
-          </properties>
-          <option name="timeStamp" value="7" />
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceFunction.java</url>
+          <line>57</line>
+          <option name="timeStamp" value="5" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
