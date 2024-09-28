@@ -4,8 +4,38 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="update test class">
-      <change beforePath="$PROJECT_DIR$/.github/workflows/maven.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/maven.yml" afterDir="false" />
+    <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="update maven.yml">
+      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/BlockEmitter.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/misc/annotation/NotNull.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/Compiler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Compiler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ci/CompilerTester.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ci/CompilerTester.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/helper/SymbolTable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/helper/SymbolTable.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ExpEvaluator.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/FunctionEmitter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/FunctionEmitter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/GlobalDeclEmitter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ConstDeclEmitter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/IRGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/IRGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceBlock.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceBlock.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceConstant.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceConstantData.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceConstantDataArray.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceConstantFloat.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceConstantInt.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceConstantString.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceFunction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceFunction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceGlobalVariable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceGlobalVariable.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUnit.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUnit.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceValue.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceValue.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/instruction/IceAllocaInstruction.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/instruction/IceBinaryInstruction.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/instruction/IceInstruction.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/instruction/IceLoadInstruction.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/type/IceArrayType.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/type/IcePtrType.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/type/IceType.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/testcases/testcase.sy" beforeDir="false" afterPath="$PROJECT_DIR$/testcases/testcase.sy" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -15,6 +45,7 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+        <option value="AnnotationType" />
         <option value="Class" />
       </list>
     </option>
@@ -23,12 +54,12 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
     <option name="RESET_MODE" value="HARD" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "nullnan"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;nullnan&quot;
   }
-}]]></component>
+}</component>
   <component name="GitLabMergeRequestFiltersHistory">{
   &quot;lastFilter&quot;: {
     &quot;state&quot;: &quot;OPENED&quot;,
@@ -45,12 +76,12 @@
     &quot;second&quot;: &quot;ca76d990-8e30-4111-9c3d-44392061420b&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/nullnan/chill-compiler.git",
-    "accountId": "0d003728-1739-4972-8c2b-b7c7b0465b39"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/nullnan/chill-compiler.git&quot;,
+    &quot;accountId&quot;: &quot;0d003728-1739-4972-8c2b-b7c7b0465b39&quot;
   }
-}]]></component>
+}</component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -73,40 +104,28 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/MARKSET/IdeaProjects/compiler2024-chillcompiler4j&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/MARKSET/IdeaProjects/compiler2024-chillcompiler4j/testcases/testcase.sy&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;模块&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;项目&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;,
-    &quot;应用程序.Compiler.executor&quot;: &quot;Debug&quot;,
+    &quot;应用程序.Compiler.executor&quot;: &quot;Run&quot;,
     &quot;应用程序.CompilerTester.executor&quot;: &quot;Run&quot;
   }
 }</component>
-  <component name="RunManager" selected="Maven.chillcompiler [test]">
+  <component name="RunManager" selected="应用程序.Compiler">
     <configuration name="Compiler" type="Application" factoryName="Application" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="Compiler" />
       <module name="chillcompiler" />
       <option name="PROGRAM_PARAMETERS" value="-S -o - testcase.sy" />
       <option name="VM_PARAMETERS" value="-Xss8M" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/testcases" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="CompilerTester" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="top.voidc.ci.CompilerTester" />
-      <module name="chillcompiler" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="top.voidc.ci.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
@@ -146,13 +165,7 @@
     <list>
       <item itemvalue="Maven.chillcompiler [test]" />
       <item itemvalue="应用程序.Compiler" />
-      <item itemvalue="应用程序.CompilerTester" />
     </list>
-    <recent_temporary>
-      <list>
-        <item itemvalue="应用程序.CompilerTester" />
-      </list>
-    </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -180,7 +193,16 @@
       <workItem from="1725893055260" duration="248000" />
       <workItem from="1726233405187" duration="231000" />
       <workItem from="1726375061904" duration="9401000" />
-      <workItem from="1726389297753" duration="3052000" />
+      <workItem from="1726389297753" duration="3365000" />
+      <workItem from="1726544695314" duration="124000" />
+      <workItem from="1726927646053" duration="3149000" />
+      <workItem from="1727066836431" duration="15000" />
+      <workItem from="1727092150487" duration="1804000" />
+      <workItem from="1727349987927" duration="2421000" />
+      <workItem from="1727352430972" duration="1988000" />
+      <workItem from="1727442207167" duration="1487000" />
+      <workItem from="1727516186196" duration="356000" />
+      <workItem from="1727516962042" duration="3609000" />
     </task>
     <task id="LOCAL-00001" summary="update grammar">
       <option name="closed" value="true" />
@@ -246,7 +268,15 @@
       <option name="project" value="LOCAL" />
       <updated>1726392077603</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="update maven.yml">
+      <option name="closed" value="true" />
+      <created>1726392393063</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1726392393063</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -267,8 +297,38 @@
     <MESSAGE value="update grammar" />
     <MESSAGE value="add functional testcases" />
     <MESSAGE value="add README.md" />
-    <MESSAGE value="update maven.yml" />
     <MESSAGE value="update test class" />
-    <option name="LAST_COMMIT_MESSAGE" value="update test class" />
+    <MESSAGE value="update maven.yml" />
+    <option name="LAST_COMMIT_MESSAGE" value="update maven.yml" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/IRGenerator.java</url>
+          <line>39</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ConstDeclEmitter.java</url>
+          <line>40</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-method">
+          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ConstExpEvaluator.java</url>
+          <line>202</line>
+          <properties class="top.voidc.frontend.translator.ConstExpEvaluator" method="visitLVal">
+            <option name="EMULATED" value="true" />
+            <option name="WATCH_EXIT" value="false" />
+          </properties>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+    <pin-to-top-manager>
+      <pinned-members>
+        <PinnedItemInfo parentTag="top.voidc.frontend.helper.SymbolTable$BlockRecord" memberName="table" />
+      </pinned-members>
+    </pin-to-top-manager>
   </component>
 </project>
