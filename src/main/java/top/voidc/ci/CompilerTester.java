@@ -180,5 +180,8 @@ public class CompilerTester {
         if (CESize > 0) {
             throw new Exception(CESize + " testcase(s) compile failed. Abort.");
         }
+
+        System.out.println("=== [Phase] Cleanup ===");
+        testResults.parallelStream().filter(testResult -> testResult.getStatus() != ResultStatus.CE).forEach(TestResult::cleanup);
     }
 }

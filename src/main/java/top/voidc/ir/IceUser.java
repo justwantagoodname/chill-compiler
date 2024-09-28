@@ -1,6 +1,6 @@
 package top.voidc.ir;
 
-import top.voidc.ir.type.IceType;
+import top.voidc.ir.ice.type.IceType;
 
 import java.util.ArrayList;
 import java.util.List;

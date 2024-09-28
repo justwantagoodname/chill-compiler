@@ -1,5 +1,8 @@
 package top.voidc.ir;
 
+import top.voidc.ir.ice.constant.IceConstant;
+import top.voidc.ir.ice.constant.IceFunction;
+
 import java.util.ArrayList;
 import java.util.List;
 
