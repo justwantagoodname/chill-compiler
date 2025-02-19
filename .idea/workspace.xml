@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="更新改进了组织结构修复全局数组的问题">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+        <option value="AnnotationType" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="PUSH_TAGS">
+      <GitPushTagMode>
+        <option name="argument" value="--follow-tags" />
+        <option name="title" value="Current Branch" />
+      </GitPushTagMode>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="HARD" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;nullnan&quot;
+  }
+}</component>
+  <component name="GitLabMergeRequestFiltersHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPENED&quot;,
+    &quot;assignee&quot;: {
+      &quot;type&quot;: &quot;org.jetbrains.plugins.gitlab.mergerequest.ui.filters.GitLabMergeRequestsFiltersValue.MergeRequestsMemberFilterValue.MergeRequestsAssigneeFilterValue&quot;,
+      &quot;username&quot;: &quot;T202411065203807&quot;,
+      &quot;fullname&quot;: &quot;编译成蓝色疾旋鼬&quot;
+    }
+  }
+}</component>
+  <component name="GitLabMergeRequestsSettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;first&quot;: &quot;https://gitlab.eduxiji.net/T202411065203807/compiler2024-chillcompiler4j.git&quot;,
+    &quot;second&quot;: &quot;ca76d990-8e30-4111-9c3d-44392061420b&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/nullnan/chill-compiler.git",
+    "accountId": "f8bf9b6d-d73a-4a7a-ad32-0ed19f3d8541"
+  }
+}]]></component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="2lQVWcbZp7hFtT3LjypLMUn5X48" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Maven.chillcompiler [clean].executor": "Run",
+    "Maven.chillcompiler [compile].executor": "Run",
+    "Maven.chillcompiler [package].executor": "Run",
+    "Maven.chillcompiler [test].executor": "Run",
+    "Maven.chillcompiler [validate].executor": "Run",
+    "Maven.chillcompiler [verify].executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/MARKSET/IdeaProjects/compiler2024-chillcompiler4j/testcases/testcase.sy",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true",
+    "应用程序.Compiler.executor": "Run",
+    "应用程序.CompilerTester.executor": "Run"
+  }
+}]]></component>
+  <component name="RunManager" selected="Application.Compiler">
+    <configuration name="Compiler" type="Application" factoryName="Application" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="Compiler" />
+      <module name="chillcompiler" />
+      <option name="PROGRAM_PARAMETERS" value="-S -o - functional/95_float.sy" />
+      <option name="VM_PARAMETERS" value="-Xss8M" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/testcases" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="chillcompiler [test]" type="MavenRunConfiguration" factoryName="Maven" nameIsGenerated="true">
+      <MavenSettings>
+        <option name="myGeneralSettings" />
+        <option name="myRunnerSettings" />
+        <option name="myRunnerParameters">
+          <MavenRunnerParameters>
+            <option name="cmdOptions" />
+            <option name="profiles">
+              <set />
+            </option>
+            <option name="goals">
+              <list>
+                <option value="test" />
+              </list>
+            </option>
+            <option name="multimoduleDir" />
+            <option name="pomFileName" />
+            <option name="profilesMap">
+              <map>
+                <entry key="arm-test" value="true" />
+              </map>
+            </option>
+            <option name="projectsCmdOptionValues">
+              <list />
+            </option>
+            <option name="resolveToWorkspace" value="false" />
+            <option name="workingDirPath" value="$PROJECT_DIR$" />
+          </MavenRunnerParameters>
+        </option>
+      </MavenSettings>
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Application.Compiler" />
+      <item itemvalue="Maven.chillcompiler [test]" />
+    </list>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-125ca727e0f0-intellij.indexing.shared.core-IU-243.23654.189" />
+        <option value="bundled-js-predefined-d6986cc7102b-822845ee3bb5-JavaScript-IU-243.23654.189" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="应用程序级" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="默认任务">
+      <changelist id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="" />
+      <created>1725112319510</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1725112319510</updated>
+      <workItem from="1725112320705" duration="388000" />
+      <workItem from="1725112770257" duration="153000" />
+      <workItem from="1725112943498" duration="360000" />
+      <workItem from="1725802899332" duration="1454000" />
+      <workItem from="1725804872142" duration="1209000" />
+      <workItem from="1725853056283" duration="2781000" />
+      <workItem from="1725891345463" duration="1631000" />
+      <workItem from="1725893055260" duration="248000" />
+      <workItem from="1726233405187" duration="231000" />
+      <workItem from="1726375061904" duration="9401000" />
+      <workItem from="1726389297753" duration="3365000" />
+      <workItem from="1726544695314" duration="124000" />
+      <workItem from="1726927646053" duration="3149000" />
+      <workItem from="1727066836431" duration="15000" />
+      <workItem from="1727092150487" duration="1804000" />
+      <workItem from="1727349987927" duration="2421000" />
+      <workItem from="1727352430972" duration="1988000" />
+      <workItem from="1727442207167" duration="1487000" />
+      <workItem from="1727516186196" duration="356000" />
+      <workItem from="1727516962042" duration="3609000" />
+      <workItem from="1727521148836" duration="628000" />
+      <workItem from="1727522310952" duration="5695000" />
+      <workItem from="1727529329799" duration="5359000" />
+      <workItem from="1739967213788" duration="1244000" />
+    </task>
+    <task id="LOCAL-00001" summary="update grammar">
+      <option name="closed" value="true" />
+      <created>1726233526781</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1726233526781</updated>
+    </task>
+    <task id="LOCAL-00002" summary="add functional testcases">
+      <option name="closed" value="true" />
+      <created>1726389384235</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1726389384235</updated>
+    </task>
+    <task id="LOCAL-00003" summary="add functional testcases">
+      <option name="closed" value="true" />
+      <created>1726389393961</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1726389393961</updated>
+    </task>
+    <task id="LOCAL-00004" summary="add functional testcases">
+      <option name="closed" value="true" />
+      <created>1726389553763</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1726389553763</updated>
+    </task>
+    <task id="LOCAL-00005" summary="add README.md">
+      <option name="closed" value="true" />
+      <created>1726389988822</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1726389988822</updated>
+    </task>
+    <task id="LOCAL-00006" summary="update maven.yml">
+      <option name="closed" value="true" />
+      <created>1726390307813</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1726390307813</updated>
+    </task>
+    <task id="LOCAL-00007" summary="update test class">
+      <option name="closed" value="true" />
+      <created>1726390965995</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1726390965995</updated>
+    </task>
+    <task id="LOCAL-00008" summary="update test class">
+      <option name="closed" value="true" />
+      <created>1726392077603</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1726392077603</updated>
+    </task>
+    <task id="LOCAL-00009" summary="update maven.yml">
+      <option name="closed" value="true" />
+      <created>1726392393063</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1726392393063</updated>
+    </task>
+    <task id="LOCAL-00010" summary="更新改进了组织结构修复全局数组的问题">
+      <option name="closed" value="true" />
+      <created>1727521272654</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1727521272654</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="main" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="update grammar" />
+    <MESSAGE value="add functional testcases" />
+    <MESSAGE value="add README.md" />
+    <MESSAGE value="update test class" />
+    <MESSAGE value="update maven.yml" />
+    <MESSAGE value="更新改进了组织结构修复全局数组的问题" />
+    <option name="LAST_COMMIT_MESSAGE" value="更新改进了组织结构修复全局数组的问题" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ConstDeclEmitter.java</url>
+          <line>40</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceFunction.java</url>
+          <line>57</line>
+          <option name="timeStamp" value="5" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+    <pin-to-top-manager>
+      <pinned-members>
+        <PinnedItemInfo parentTag="top.voidc.frontend.helper.SymbolTable$BlockRecord" memberName="table" />
+      </pinned-members>
+    </pin-to-top-manager>
+  </component>
+</project>
