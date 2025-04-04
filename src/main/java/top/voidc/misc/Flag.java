@@ -53,22 +53,33 @@ public class Flag {
         return instance;
     }
 
+    public void reset() {
+        options.clear();
+    }
+
     public void registerOption(Option<?> option) {
         options.put(option.getName(), option);
     }
 
     public static void init(String[] args) {
         Flag flagInstance = getInstance();
-
+        flagInstance.reset();
         flagInstance.registerOption(new Option<>("source", String.class, null));
         flagInstance.registerOption(new Option<>("-o", String.class, "a.out"));
+        flagInstance.registerOption(new Option<>("-S", Boolean.class, false));
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].startsWith("-")) {
                 Option<?> option = flagInstance.options.get(args[i]);
-                if (option != null && i + 1 < args.length && !args[i + 1].startsWith("-")) {
-                    option.setValue(args[i + 1]);
-                    i++;
+                if (option != null) {
+                    if (option.getType().equals(Boolean.class)) {
+                        option.setValue("true");
+                    } else if (option.getType().equals(String.class)
+                                && i + 1 < args.length
+                                && (!args[i + 1].startsWith("-") || "-".equals(args[i + 1]))) {
+                        option.setValue(args[i + 1]);
+                        i++;
+                    }
                 }
             } else {
                 Option<String> sourceOption = (Option<String>) flagInstance.options.get("source");
