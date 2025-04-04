@@ -5,8 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="更新改进了组织结构修复全局数组的问题">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/Compiler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Compiler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/misc/Flag.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/misc/Flag.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,12 +54,12 @@
     &quot;second&quot;: &quot;ca76d990-8e30-4111-9c3d-44392061420b&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/nullnan/chill-compiler.git",
-    "accountId": "f8bf9b6d-d73a-4a7a-ad32-0ed19f3d8541"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/nullnan/chill-compiler.git&quot;,
+    &quot;accountId&quot;: &quot;f8bf9b6d-d73a-4a7a-ad32-0ed19f3d8541&quot;
   }
-}]]></component>
+}</component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -72,6 +73,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Application.Compiler.executor": "Debug",
     "Maven.chillcompiler [clean].executor": "Run",
     "Maven.chillcompiler [compile].executor": "Run",
     "Maven.chillcompiler [package].executor": "Run",
@@ -91,7 +93,7 @@
     "project.structure.last.edited": "Project",
     "project.structure.proportion": "0.15",
     "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "settings.editor.selected.configurable": "preferences.keymap",
     "vue.rearranger.settings.migration": "true",
     "应用程序.Compiler.executor": "Run",
     "应用程序.CompilerTester.executor": "Run"
@@ -148,8 +150,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-125ca727e0f0-intellij.indexing.shared.core-IU-243.23654.189" />
-        <option value="bundled-js-predefined-d6986cc7102b-822845ee3bb5-JavaScript-IU-243.23654.189" />
+        <option value="bundled-jdk-9823dce3aa75-125ca727e0f0-intellij.indexing.shared.core-IU-243.24978.46" />
+        <option value="bundled-js-predefined-d6986cc7102b-76f8388c3a79-JavaScript-IU-243.24978.46" />
       </set>
     </attachedChunks>
   </component>
@@ -185,6 +187,8 @@
       <workItem from="1727522310952" duration="5695000" />
       <workItem from="1727529329799" duration="5359000" />
       <workItem from="1739967213788" duration="1244000" />
+      <workItem from="1743770060433" duration="90000" />
+      <workItem from="1743770419539" duration="315000" />
     </task>
     <task id="LOCAL-00001" summary="update grammar">
       <option name="closed" value="true" />
@@ -316,6 +320,11 @@
           <url>file://$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceFunction.java</url>
           <line>57</line>
           <option name="timeStamp" value="5" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/misc/Flag.java</url>
+          <line>69</line>
+          <option name="timeStamp" value="6" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
