@@ -20,3 +20,12 @@
 
 ### Stage 5: Explore
 - [ ] 探索前沿的优化技术
+
+## Note
+### 使用 LLVM 编译源文件
+```bash
+clang -S -emit-llvm testcases/temp.c -o testcases/temp.ll
+llc -march=arm -mattr=+v7,+vfp2 -float-abi=hard testcases/temp.ll -o testcases/temp.s
+armv7l-unknown-linux-gnueabihf-gcc testcases/temp.s -o testcases/temp_arm_from_ll
+qemu-arm testcases/temp_arm_from_ll
+```
