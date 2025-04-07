@@ -139,6 +139,48 @@ public interface SysyVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStmt(SysyParser.StmtContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link SysyParser#assignStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAssignStmt(SysyParser.AssignStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SysyParser#exprStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprStmt(SysyParser.ExprStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SysyParser#ifStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIfStmt(SysyParser.IfStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SysyParser#whileStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitWhileStmt(SysyParser.WhileStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SysyParser#breakStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBreakStmt(SysyParser.BreakStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SysyParser#continueStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitContinueStmt(SysyParser.ContinueStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SysyParser#returnStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitReturnStmt(SysyParser.ReturnStmtContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link SysyParser#string}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

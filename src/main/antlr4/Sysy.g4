@@ -45,14 +45,24 @@ lVal: Ident ('[' exp ']')* ;
 
 number: IntConst | FloatConst ;
 
-stmt: lVal '=' exp ';'
-    | (exp)? ';'
+stmt: assignStmt
+    | exprStmt
     | block
-    | 'if' '(' cond ')' stmt ('else' stmt)?
-    | 'while' '(' cond ')' stmt
-    | 'break' ';'
-    | 'continue' ';'
-    | 'return' (exp)? ';' ;
+    | ifStmt
+    | whileStmt
+    | breakStmt
+    | continueStmt
+    | returnStmt
+    ;
+
+assignStmt: lVal '=' exp ';' ;
+exprStmt: (exp)? ';';
+ifStmt: 'if' '(' cond ')' stmt ('else' stmt)? ;
+whileStmt: 'while' '(' cond ')' stmt ;
+breakStmt: 'break' ';' ;
+continueStmt: 'continue' ';' ;
+returnStmt: 'return' (exp)? ';' ;
+
 
 string: StringLiteral;
 funcCall: Ident '(' (funcRParams)? ')' ;
