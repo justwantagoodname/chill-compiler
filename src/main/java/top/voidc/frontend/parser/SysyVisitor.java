@@ -61,6 +61,24 @@ public interface SysyVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitInitVal(SysyParser.InitValContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link SysyParser#externFuncDef}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExternFuncDef(SysyParser.ExternFuncDefContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SysyParser#funcPrototypeParams}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFuncPrototypeParams(SysyParser.FuncPrototypeParamsContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SysyParser#funcPrototypeParam}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFuncPrototypeParam(SysyParser.FuncPrototypeParamContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link SysyParser#funcDef}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
