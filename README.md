@@ -16,7 +16,7 @@
 - [ ] 进行死代码消除
 - [ ] 寄存器分配
 ### Stage 4: Code Generation
-- [ ] 生成目标代码（GNU ARM RISC-V汇编)
+- [ ] 生成目标代码 (GNU ARM RISC-V汇编)
 
 ### Stage 5: Explore
 - [ ] 探索前沿的优化技术
