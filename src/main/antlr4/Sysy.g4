@@ -4,7 +4,7 @@ grammar Sysy;
 package top.voidc.frontend.parser;
 }
 
-compUnit: (decl | funcDef | COMMENT | LINE_COMMENT)* ;
+compUnit: (decl | externFuncDef | funcDef | COMMENT | LINE_COMMENT)* ;
 
 decl: constDecl | varDecl ;
 
@@ -20,6 +20,12 @@ varDef: Ident ('[' constExp ']')* ('=' initVal)? ;
 
 initVal: exp
        | '{' (initVal (',' initVal)*)? '}' ;
+
+externFuncDef: 'extern' funcType Ident '(' (funcPrototypeParams)? ')' ';' ;
+
+funcPrototypeParams: funcPrototypeParam (',' funcPrototypeParam)* (',' '...')?;
+
+funcPrototypeParam: primitiveType Ident? ('[' ']' funcFParamArrayItem*)? ;
 
 funcDef: funcType Ident '(' (funcFParams)? ')' block ;
 
