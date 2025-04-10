@@ -2,8 +2,17 @@ package top.voidc.ir.ice.type;
 
 import java.util.List;
 
+/**
+ * 数组类型注意和指针类型的区别
+ */
 public class IceArrayType extends IceType {
+    /**
+     * 数组类型的元素类型
+     */
     private final IceType elementType;
+    /**
+     * 数组的大小
+     */
     private final int numElements;
 
     public IceArrayType(IceType elementType, int numElements) {
@@ -29,9 +38,23 @@ public class IceArrayType extends IceType {
         return numElements;
     }
 
+    public boolean isNested() {
+        return getElementType().isArray();
+    }
+
+    public int getDimSize() {
+        int depth = 0;
+        IceType type = this;
+        while (type.isArray()) {
+            depth++;
+            type = ((IceArrayType) type).getElementType();
+        }
+        return depth;
+    }
+
     @Override
     public String toString() {
-        return String.format("[%d x %s]", numElements, elementType);
+        return "[" + numElements + " x " + elementType + "]";
     }
 
     @Override

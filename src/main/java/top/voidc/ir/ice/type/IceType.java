@@ -12,7 +12,7 @@ public class IceType {
         F32,
         VOID,
         STRING,
-        ARRAY,
+        ARRAY, // 字面数组的值类型
         FUNCTION,
         PTR
     }
@@ -64,5 +64,43 @@ public class IceType {
         } else {
             return false;
         }
+    }
+
+    public boolean isInteger() {
+        return this.getTypeEnum() == TypeEnum.I32;
+    }
+
+    public boolean isFloat() {
+        return this.getTypeEnum() == TypeEnum.F32;
+    }
+
+    public boolean isConvertibleTo(IceType target) {
+        if (this.equals(target)) {
+            return true;
+        }
+        if (this.isInteger() && target.isFloat()) {
+            return true;
+        }
+        return this.isFloat() && target.isInteger();
+    }
+
+    public boolean isVoid() {
+        return this.getTypeEnum() == TypeEnum.VOID;
+    }
+
+    public boolean isString() {
+        return this.getTypeEnum() == TypeEnum.STRING;
+    }
+
+    public boolean isArray() {
+        return this.getTypeEnum() == TypeEnum.ARRAY;
+    }
+
+    public boolean isImmediate() {
+        return this.getTypeEnum() == TypeEnum.I32 || this.getTypeEnum() == TypeEnum.F32;
+    }
+
+    public boolean isPointer() {
+        return this.getTypeEnum() == TypeEnum.PTR;
     }
 }

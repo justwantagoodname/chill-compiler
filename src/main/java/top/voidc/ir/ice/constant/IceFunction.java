@@ -21,7 +21,7 @@ public class IceFunction extends IceConstant {
 
     public IceFunction(String name) {
         super(name, IceType.FUNCTION);
-        this.entryBlock = new IceBlock("entry");
+        this.entryBlock = new IceBlock(this, "entry");
         this.parameterTypes = new ArrayList<>();
         this.parameters = new ArrayList<>();
     }
@@ -81,5 +81,12 @@ public class IceFunction extends IceConstant {
 
     public IceBlock getEntryBlock() {
         return entryBlock;
+    }
+
+    public String getSignature() {
+        return "@" + getName() + "(" +
+                String.join(", ", parameters.stream()
+                        .map(p -> p.getType().toString()).toArray(String[]::new)) +
+                ")";
     }
 }

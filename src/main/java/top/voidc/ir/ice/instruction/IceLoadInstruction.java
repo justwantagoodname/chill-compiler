@@ -12,6 +12,12 @@ public class IceLoadInstruction extends IceInstruction {
         this.addOperand(source);
     }
 
+    public IceLoadInstruction(IceBlock parent, IceValue source) {
+        super(parent, ((IcePtrType<?>)source.getType()).getPointTo());
+        setInstructionType(InstructionType.LOAD);
+        this.addOperand(source);
+    }
+
     public IceValue getSource() {
         return getOperand(0);
     }

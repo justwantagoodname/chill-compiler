@@ -4,16 +4,21 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceUser;
 import top.voidc.ir.ice.type.IceType;
 
+import java.util.Objects;
+
 public class IceInstruction extends IceUser {
     public IceBlock getParent() {
         return parent;
     }
 
     public enum InstructionType {
+        CALL,
+        TCONVERT,
         ALLOCA,
         LOAD,
         STORE,
         BINARY,
+        NEG,
         ADD,
         SUB,
         MUL,
@@ -24,14 +29,18 @@ public class IceInstruction extends IceUser {
         AND,
         OR,
         XOR,
-        FADD,
-        FSUB,
-        FMUL,
-        FDIV;
+        EQ,
+        NE,
+        LT,
+        LE,
+        GT,
+        GE;
 
         @Override
         public String toString() {
             return switch (this) {
+                case CALL -> "call";
+                case TCONVERT -> "tconvert";
                 case ALLOCA -> "alloca";
                 case LOAD -> "load";
                 case STORE -> "store";
@@ -46,10 +55,33 @@ public class IceInstruction extends IceUser {
                 case AND -> "and";
                 case OR -> "or";
                 case XOR -> "xor";
-                case FADD -> "fadd";
-                case FMUL -> "fmul";
-                case FSUB -> "fsub";
-                case FDIV -> "fdiv";
+                case NEG -> "neg";
+                case EQ -> "eq";
+                case NE -> "ne";
+                case LT -> "lt";
+                case LE -> "le";
+                case GT -> "gt";
+                case GE -> "ge";
+            };
+        }
+
+        public static InstructionType fromSysyLiteral(String str) {
+            str = Objects.requireNonNull(str);
+            return switch (str) {
+                case "+" -> InstructionType.ADD;
+                case "-" -> InstructionType.SUB;
+                case "*" -> InstructionType.MUL;
+                case "/" -> InstructionType.DIV;
+                case "%" -> InstructionType.MOD;
+                case "&&" -> InstructionType.AND;
+                case "||" -> InstructionType.OR;
+                case "==" -> InstructionType.EQ;
+                case "!=" -> InstructionType.NE;
+                case "<" -> InstructionType.LT;
+                case "<=" -> InstructionType.LE;
+                case ">" -> InstructionType.GT;
+                case ">=" -> InstructionType.GE;
+                default -> throw new IllegalStateException("Unexpected value: " + str);
             };
         }
     }
@@ -59,6 +91,11 @@ public class IceInstruction extends IceUser {
 
     public IceInstruction(IceBlock parent, String name, IceType type) {
         super(name, type);
+        this.parent = parent;
+    }
+
+    public IceInstruction(IceBlock parent, IceType type) {
+        super(parent.getFunction().generateLocalValueName(), type);
         this.parent = parent;
     }
 

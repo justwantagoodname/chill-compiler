@@ -12,7 +12,7 @@ public class Log {
     }
 
     public static void e(String format, Object... args) {
-        if (DEBUG) log(ANSI_RED + "ERROR" + ANSI_RESET, format);
+        if (DEBUG) log(ANSI_RED + "ERROR" + ANSI_RESET, ANSI_RED + format + ANSI_RESET);
         else log("ERROR", format);
     }
 

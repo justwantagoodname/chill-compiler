@@ -19,10 +19,9 @@ public class IceConstantInt extends IceConstantData {
     @Override
     public String toString() {
         if (getName() == null) {
-            return '(' + getType().toString() + ' ' + value + ')';
+            return getType().toString() + ' ' + value;
         }
-
-        return String.format("@%s = constant %s %d", getName(), getType(), value);
+        return "@" + getName() + " = constant " +  getType() + " " + getValue();
     }
 
     @Override

@@ -1,1 +1,4 @@
-int f(int a, float b) {}
+const int a = 1;
+void f() {
+    a;
+}
