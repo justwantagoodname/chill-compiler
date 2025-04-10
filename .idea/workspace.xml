@@ -4,10 +4,33 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="更新改进了组织结构修复全局数组的问题">
+    <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="给每个stmt语句命名">
+      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ExpEmitter.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceCallInstruction.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceConvertInstruction.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceGEPInstruction.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceNegInstruction.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceNotInstruction.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/misc/StreamTools.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/Compiler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Compiler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/misc/Flag.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/misc/Flag.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/helper/SymbolTable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/helper/SymbolTable.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/FunctionEmitter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/FunctionEmitter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/IRGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/IRGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceBlock.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceBlock.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceContext.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceContext.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceValue.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceValue.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceConstantInt.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceConstantInt.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceFunction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceFunction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceAllocaInstruction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceAllocaInstruction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceBinaryInstruction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceBinaryInstruction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceInstruction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceInstruction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceLoadInstruction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceLoadInstruction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/type/IceArrayType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/type/IceArrayType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/type/IceType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/type/IceType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/misc/Log.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/misc/Log.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/testcases/testcase.sy" beforeDir="false" afterPath="$PROJECT_DIR$/testcases/testcase.sy" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -17,8 +40,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Class" />
         <option value="AnnotationType" />
+        <option value="Class" />
       </list>
     </option>
   </component>
@@ -73,9 +96,12 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "Application.Compiler.executor": "Debug",
+    "Application.Compiler.executor": "Run",
+    "Application.StreamTools.executor": "Run",
+    "Application.StreamUtils.executor": "Run",
     "Maven.chillcompiler [clean].executor": "Run",
     "Maven.chillcompiler [compile].executor": "Run",
+    "Maven.chillcompiler [org.antlr:antlr4-maven-plugin:4.12.0:antlr4].executor": "Run",
     "Maven.chillcompiler [package].executor": "Run",
     "Maven.chillcompiler [test].executor": "Run",
     "Maven.chillcompiler [validate].executor": "Run",
@@ -84,7 +110,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/MARKSET/IdeaProjects/compiler2024-chillcompiler4j/testcases/testcase.sy",
+    "last_opened_file_path": "/home/null/IdeaProjects/chill-compiler/testcases/testcase.sy",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -103,9 +129,35 @@
     <configuration name="Compiler" type="Application" factoryName="Application" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="Compiler" />
       <module name="chillcompiler" />
-      <option name="PROGRAM_PARAMETERS" value="-S -o - functional/95_float.sy" />
-      <option name="VM_PARAMETERS" value="-Xss8M" />
+      <option name="PROGRAM_PARAMETERS" value="-S -o - testcase.sy" />
+      <option name="VM_PARAMETERS" value="-Xss8M -Ddebug=true" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/testcases" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="StreamTools" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="top.voidc.misc.StreamTools" />
+      <module name="chillcompiler" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="top.voidc.misc.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="StreamUtils" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="top.voidc.misc.StreamUtils" />
+      <module name="chillcompiler" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="top.voidc.misc.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
@@ -144,8 +196,16 @@
     </configuration>
     <list>
       <item itemvalue="Application.Compiler" />
+      <item itemvalue="Application.StreamTools" />
+      <item itemvalue="Application.StreamUtils" />
       <item itemvalue="Maven.chillcompiler [test]" />
     </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.StreamTools" />
+        <item itemvalue="Application.StreamUtils" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -188,7 +248,10 @@
       <workItem from="1727529329799" duration="5359000" />
       <workItem from="1739967213788" duration="1244000" />
       <workItem from="1743770060433" duration="90000" />
-      <workItem from="1743770419539" duration="315000" />
+      <workItem from="1743770419539" duration="5816000" />
+      <workItem from="1743993563188" duration="19449000" />
+      <workItem from="1744036835210" duration="2467000" />
+      <workItem from="1744164953509" duration="34935000" />
     </task>
     <task id="LOCAL-00001" summary="update grammar">
       <option name="closed" value="true" />
@@ -270,7 +333,63 @@
       <option name="project" value="LOCAL" />
       <updated>1727521272654</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="更新Flag 的一点小问题">
+      <option name="closed" value="true" />
+      <created>1743771057536</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1743771057536</updated>
+    </task>
+    <task id="LOCAL-00012" summary="更新Flag 的一点小问题">
+      <option name="closed" value="true" />
+      <created>1743771712513</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1743771712513</updated>
+    </task>
+    <task id="LOCAL-00013" summary="更新Flag 的一点小问题">
+      <option name="closed" value="true" />
+      <created>1743771718281</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1743771718281</updated>
+    </task>
+    <task id="LOCAL-00014" summary="update environment configuration and enhance README with LLVM usage instructions">
+      <option name="closed" value="true" />
+      <created>1743776477285</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1743776477285</updated>
+    </task>
+    <task id="LOCAL-00015" summary="更新外部函数的定义">
+      <option name="closed" value="true" />
+      <created>1744008935331</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1744008935331</updated>
+    </task>
+    <task id="LOCAL-00016" summary="把Compiler的main函数分解到对象中">
+      <option name="closed" value="true" />
+      <created>1744011469913</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1744011469913</updated>
+    </task>
+    <task id="LOCAL-00017" summary="给每个stmt语句命名">
+      <option name="closed" value="true" />
+      <created>1744032601323</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1744032601323</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -306,28 +425,14 @@
     <MESSAGE value="update test class" />
     <MESSAGE value="update maven.yml" />
     <MESSAGE value="更新改进了组织结构修复全局数组的问题" />
-    <option name="LAST_COMMIT_MESSAGE" value="更新改进了组织结构修复全局数组的问题" />
+    <MESSAGE value="更新Flag 的一点小问题" />
+    <MESSAGE value="update environment configuration and enhance README with LLVM usage instructions" />
+    <MESSAGE value="更新外部函数的定义" />
+    <MESSAGE value="把Compiler的main函数分解到对象中" />
+    <MESSAGE value="给每个stmt语句命名" />
+    <option name="LAST_COMMIT_MESSAGE" value="给每个stmt语句命名" />
   </component>
   <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ConstDeclEmitter.java</url>
-          <line>40</line>
-          <option name="timeStamp" value="4" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceFunction.java</url>
-          <line>57</line>
-          <option name="timeStamp" value="5" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/top/voidc/misc/Flag.java</url>
-          <line>69</line>
-          <option name="timeStamp" value="6" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
     <pin-to-top-manager>
       <pinned-members>
         <PinnedItemInfo parentTag="top.voidc.frontend.helper.SymbolTable$BlockRecord" memberName="table" />

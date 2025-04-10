@@ -68,7 +68,11 @@ public class SymbolTable {
         functionMap.put(name, function);
     }
 
-    public IceFunction getFunction(String name) {
-        return functionMap.get(name);
+    public String getCurrentScopeName() {
+        return stack.peek().scopeName;
+    }
+
+    public Optional<IceFunction> getFunction(String name) {
+        return Optional.ofNullable(functionMap.get(name));
     }
 }

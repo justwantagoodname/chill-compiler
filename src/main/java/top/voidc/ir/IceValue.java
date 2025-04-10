@@ -53,9 +53,10 @@ public class IceValue {
     @Override
     public String toString() {
         if (name == null) {
-            return getType().toString() + "unnamed";
+            return "%" + getType().toString() + "unnamed";
+        } else {
+            return "%" + name;
         }
-        return String.format("%s %%%s", getType(), name);
     }
 
     public void setAlign(int align) {

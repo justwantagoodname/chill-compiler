@@ -4,6 +4,7 @@ import top.voidc.ir.ice.type.IceType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class IceUser extends IceValue {
     private final List<IceValue> operands;
@@ -29,6 +30,14 @@ public class IceUser extends IceValue {
 
     public Iterable<? extends IceValue> getOperands() {
         return operands;
+    }
+
+    public List<IceValue> getOperandsList() {
+        return operands;
+    }
+
+    public Stream<IceValue> operandsStream() {
+        return operands.stream();
     }
 
     @Override

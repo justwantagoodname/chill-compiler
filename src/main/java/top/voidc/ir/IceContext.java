@@ -4,12 +4,15 @@ import top.voidc.frontend.helper.SymbolTable;
 import top.voidc.frontend.parser.SysyParser;
 
 import java.io.File;
+import java.util.Objects;
 
 public class IceContext {
 
     File source;
 
     private SysyParser.CompUnitContext ast;
+
+    private SysyParser parser;
 
     private final SymbolTable symbolTable = new SymbolTable();
 
@@ -28,26 +31,33 @@ public class IceContext {
     }
 
     public void setSource(File source) {
-        assert source != null;
+        Objects.requireNonNull(source);
         this.source = source;
     }
 
     public File getSource() {
-        assert source != null;
         return this.source;
     }
 
     public void setAst(SysyParser.CompUnitContext ast) {
-        assert ast != null;
+        Objects.requireNonNull(ast);
         this.ast = ast;
     }
 
     public SysyParser.CompUnitContext getAst() {
-        assert ast != null;
         return this.ast;
     }
 
     public SymbolTable getSymbolTable() {
         return symbolTable;
+    }
+
+    public void setParser(SysyParser parser) {
+        Objects.requireNonNull(parser);
+        this.parser = parser;
+    }
+
+    public SysyParser getParser() {
+        return this.parser;
     }
 }

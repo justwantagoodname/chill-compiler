@@ -1,5 +1,6 @@
 package top.voidc.ir;
 
+import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IceType;
 
@@ -8,6 +9,7 @@ import java.util.List;
 
 public class IceBlock extends IceUser {
     private final List<IceInstruction> instructions;
+    private final IceFunction function; // 所属函数
 
     @Override
     public String toString() {
@@ -16,10 +18,14 @@ public class IceBlock extends IceUser {
         return sb.toString();
     }
 
-    public IceBlock(String name) {
+    public IceBlock(IceFunction parentFunction, String name) {
         super(name, IceType.VOID);
-
+        this.function = parentFunction;
         this.instructions = new ArrayList<>();
+    }
+
+    public IceFunction getFunction() {
+        return function;
     }
 
     public void addInstruction(IceInstruction instruction) {

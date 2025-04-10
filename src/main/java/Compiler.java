@@ -50,6 +50,7 @@ public class Compiler {
         final var tokenStream = new CommonTokenStream(lexer);
         final var parser = new SysyParser(tokenStream);
         context.setAst(parser.compUnit());
+        context.setParser(parser);
     }
 
     public void emitLLVM() throws IOException {

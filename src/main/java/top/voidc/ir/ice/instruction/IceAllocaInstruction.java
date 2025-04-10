@@ -12,7 +12,6 @@ public class IceAllocaInstruction extends IceInstruction {
 
     @Override
     public String toString() {
-        return String.format("%%%s = %s %s", getName(),
-                getInstructionType(), ((IcePtrType<?>)getType()).getPointTo());
+        return "%" + getName() + " = " + getInstructionType() + " " + ((IcePtrType<?>) getType()).getPointTo();
     }
 }

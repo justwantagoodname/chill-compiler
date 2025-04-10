@@ -17,10 +17,12 @@ import top.voidc.misc.Log;
 import java.util.ArrayList;
 
 /**
- * 翻译函数为 IceIR 会生成一整个 block 后续进行基本块分割
+ * 翻译函数为 IceIR
+ * 解析函数体每一条语句，具体由各自的visit方法处理
  */
 public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
     private IceFunction functionEntity;
+    private IceBlock currentBlock; // 当前所处的基本块
     private final IceContext context;
 
     public FunctionEmitter(IceContext context) {
@@ -42,7 +44,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
     public IceFunction visitFuncDef(SysyParser.FuncDefContext ctx) {
         String functionName = ctx.Ident().getText();
         functionEntity = new IceFunction(functionName);
-        context.getSymbolTable().createScope(functionName + ":scope");
+        context.getSymbolTable().createScope(functionName + "::scope");
 
         final var retTypeLiteral = ctx.funcType().getText();
         final var retType = IceType.fromSysyLiteral(retTypeLiteral);
@@ -55,6 +57,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
             }
         }
 
+        this.currentBlock = functionEntity.getEntryBlock();
         this.visitBlock(ctx.block());
         context.getSymbolTable().exitScope();
         context.getSymbolTable().putFunction(functionEntity.getName(), functionEntity);
@@ -94,14 +97,24 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
         return paramValue;
     }
 
+
+    // 解析 Stmt 元素
+
+    /**
+     * 解析表达式语句
+     * @param ctx the parse tree
+     * @return
+     */
     @Override
-    public IceBlock visitBlock(SysyParser.BlockContext ctx) {
-
-
+    public IceValue visitExprStmt(SysyParser.ExprStmtContext ctx) {
+        final var expEmitter = new ExpEmitter(context, currentBlock);
+        ctx.exp().accept(expEmitter);
         return null;
     }
 
-//    private IceValue visitVarArrayDef(SysyParser.VarDefContext ctx) {
+
+    // 解析 Decl 元素
+    //    private IceValue visitVarArrayDef(SysyParser.VarDefContext ctx) {
 //        final var typeLiteral = ((SysyParser.VarDeclContext) ctx.parent).primitiveType().getText();
 //        var varType = IceType.fromSysyLiteral(typeLiteral);
 //        final var name = ctx.Ident().getText();
