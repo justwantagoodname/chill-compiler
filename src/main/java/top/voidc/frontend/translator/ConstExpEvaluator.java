@@ -2,20 +2,18 @@ package top.voidc.frontend.translator;
 
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
+import top.voidc.frontend.translator.exception.CompilationException;
 import top.voidc.frontend.translator.exception.EvaluationException;
 import top.voidc.ir.*;
 import top.voidc.ir.ice.constant.*;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.Log;
-import top.voidc.misc.Tool;
 import top.voidc.misc.annotation.NotNull;
 
 /**
  * 常量表达式求值，若输出是非常量表达式，抛出异常
  */
 public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
-
-    private IceFunction function;
 
     private final IceContext context;
 
@@ -81,14 +79,14 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
                     case "*" -> IceConstantData.create(null, lhsValue * rhsValue);
                     case "/" -> IceConstantData.create(null, lhsValue / rhsValue);
                     case "%" -> IceConstantData.create(null, lhsValue % rhsValue);
-                    case "&&" -> IceConstantData.create(null, lhsValue & rhsValue);
-                    case "||" -> IceConstantData.create(null, lhsValue | rhsValue);
-                    case "<" -> IceConstantData.create(null, lhsValue < rhsValue ? 1 : 0);
-                    case ">" -> IceConstantData.create(null, lhsValue > rhsValue ? 1 : 0);
-                    case "<=" -> IceConstantData.create(null, lhsValue <= rhsValue ? 1 : 0);
-                    case ">=" -> IceConstantData.create(null, lhsValue >= rhsValue ? 1 : 0);
-                    case "==" -> IceConstantData.create(null, lhsValue == rhsValue ? 1 : 0);
-                    case "!=" -> IceConstantData.create(null, lhsValue != rhsValue ? 1 : 0);
+                    case "&&" -> IceConstantData.create(null, lhsValue != 0 && rhsValue != 0);
+                    case "||" -> IceConstantData.create(null, lhsValue != 0 || rhsValue != 0);
+                    case "<" -> IceConstantData.create(null, lhsValue < rhsValue);
+                    case ">" -> IceConstantData.create(null, lhsValue > rhsValue);
+                    case "<=" -> IceConstantData.create(null, lhsValue <= rhsValue);
+                    case ">=" -> IceConstantData.create(null, lhsValue >= rhsValue);
+                    case "==" -> IceConstantData.create(null, lhsValue == rhsValue);
+                    case "!=" -> IceConstantData.create(null, lhsValue != rhsValue);
                     default -> throw new IllegalStateException("Unexpected value: " + op);
                 };
             }
@@ -101,12 +99,14 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
                     case "-" -> IceConstantData.create(null, lhsValue - rhsValue);
                     case "*" -> IceConstantData.create(null, lhsValue * rhsValue);
                     case "/" -> IceConstantData.create(null, lhsValue / rhsValue);
-                    case "<" -> IceConstantData.create(null, lhsValue < rhsValue ? 1 : 0);
-                    case ">" -> IceConstantData.create(null, lhsValue > rhsValue ? 1 : 0);
-                    case "<=" -> IceConstantData.create(null, lhsValue <= rhsValue ? 1 : 0);
-                    case ">=" -> IceConstantData.create(null, lhsValue >= rhsValue ? 1 : 0);
-                    case "==" -> IceConstantData.create(null, lhsValue == rhsValue ? 1 : 0);
-                    case "!=" -> IceConstantData.create(null, lhsValue != rhsValue ? 1 : 0);
+                    case "&&" -> IceConstantData.create(null, lhsValue != 0 && rhsValue != 0);
+                    case "||" -> IceConstantData.create(null, lhsValue != 0 || rhsValue != 0);
+                    case "<" -> IceConstantData.create(null, lhsValue < rhsValue);
+                    case ">" -> IceConstantData.create(null, lhsValue > rhsValue);
+                    case "<=" -> IceConstantData.create(null, lhsValue <= rhsValue);
+                    case ">=" -> IceConstantData.create(null, lhsValue >= rhsValue);
+                    case "==" -> IceConstantData.create(null, lhsValue == rhsValue);
+                    case "!=" -> IceConstantData.create(null, lhsValue != rhsValue);
                     default -> throw new IllegalStateException("Unexpected value: " + op);
                 };
             }
@@ -176,21 +176,18 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
 
     @Override
     public IceConstant visitFuncCall(SysyParser.FuncCallContext ctx) {
-        throw new EvaluationException();
+        throw new EvaluationException(ctx, context);
     }
 
     /**
      * 访问常量数组，获得常量
      *
-     * @param target
-     * @param ctx
-     * @return
      */
     public IceConstant fetchConstValue(@NotNull IceConstantArray target, SysyParser.LValContext ctx) {
         Log.should(!ctx.exp().isEmpty(), "Array access should have one index");
         final var arrayRefValues = ctx.exp().stream().map(this::visit).toList();
         if (arrayRefValues.stream().anyMatch(exp -> !isConst(exp))) {
-            Tool.TODO(); // generate code
+            throw new EvaluationException(ctx, context);
         }
         final var constArrayRef = arrayRefValues.stream()
                 .map(exp -> (int) ((IceConstantInt) exp).getValue()).toList();
@@ -206,16 +203,16 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
     @Override
     public IceConstant visitLVal(SysyParser.LValContext ctx) {
         final var target = ctx.Ident().getText();
-        final var symbol = context.getSymbolTable().get(target);
+        final var symbol = context.getSymbolTable().get(target).orElseThrow(
+                () -> new CompilationException("找不到 " + target + " 的定义", ctx, context)
+        );
 
-        Log.should(symbol.isPresent(), "can't find declare of " + target);
-
-        if (symbol.get() instanceof IceConstantArray) {
-            return fetchConstValue((IceConstantArray) symbol.get(), ctx);
-        } else if (symbol.get() instanceof IceConstantData) {
-            return ((IceConstantData) symbol.get()).clone();
+        if (symbol instanceof IceConstantArray) {
+            return fetchConstValue((IceConstantArray) symbol, ctx);
+        } else if (symbol instanceof IceConstantData) {
+            return ((IceConstantData) symbol).clone();
         } else {
-            throw new EvaluationException();
+            throw new EvaluationException(ctx, context);
         }
     }
 }

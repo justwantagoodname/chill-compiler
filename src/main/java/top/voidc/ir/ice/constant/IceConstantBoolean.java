@@ -2,17 +2,17 @@ package top.voidc.ir.ice.constant;
 
 import top.voidc.ir.ice.type.IceType;
 
-public class IceConstantInt extends IceConstantData {
-    private final long value;
+public class IceConstantBoolean extends IceConstantData {
+    private final boolean value;
 
-    public IceConstantInt(String name, long value) {
+    public IceConstantBoolean(String name, boolean value) {
         super(name);
-        this.setType(IceType.I32);
+        this.setType(IceType.I1);
         this.value = value;
     }
 
-    public long getValue() {
-        return (int) value;
+    public int getValue() {
+        return value ? 1 : 0;
     }
 
     @Override
@@ -26,15 +26,15 @@ public class IceConstantInt extends IceConstantData {
     @Override
     public IceConstantData castTo(IceType targetType) {
         return switch (targetType.getTypeEnum()) {
-            case I32 -> this;
-            case I1 -> new IceConstantBoolean(this.getName(), value != 0);
-            case F32 -> new IceConstantFloat(this.getName(), (float) value);
+            case I1 -> this;
+            case I32 -> new IceConstantInt(this.getName(), value ? 1 : 0);
+            case F32 -> new IceConstantFloat(this.getName(), getValue());
             default -> throw new IllegalStateException("Unexpected value: " + type);
         };
     }
 
     @Override
     public IceConstantData clone() {
-        return new IceConstantInt(null, value);
+        return new IceConstantBoolean(null, value);
     }
 }
