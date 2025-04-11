@@ -1,6 +1,7 @@
 package top.voidc.ir.ice.type;
 
 public class IceType {
+    public static final IceType I1 = new IceType(TypeEnum.I1);
     public static final IceType I32 = new IceType(TypeEnum.I32);
     public static final IceType F32 = new IceType(TypeEnum.F32);
     public static final IceType VOID = new IceType(TypeEnum.VOID);
@@ -8,6 +9,7 @@ public class IceType {
     public static final IceType FUNCTION = new IceType(TypeEnum.FUNCTION);
 
     public enum TypeEnum {
+        I1,
         I32,
         F32,
         VOID,
@@ -30,6 +32,7 @@ public class IceType {
     @Override
     public String toString() {
         return switch (this.getTypeEnum()) {
+            case I1 -> "i1";
             case I32 -> "i32";
             case F32 -> "f32";
             case VOID -> "void";
@@ -66,8 +69,12 @@ public class IceType {
         }
     }
 
+    public boolean isBoolean() {
+        return this.getTypeEnum() == TypeEnum.I1;
+    }
+
     public boolean isInteger() {
-        return this.getTypeEnum() == TypeEnum.I32;
+        return this.getTypeEnum() == TypeEnum.I32 || this.getTypeEnum() == TypeEnum.I1;
     }
 
     public boolean isFloat() {
@@ -96,8 +103,10 @@ public class IceType {
         return this.getTypeEnum() == TypeEnum.ARRAY;
     }
 
-    public boolean isImmediate() {
-        return this.getTypeEnum() == TypeEnum.I32 || this.getTypeEnum() == TypeEnum.F32;
+    public boolean isNumeric() {
+        return this.getTypeEnum() == TypeEnum.I32
+                || this.getTypeEnum() == TypeEnum.F32
+                || this.getTypeEnum() == TypeEnum.I1;
     }
 
     public boolean isPointer() {

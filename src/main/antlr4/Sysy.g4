@@ -57,7 +57,7 @@ stmt: assignStmt
 
 assignStmt: lVal '=' exp ';' ;
 exprStmt: (exp)? ';';
-ifStmt: 'if' '(' cond ')' stmt ('else' stmt)? ;
+ifStmt: 'if' '(' cond ')' thenStmt=stmt ('else' elseStmt=stmt)? ;
 whileStmt: 'while' '(' cond ')' stmt ;
 breakStmt: 'break' ';' ;
 continueStmt: 'continue' ';' ;

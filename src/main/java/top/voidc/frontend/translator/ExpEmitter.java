@@ -19,13 +19,25 @@ import top.voidc.misc.StreamTools;
  * 每个visit方法都返回一个 IceType 用于类型检查和插入类型转换
  */
 public class ExpEmitter extends SysyBaseVisitor<IceValue> {
-    private final IceBlock block; // 当前基本块
-    private final IceContext context; // 上下文
+    protected final IceBlock block; // 当前基本块
+    protected final IceContext context; // 上下文
 
 
     public ExpEmitter(IceContext context, IceBlock block) {
         this.block = block;
         this.context = context;
+    }
+
+    protected IceValue visitLogicalExp(SysyParser.ExpContext ctx) {
+        throw new CompilationException("逻辑表达式不支持", ctx, context);
+    }
+
+    protected IceValue visitLogicNotExp(SysyParser.ExpContext ctx) {
+        throw new CompilationException("逻辑非表达式不支持", ctx, context);
+    }
+
+    protected boolean isInCond(SysyParser.ExpContext ctx) {
+        return !XPath.findAll(ctx, "ancestor::cond", context.getParser()).isEmpty();
     }
 
     private IceValue visitUnaryExp(SysyParser.ExpContext ctx) {
@@ -50,6 +62,9 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
                 }
             }
             case "!" -> {
+                if (isInCond(ctx)) {
+                    return this.visitLogicNotExp(ctx);
+                }
                 switch (innerValue.getType().getTypeEnum()) {
                     case I32, F32 -> {
                         // 生成非指令
@@ -70,7 +85,6 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         var lhsValue = visit(ctx.exp(0));
         var rhsValue = visit(ctx.exp(1));
 
-
         if (!lhsValue.getType().equals(rhsValue.getType())) {
             // 如果两侧类型不同，进行类型转换
             if (lhsValue.getType().equals(IceType.I32)
@@ -88,9 +102,29 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
             }
         }
 
+        if (!lhsValue.getType().isNumeric() || !rhsValue.getType().isNumeric()) {
+            // 如果不是数字类型，抛出异常
+            throw new CompilationException("无法对 " + lhsValue.getType() + " 和 " + rhsValue.getType() + " 进行运算", ctx,
+                    context);
+        }
+
         // 生成指令
-        final var instrOp = IceInstruction.InstructionType.fromSysyLiteral(ctx.arithOp.getText());
-        final var instr = new IceBinaryInstruction(block, instrOp, lhsValue.getType(), lhsValue, rhsValue);
+        IceInstruction instr;
+        if (ctx.relOp != null) {
+            // 关系运算符
+            final var instrOp = IceCmpInstruction.CmpType.fromSysyLiteral(ctx.relOp.getText(),
+                    lhsValue.getType().isFloat());
+            if (lhsValue.getType().isInteger()) {
+                instr = new IceIcmpInstruction(block, instrOp, lhsValue, rhsValue);
+            } else {
+                // 浮点数比较
+                instr = new IceFcmpInstruction(block, instrOp, lhsValue, rhsValue);
+            }
+        } else {
+            // 算术运算符
+            final var instrOp = IceInstruction.InstructionType.fromSysyLiteral(ctx.arithOp.getText());
+            instr = new IceBinaryInstruction(block, instrOp, lhsValue.getType(), lhsValue, rhsValue);
+        }
         block.addInstruction(instr);
         return instr;
     }
@@ -101,9 +135,12 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         if (ctx.unaryOp != null) {
             // 一元运算符
             return visitUnaryExp(ctx);
-        } else if (ctx.arithOp != null || ctx.logicOp != null || ctx.relOp != null) {
+        } else if (ctx.arithOp != null || ctx.relOp != null) {
             // 二元运算符
             return visitBinaryExp(ctx);
+        } else if (ctx.logicOp != null) {
+            // 逻辑运算符
+            return visitLogicalExp(ctx);
         }
 
         // 其他情况向下遍历
@@ -137,7 +174,6 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
     /**
      * 处理函数调用，顺带检查参数数量和类型，并作出相应的转换
      * @param ctx the parse tree
-     * @return
      */
     @Override
     public IceValue visitFuncCall(SysyParser.FuncCallContext ctx) {
@@ -232,7 +268,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
             } else {
                 targetVariable = gepInstr;
             }
-        } else if (targetVariable.getType().isImmediate()) {
+        } else if (targetVariable instanceof IceConstantData) {
             // 是一个立即数（常量的情况）
             return targetVariable;
         }

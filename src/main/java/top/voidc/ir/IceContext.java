@@ -2,9 +2,11 @@ package top.voidc.ir;
 
 import top.voidc.frontend.helper.SymbolTable;
 import top.voidc.frontend.parser.SysyParser;
+import top.voidc.ir.ice.constant.IceFunction;
 
 import java.io.File;
 import java.util.Objects;
+import java.util.Stack;
 
 public class IceContext {
 
@@ -18,6 +20,14 @@ public class IceContext {
 
     private IceUnit result;
 
+    private IceFunction currentFunction;
+
+    public record IceIfLabel(IceBlock trueLabel, IceBlock falseLabel) { }
+
+    public record IceLoopLabel(IceBlock condLabel, IceBlock endLabel) { }
+
+    private Stack<IceIfLabel> ifLabelStack = new Stack<>();
+    private Stack<IceLoopLabel> loopLabelStack = new Stack<>();
 
     public IceContext() {
     }
@@ -59,5 +69,29 @@ public class IceContext {
 
     public SysyParser getParser() {
         return this.parser;
+    }
+
+    public IceFunction getCurrentFunction() {
+        return currentFunction;
+    }
+
+    public void setCurrentFunction(IceFunction currentFunction) {
+        this.currentFunction = currentFunction;
+    }
+
+    public Stack<IceIfLabel> getIfLabelStack() {
+        return ifLabelStack;
+    }
+
+    public void setIfLabelStack(Stack<IceIfLabel> ifLabelStack) {
+        this.ifLabelStack = ifLabelStack;
+    }
+
+    public Stack<IceLoopLabel> getLoopLabelStack() {
+        return loopLabelStack;
+    }
+
+    public void setLoopLabelStack(Stack<IceLoopLabel> loopLabelStack) {
+        this.loopLabelStack = loopLabelStack;
     }
 }

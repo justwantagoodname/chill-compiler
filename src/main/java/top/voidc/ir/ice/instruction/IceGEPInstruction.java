@@ -11,6 +11,7 @@ public class IceGEPInstruction extends IceInstruction {
 
     public IceGEPInstruction(IceBlock block, IceValue basePtr, List<IceValue> indices) {
         super(block, basePtr.getType());
+        setInstructionType(InstructionType.GEP);
         Log.should(basePtr.getType().isPointer(), "GEP指令的基址必须是指针类型");
         this.addOperand(basePtr);
         indices.forEach(this::addOperand);

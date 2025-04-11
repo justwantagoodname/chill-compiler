@@ -24,6 +24,12 @@ public class IceBlock extends IceUser {
         this.instructions = new ArrayList<>();
     }
 
+    public IceBlock(IceFunction parentFunction) {
+        super(parentFunction.generateLocalValueName(), IceType.VOID);
+        this.function = parentFunction;
+        this.instructions = new ArrayList<>();
+    }
+
     public IceFunction getFunction() {
         return function;
     }
@@ -50,5 +56,9 @@ public class IceBlock extends IceUser {
 
     public Iterable<IceBlock> predecessors() {
         return (Iterable<IceBlock>) this.getUsers();
+    }
+
+    public void addSuccessor(IceBlock block) {
+        this.addOperand(block);
     }
 }

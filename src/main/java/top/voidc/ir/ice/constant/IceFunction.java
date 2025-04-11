@@ -2,13 +2,10 @@ package top.voidc.ir.ice.constant;
 
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IceType;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class IceFunction extends IceConstant {
     private int tempValueCounter = 0;
@@ -19,9 +16,12 @@ public class IceFunction extends IceConstant {
 
     private final IceBlock entryBlock;
 
+    private final IceBlock exitBlock;
+
     public IceFunction(String name) {
         super(name, IceType.FUNCTION);
         this.entryBlock = new IceBlock(this, "entry");
+        this.exitBlock = new IceBlock(this, "exit");
         this.parameterTypes = new ArrayList<>();
         this.parameters = new ArrayList<>();
     }
@@ -81,6 +81,10 @@ public class IceFunction extends IceConstant {
 
     public IceBlock getEntryBlock() {
         return entryBlock;
+    }
+
+    public IceBlock getExitBlock() {
+        return exitBlock;
     }
 
     public String getSignature() {
