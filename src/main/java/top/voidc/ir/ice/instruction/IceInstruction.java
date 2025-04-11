@@ -12,6 +12,9 @@ public class IceInstruction extends IceUser {
     }
 
     public enum InstructionType {
+        BRANCH,
+        CMP,
+        GEP,
         CALL,
         TCONVERT,
         ALLOCA,
@@ -29,16 +32,15 @@ public class IceInstruction extends IceUser {
         AND,
         OR,
         XOR,
-        EQ,
-        NE,
-        LT,
-        LE,
-        GT,
-        GE;
+        RET;
 
         @Override
         public String toString() {
             return switch (this) {
+                case BRANCH -> "br";
+                case CMP -> "cmp";
+                case RET -> "ret";
+                case GEP -> "getelementptr";
                 case CALL -> "call";
                 case TCONVERT -> "tconvert";
                 case ALLOCA -> "alloca";
@@ -56,12 +58,6 @@ public class IceInstruction extends IceUser {
                 case OR -> "or";
                 case XOR -> "xor";
                 case NEG -> "neg";
-                case EQ -> "eq";
-                case NE -> "ne";
-                case LT -> "lt";
-                case LE -> "le";
-                case GT -> "gt";
-                case GE -> "ge";
             };
         }
 
@@ -73,14 +69,8 @@ public class IceInstruction extends IceUser {
                 case "*" -> InstructionType.MUL;
                 case "/" -> InstructionType.DIV;
                 case "%" -> InstructionType.MOD;
-                case "&&" -> InstructionType.AND;
-                case "||" -> InstructionType.OR;
-                case "==" -> InstructionType.EQ;
-                case "!=" -> InstructionType.NE;
-                case "<" -> InstructionType.LT;
-                case "<=" -> InstructionType.LE;
-                case ">" -> InstructionType.GT;
-                case ">=" -> InstructionType.GE;
+                case "&" -> InstructionType.AND;
+                case "|" -> InstructionType.OR;
                 default -> throw new IllegalStateException("Unexpected value: " + str);
             };
         }

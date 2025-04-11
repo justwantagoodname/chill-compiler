@@ -4,33 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="给每个stmt语句命名">
-      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ExpEmitter.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceCallInstruction.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceConvertInstruction.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceGEPInstruction.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceNegInstruction.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceNotInstruction.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/top/voidc/misc/StreamTools.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/Compiler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Compiler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/helper/SymbolTable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/helper/SymbolTable.java" afterDir="false" />
+    <list default="true" id="caf1ae6d-0be3-41cd-b6f4-d5f92b4d3173" name="更改" comment="statment翻译成IR">
+      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/null.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ExpEmitter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/ExpEmitter.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/FunctionEmitter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/FunctionEmitter.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/IRGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/frontend/translator/IRGenerator.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceBlock.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceBlock.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceContext.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceContext.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceUser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceValue.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/IceValue.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceConstantInt.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceConstantInt.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceFunction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/constant/IceFunction.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceAllocaInstruction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceAllocaInstruction.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceBinaryInstruction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceBinaryInstruction.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceInstruction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceInstruction.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceLoadInstruction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/instruction/IceLoadInstruction.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/type/IceArrayType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/type/IceArrayType.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/type/IceType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/ir/ice/type/IceType.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/top/voidc/misc/Log.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/top/voidc/misc/Log.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/testcases/testcase.sy" beforeDir="false" afterPath="$PROJECT_DIR$/testcases/testcase.sy" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -94,37 +72,38 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.Compiler.executor": "Run",
-    "Application.StreamTools.executor": "Run",
-    "Application.StreamUtils.executor": "Run",
-    "Maven.chillcompiler [clean].executor": "Run",
-    "Maven.chillcompiler [compile].executor": "Run",
-    "Maven.chillcompiler [org.antlr:antlr4-maven-plugin:4.12.0:antlr4].executor": "Run",
-    "Maven.chillcompiler [package].executor": "Run",
-    "Maven.chillcompiler [test].executor": "Run",
-    "Maven.chillcompiler [validate].executor": "Run",
-    "Maven.chillcompiler [verify].executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/home/null/IdeaProjects/chill-compiler/testcases/testcase.sy",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "Project",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "preferences.keymap",
-    "vue.rearranger.settings.migration": "true",
-    "应用程序.Compiler.executor": "Run",
-    "应用程序.CompilerTester.executor": "Run"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.Compiler.executor&quot;: &quot;Run&quot;,
+    &quot;Application.StreamTools.executor&quot;: &quot;Run&quot;,
+    &quot;Application.StreamUtils.executor&quot;: &quot;Run&quot;,
+    &quot;Maven.chillcompiler [clean].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.chillcompiler [compile].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.chillcompiler [org.antlr:antlr4-maven-plugin:4.12.0:antlr4].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.chillcompiler [package].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.chillcompiler [test].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.chillcompiler [validate].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.chillcompiler [verify].executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/null/IdeaProjects/chill-compiler/testcases/testcase.sy&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.keymap&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;,
+    &quot;应用程序.Compiler.executor&quot;: &quot;Run&quot;,
+    &quot;应用程序.CompilerTester.executor&quot;: &quot;Run&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Application.Compiler">
     <configuration name="Compiler" type="Application" factoryName="Application" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="Compiler" />
@@ -251,7 +230,9 @@
       <workItem from="1743770419539" duration="5816000" />
       <workItem from="1743993563188" duration="19449000" />
       <workItem from="1744036835210" duration="2467000" />
-      <workItem from="1744164953509" duration="34935000" />
+      <workItem from="1744164953509" duration="37460000" />
+      <workItem from="1744275193587" duration="24651000" />
+      <workItem from="1744359985683" duration="8315000" />
     </task>
     <task id="LOCAL-00001" summary="update grammar">
       <option name="closed" value="true" />
@@ -389,7 +370,31 @@
       <option name="project" value="LOCAL" />
       <updated>1744032601323</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="表达式翻译成IR">
+      <option name="closed" value="true" />
+      <created>1744272787682</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1744272787683</updated>
+    </task>
+    <task id="LOCAL-00019" summary="表达式翻译成IR">
+      <option name="closed" value="true" />
+      <created>1744272932293</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1744272932293</updated>
+    </task>
+    <task id="LOCAL-00020" summary="statment翻译成IR">
+      <option name="closed" value="true" />
+      <created>1744368441364</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1744368441364</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -430,7 +435,9 @@
     <MESSAGE value="更新外部函数的定义" />
     <MESSAGE value="把Compiler的main函数分解到对象中" />
     <MESSAGE value="给每个stmt语句命名" />
-    <option name="LAST_COMMIT_MESSAGE" value="给每个stmt语句命名" />
+    <MESSAGE value="表达式翻译成IR" />
+    <MESSAGE value="statment翻译成IR" />
+    <option name="LAST_COMMIT_MESSAGE" value="statment翻译成IR" />
   </component>
   <component name="XDebuggerManager">
     <pin-to-top-manager>

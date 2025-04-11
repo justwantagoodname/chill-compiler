@@ -1647,6 +1647,8 @@ public class SysyParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class IfStmtContext extends ParserRuleContext {
+		public StmtContext thenStmt;
+		public StmtContext elseStmt;
 		public CondContext cond() {
 			return getRuleContext(CondContext.class,0);
 		}
@@ -1682,7 +1684,7 @@ public class SysyParser extends Parser {
 			setState(272);
 			match(T__12);
 			setState(273);
-			stmt();
+			((IfStmtContext)_localctx).thenStmt = stmt();
 			setState(276);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,27,_ctx) ) {
@@ -1691,7 +1693,7 @@ public class SysyParser extends Parser {
 				setState(274);
 				match(T__16);
 				setState(275);
-				stmt();
+				((IfStmtContext)_localctx).elseStmt = stmt();
 				}
 				break;
 			}
