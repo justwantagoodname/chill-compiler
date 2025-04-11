@@ -270,7 +270,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
             }
         } else if (targetVariable instanceof IceConstantData) {
             // 是一个立即数（常量的情况）
-            return targetVariable;
+            return ((IceConstantData) targetVariable).clone();
         }
         // 其他情况，直接加载ptr指向的变量
 

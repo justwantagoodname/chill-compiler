@@ -29,6 +29,7 @@ public class IceConstantFloat extends IceConstantData {
     public IceConstantData castTo(IceType targetType) {
         return switch (targetType.getTypeEnum()) {
             case I32 -> new IceConstantInt(this.getName(), (long) value);
+            case I1 -> new IceConstantBoolean(this.getName(), getValue() != 0);
             case F32 -> this;
             default -> throw new IllegalStateException("Unexpected value: " + type);
         };

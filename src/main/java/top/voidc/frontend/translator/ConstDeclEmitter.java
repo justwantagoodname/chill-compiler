@@ -16,12 +16,8 @@ import java.util.Set;
 
 /**
  * 遍历全局和局部范围内的中的常量和全局变量，要求区别是要求所有的初值必须是常量或者编译期可计算的表达式
+ *  * TODO: 对于局部常量和变量还得特殊处理下
  */
-
-/**
- * TODO: 对于局部常量和变量还得特殊处理下
- */
-
 public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
     private final Set<SysyParser.InitValContext> visited = new HashSet<>();
     private final IceContext context;

@@ -7,10 +7,6 @@ public abstract class IceConstantData extends IceConstant {
         super(name, IceType.VOID);
     }
 
-    public static IceConstantData create(String name, long value) {
-        return new IceConstantInt(name, value);
-    }
-
     public abstract IceConstantData castTo(IceType type);
 
     public abstract IceConstantData clone();
@@ -23,5 +19,13 @@ public abstract class IceConstantData extends IceConstant {
 
     public static IceConstantData create(String name, double value) {
         return new IceConstantFloat(name, value);
+    }
+
+    public static IceConstantData create(String name, long value) {
+        return new IceConstantInt(name, value);
+    }
+
+    public static IceConstantData create(String name, boolean value) {
+        return new IceConstantBoolean(name, value);
     }
 }
