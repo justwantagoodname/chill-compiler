@@ -67,6 +67,22 @@ public class IceFunction extends IceConstant {
         return blocks;
     }
 
+    public int getBlocksSize() {
+        final var blocks = new ArrayList<IceBlock>();
+        blocks.add(entryBlock);
+
+        for (var i = 0; i < blocks.size(); i++) {
+            final var currentBlock = blocks.get(i);
+            currentBlock.successors().forEach(block -> {
+                if (!blocks.contains(block)) {
+                    blocks.add(block);
+                }
+            });
+        }
+
+        return blocks.size();
+    }
+
     @Override
     public String toString() {
         final var sb = new StringBuilder();
