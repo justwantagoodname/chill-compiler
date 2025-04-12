@@ -3,6 +3,8 @@ package top.voidc.optimizer.pass;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.constant.IceFunction;
 
+import java.util.ArrayList;
+
 public class DominatorTreeTest {
     public static void main(String[] args) {
         IceFunction function = new IceFunction("testFunction");

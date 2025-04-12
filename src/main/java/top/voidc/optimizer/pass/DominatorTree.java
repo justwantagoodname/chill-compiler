@@ -3,6 +3,7 @@ package top.voidc.optimizer.pass;
 import com.ibm.icu.text.ArabicShaping;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.instruction.IceLoadInstruction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +18,8 @@ public class DominatorTree {
 
     // parent on dfs tree
     int[] parent;
+    // successors on dfs tree
+    ArrayList<ArrayList<Integer>> successors;
 
     // for union-find set use
     int[] ancestor;
@@ -43,6 +46,10 @@ public class DominatorTree {
         for (int i = 0; i < blocksSize; ++i) {
             bucket.add(new ArrayList<>());
         }
+        this.successors = new ArrayList<>(blocksSize);
+        for (int i = 0; i < blocksSize; ++i) {
+            successors.add(new ArrayList<>());
+        }
 
         this.buildTree(function.getEntryBlock());
     }
@@ -59,10 +66,33 @@ public class DominatorTree {
         return dfsSortedBlocks[idom[index]];
     }
 
+    public ArrayList<IceBlock> dfsOnTree(IceBlock startBlock) {
+        ArrayList<IceBlock> result = new ArrayList<>();
+        Stack<Integer> stack = new Stack<>();
+        stack.push(dfsBlockIndex.get(startBlock));
+
+        while (!stack.isEmpty()) {
+            int index = stack.pop();
+            result.add(dfsSortedBlocks[index]);
+
+            for (int successor : successors.get(index)) {
+                stack.push(successor);
+            }
+        }
+        return result;
+    }
+
     private void buildTree(IceBlock root) {
         dfs(root);
         initUnionFindSet();
         getSemiAndIdom();
+
+        for (int i = 0; i < blocksSize; ++i) {
+            int idomIndex = idom[i];
+            if (idomIndex != -1) {
+                successors.get(idomIndex).add(i);
+            }
+        }
     }
 
     private void dfs(IceBlock root) {
