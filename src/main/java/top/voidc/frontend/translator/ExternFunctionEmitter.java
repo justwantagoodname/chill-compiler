@@ -51,7 +51,7 @@ public class ExternFunctionEmitter extends FunctionEmitter {
     @Override
     public IceValue visitFuncPrototypeParam(SysyParser.FuncPrototypeParamContext ctx) {
         final var typeLiteral = ctx.primitiveType().getText();
-        final var name = ctx.Ident().getText();
+        final var name = ctx.Ident() == null ? null : ctx.Ident().getText();
         final var arraySize = new ArrayList<Integer>();
         if (ctx.children.size() > 2) {
             if (!ctx.funcFParamArrayItem().isEmpty()) {

@@ -5,6 +5,7 @@ import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.frontend.translator.exception.CompilationException;
 import top.voidc.ir.IceContext;
+import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.IceUnit;
 import top.voidc.misc.Flag;
@@ -52,7 +53,8 @@ public class IRGenerator extends SysyBaseVisitor<Void> {
                 unit.addFunction(functionEntity);
             } else if (child instanceof SysyParser.ExternFuncDefContext externFuncDefContext) {
                 final var externFunctionEmitter = new ExternFunctionEmitter(context);
-                externFuncDefContext.accept(externFunctionEmitter);
+                final var externFunctionEntity = (IceExternFunction) externFuncDefContext.accept(externFunctionEmitter);
+                context.getSymbolTable().putFunction(externFunctionEntity.getName(), externFunctionEntity);
                 unit.addFunction(externFunctionEmitter.getExternFunction());
             }
         }

@@ -17,6 +17,9 @@ import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.Log;
 import top.voidc.misc.StreamTools;
 
+import java.util.List;
+import java.util.Optional;
+
 /**
  * 用于翻译*单个*表达式为 IceIR，注意生成的表达式会被插入到当前的基本块的最后
  * 每个visit方法都返回一个 IceType 用于类型检查和插入类型转换
@@ -190,7 +193,11 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
 //        Log.d("visitFuncCall " + ctx.getText());
 
         // 得到参数的值
-        final var arguments = ctx.funcRParams().exp().stream().map(this::visit).toList();
+        final List<IceValue> arguments = ctx.funcRParams() == null ? List.of() :
+                ctx.funcRParams().exp()
+                .stream()
+                .map(this::visit)
+                .toList();
 
         final var function = context.getSymbolTable().getFunction(ctx.Ident().getText())
                 .orElseThrow(
