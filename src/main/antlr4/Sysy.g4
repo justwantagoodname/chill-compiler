@@ -25,7 +25,7 @@ externFuncDef: 'extern' funcType Ident '(' (funcPrototypeParams)? ')' ';' ;
 
 funcPrototypeParams: funcPrototypeParam (',' funcPrototypeParam)* (',' varArgs='...')?;
 
-funcPrototypeParam: primitiveType Ident? ('[' ']' funcFParamArrayItem*)? ;
+funcPrototypeParam: (primitiveType | 'string') Ident? ('[' ']' funcFParamArrayItem*)? ;
 
 funcDef: funcType Ident '(' (funcFParams)? ')' block ;
 
@@ -33,7 +33,7 @@ funcType: 'void' | primitiveType ;
 
 funcFParams: funcFParam (',' funcFParam)* ;
 
-funcFParam: primitiveType Ident ('[' ']' funcFParamArrayItem*)? ;
+funcFParam: primitiveType Ident (array='[' ']' funcFParamArrayItem*)? ;
 
 funcFParamArrayItem: '[' exp ']';
 

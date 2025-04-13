@@ -8,6 +8,7 @@ import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.instruction.IceAllocaInstruction;
+import top.voidc.ir.ice.instruction.IceStoreInstruction;
 import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
@@ -41,6 +42,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
     public IceFunction visitFuncDef(SysyParser.FuncDefContext ctx) {
         String functionName = ctx.Ident().getText();
         context.setCurrentFunction(new IceFunction(functionName));
+        context.getSymbolTable().putFunction(functionName, context.getCurrentFunction());
         context.getSymbolTable().createScope(functionName + "::scope");
 
         final var retTypeLiteral = ctx.funcType().getText();
@@ -87,6 +89,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
 
         var type = IceType.fromSysyLiteral(typeLiteral);
         type = !arraySize.isEmpty() ? IceArrayType.buildNestedArrayType(arraySize, type) : type;
+        type = ctx.array != null ? new IcePtrType<>(type) : type;
         Log.should(!type.isVoid(), "Function parameter cannot be void");
         final var parameter = new IceValue(name, type); // 实际的参数
 
@@ -95,6 +98,11 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
         final var parameterStackPtr = new IceAllocaInstruction(context.getCurrentFunction().getEntryBlock(),
                 name + ".addr",
                 type);
+        final var store = new IceStoreInstruction(context.getCurrentFunction().getEntryBlock(),
+                parameterStackPtr,
+                parameter);
+        context.getCurrentFunction().getEntryBlock().addInstructionsAtFront(store);
+
         context.getSymbolTable().put(name, parameterStackPtr);
         context.getCurrentFunction().getEntryBlock().addInstructionsAtFront(parameterStackPtr);
         return parameterStackPtr;

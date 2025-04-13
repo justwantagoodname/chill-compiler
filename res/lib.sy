@@ -1,1 +1,9 @@
+extern int getint();
+extern int getch();
+extern int getarray(int []);
 extern void putint(int);
+extern void putch(int);
+extern void putarray(int, int[]);
+extern void putf (int[], int, ...);
+extern void _sysy_starttime(int lineno);
+extern void _sysy_stoptime(int lineno);

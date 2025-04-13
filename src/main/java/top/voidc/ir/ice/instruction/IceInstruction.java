@@ -98,4 +98,9 @@ public class IceInstruction extends IceUser {
     protected void setInstructionType(InstructionType type) {
         this.type = type;
     }
+
+    @Override
+    public String toString() {
+        return this.getInstructionType().toString();
+    }
 }

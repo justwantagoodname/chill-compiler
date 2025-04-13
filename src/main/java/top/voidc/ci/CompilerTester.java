@@ -149,26 +149,26 @@ public class CompilerTester {
         testResults.parallelStream().forEach(TestResult::cleanup);
 
         System.out.println("=== [Phase] Compile sysy source(s) ===");
-        testResults.forEach(result -> {
+        for (var result : testResults) {
             try (final var logFileStream = new PrintStream(result.getCompilerOutput())) {
 //                System.setErr(logFileStream);
 //                System.setOut(logFileStream);
 //                Log.setOutputStream(logFileStream);
                 Log.d("==== [Begin New Src] ====");
-                try {
+//                try {
                     compileSysySource(result.getTestcase(), result.getAsm());
-                } catch (Exception e) {
+//                } catch (Exception e) {
                     // NOTE: Redirect System.err here. shouldn't move out.
-                    e.printStackTrace();
-                } finally {
-                    if (!result.getAsm().exists()) {
-                        result.setStatus(ResultStatus.CE);
-                    }
-                }
+//                    e.printStackTrace();
+//                } finally {
+//                    if (!result.getAsm().exists()) {
+//                        result.setStatus(ResultStatus.CE);
+//                    }
+//                }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        });
+        }
 
         final var CESize = testResults.parallelStream()
                 .filter(testResult -> testResult.getStatus() == ResultStatus.CE).count();

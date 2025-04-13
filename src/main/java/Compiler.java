@@ -34,9 +34,11 @@ public class Compiler {
     }
 
     public void compile() throws IOException {
-        parseSource(context);
-
         IRGenerator generator = new IRGenerator(context);
+        parseLibSource(context);
+        generator.generateIR();
+
+        parseSource(context);
         generator.generateIR();
 
         emitLLVM();
@@ -46,15 +48,20 @@ public class Compiler {
         assemblyBuilder.close();
     }
 
-    public void parseSource(IceContext context) throws IOException {
-        final var inputSource = Files.readString(
-                                    Paths.get(context.getSource().getAbsolutePath()));
+    public void parseLibSource(IceContext context) throws IOException {
         final var headerStream = Compiler.class.getResourceAsStream("/lib.sy");
         Log.should(headerStream != null, "lib.sy not found");
-        final var headerSource = new String(headerStream.readAllBytes());
-        headerStream.close();
-        final var input = CharStreams.fromString(headerSource + inputSource);
-        final var lexer = new SysyLexer(input);
+        final var libSource = CharStreams.fromStream(headerStream);
+        final var lexer = new SysyLexer(libSource);
+        final var tokenStream = new CommonTokenStream(lexer);
+        final var parser = new SysyParser(tokenStream);
+        context.setAst(parser.compUnit());
+        context.setParser(parser);
+    }
+
+    public void parseSource(IceContext context) throws IOException {
+        final var inputSource = CharStreams.fromFileName(context.getSource().getAbsolutePath());
+        final var lexer = new SysyLexer(inputSource);
         final var tokenStream = new CommonTokenStream(lexer);
         final var parser = new SysyParser(tokenStream);
         context.setAst(parser.compUnit());
