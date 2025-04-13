@@ -1,5 +1,6 @@
 package top.voidc.ir.ice.constant;
 
+import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
 
 public class IceGlobalVariable extends IceConstant {
@@ -7,7 +8,7 @@ public class IceGlobalVariable extends IceConstant {
     private IceConstantData initializer;
 
     public IceGlobalVariable(String name, IceType type, IceConstantData initializer) {
-        super(name, type);
+        super(name, new IcePtrType<>(type));
         this.initializer = initializer;
     }
 

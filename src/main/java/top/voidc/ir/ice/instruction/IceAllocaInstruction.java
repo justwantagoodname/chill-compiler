@@ -10,6 +10,11 @@ public class IceAllocaInstruction extends IceInstruction {
         setInstructionType(InstructionType.ALLOCA);
     }
 
+    public IceAllocaInstruction(IceBlock parent, IceType type) {
+        super(parent, parent.getFunction().generateLocalValueName(), new IcePtrType<>(type));
+        setInstructionType(InstructionType.ALLOCA);
+    }
+
     @Override
     public String toString() {
         return "%" + getName() + " = " + getInstructionType() + " " + ((IcePtrType<?>) getType()).getPointTo();

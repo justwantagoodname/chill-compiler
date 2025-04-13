@@ -1,10 +1,13 @@
 package top.voidc.misc;
 
+import java.io.PrintStream;
+
 public class Log {
     private static final String ANSI_RESET = "\033[0m";
     private static final String ANSI_BLUE = "\033[34m";
     private static final String ANSI_RED = "\033[31m";
     private static final boolean DEBUG = Boolean.parseBoolean(System.getProperty("debug"));
+    private static PrintStream OUT = System.out;
 
     public static void d(String format) {
         if (DEBUG) log(ANSI_BLUE + "DEBUG" + ANSI_RESET, format);
@@ -22,12 +25,16 @@ public class Log {
         String methodName = caller.getMethodName();
         String fileName = caller.getFileName();
         int lineNumber = caller.getLineNumber();
-        System.out.printf("[%s][%s.%s() at: %sL%d] %s%n", level, className, methodName, fileName, lineNumber, format);
+        OUT.println("[" + level + "][" + className + "." + methodName + "() @ (" + fileName + ":" + lineNumber + ")] " + format);
     }
 
     public static void should(boolean condition, String format) {
         if (!condition) {
             throw new AssertionError(format);
         }
+    }
+
+    public static void setOutputStream(PrintStream out) {
+        Log.OUT = out;
     }
 }

@@ -52,6 +52,20 @@ public class IceArrayType extends IceType {
         return depth;
     }
 
+    /**
+     * 获取数组的总大小
+     * @return 数组的总大小
+     */
+    public int getTotalSize() {
+        int size = 1;
+        IceType type = this;
+        while (type.isArray()) {
+            size *= ((IceArrayType) type).getNumElements();
+            type = ((IceArrayType) type).getElementType();
+        }
+        return size;
+    }
+
     @Override
     public String toString() {
         return "[" + numElements + " x " + elementType + "]";

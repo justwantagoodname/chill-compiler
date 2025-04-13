@@ -6,6 +6,7 @@ import top.voidc.frontend.translator.exception.CompilationException;
 import top.voidc.frontend.translator.exception.EvaluationException;
 import top.voidc.ir.*;
 import top.voidc.ir.ice.constant.*;
+import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.Log;
 import top.voidc.misc.annotation.NotNull;
@@ -191,7 +192,11 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
         }
         final var constArrayRef = arrayRefValues.stream()
                 .map(exp -> (int) ((IceConstantInt) exp).getValue()).toList();
-        return target.get(constArrayRef).clone();
+        final var constValue = target.get(constArrayRef);
+        if (!(constValue instanceof IceConstantData)) {
+            throw new EvaluationException(ctx, context);
+        }
+        return ((IceConstantData) constValue).clone();
     }
 
     /**
@@ -207,8 +212,11 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
                 () -> new CompilationException("找不到 " + target + " 的定义", ctx, context)
         );
 
-        if (symbol instanceof IceConstantArray) {
-            return fetchConstValue((IceConstantArray) symbol, ctx);
+        if (symbol instanceof IceGlobalVariable globalVariable
+            && globalVariable.getType() instanceof IcePtrType<?> variablePtrType
+            && variablePtrType.isConst()
+            && globalVariable.getInitializer() instanceof IceConstantArray globalVariableArray) {
+            return fetchConstValue(globalVariableArray, ctx);
         } else if (symbol instanceof IceConstantData) {
             return ((IceConstantData) symbol).clone();
         } else {
