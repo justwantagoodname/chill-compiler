@@ -1,6 +1,6 @@
 package top.voidc.ir.ice.type;
 
-public class IceType {
+public class IceType implements Comparable<IceType> {
     public static final IceType I1 = new IceType(TypeEnum.I1);
     public static final IceType I32 = new IceType(TypeEnum.I32);
     public static final IceType F32 = new IceType(TypeEnum.F32);
@@ -8,15 +8,20 @@ public class IceType {
     public static final IceType STRING = new IceType(TypeEnum.STRING);
     public static final IceType FUNCTION = new IceType(TypeEnum.FUNCTION);
 
+    @Override
+    public int compareTo(IceType o) {
+        return this.getTypeEnum().compareTo(o.getTypeEnum());
+    }
+
     public enum TypeEnum {
-        I1,
-        I32,
-        F32,
         VOID,
         STRING,
         ARRAY, // 字面数组的值类型
         FUNCTION,
-        PTR
+        PTR,
+        I1,
+        I32,
+        F32
     }
 
     private final TypeEnum typeEnum;
@@ -48,6 +53,7 @@ public class IceType {
             case "int" -> I32;
             case "float" -> F32;
             case "void" -> VOID;
+            case "string" -> STRING;
             default -> throw new IllegalArgumentException("Unknown type: " + literal);
         };
     }
@@ -86,6 +92,15 @@ public class IceType {
             return true;
         }
         if (this.isInteger() && target.isFloat()) {
+            return true;
+        }
+        if (this.isFloat() && target.isInteger()) {
+            return true;
+        }
+        if (this.isInteger() && target.isInteger()) {
+            return true;
+        }
+        if (this.isFloat() && target.isFloat()) {
             return true;
         }
         return this.isFloat() && target.isInteger();

@@ -36,10 +36,11 @@ public class ExternFunctionEmitter extends FunctionEmitter {
         final var retType = IceType.fromSysyLiteral(retTypeLiteral);
         externFunction.setReturnType(retType);
 
-        externFunction.setVArgs(ctx.funcPrototypeParams().varArgs != null);
-
         // 处理参数声明
         if (ctx.funcPrototypeParams() != null) {
+
+            externFunction.setVArgs(ctx.funcPrototypeParams().varArgs != null);
+
             for (final var param : ctx.funcPrototypeParams().funcPrototypeParam()) {
                 externFunction.addParameter(visitFuncPrototypeParam(param));
             }

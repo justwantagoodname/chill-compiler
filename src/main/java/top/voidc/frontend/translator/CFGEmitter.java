@@ -71,7 +71,7 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
     @Override
     public IceBlock visitExprStmt(SysyParser.ExprStmtContext ctx) {
         final var expEmitter = new ExpEmitter(context, currentBlock);
-        expEmitter.visit(ctx.exp());
+        if (ctx.exp() != null) expEmitter.visit(ctx.exp());
         return currentBlock;
     }
 
@@ -172,11 +172,11 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
         ParserRuleContext cur = ctx;
         while (cur.getParent() != null) {
             if (cur instanceof SysyParser.WhileStmtContext) {
-                return true;
+                return false;
             }
             cur = cur.getParent();
         }
-        return false;
+        return true;
     }
 
     /**

@@ -145,7 +145,7 @@ public class VarDeclEmitter extends ConstDeclEmitter {
                 currentFunction.getEntryBlock(), arrayType);
         currentFunction.getEntryBlock().addInstruction(varStackPtr);
 
-        handleArrayInit(varStackPtr, arraySize, ctx.initVal());
+        if (ctx.initVal() != null) handleArrayInit(varStackPtr, arraySize, ctx.initVal());
 
         context.getSymbolTable().put(name, varStackPtr);
     }
