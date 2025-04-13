@@ -19,11 +19,11 @@ public class IRGenerator extends SysyBaseVisitor<Void> {
     }
 
     public void generateIR() {
-        try {
+//        try {
             this.visit(context.getAst());
-        } catch (CompilationException e) {
-            handleCompilationException(e);
-        }
+//        } catch (CompilationException e) {
+//            handleCompilationException(e);
+//        }
     }
 
     public void handleCompilationException(CompilationException e) {
@@ -48,8 +48,12 @@ public class IRGenerator extends SysyBaseVisitor<Void> {
             } else if (child instanceof SysyParser.FuncDefContext) {
                 final var functionEmitter = new FunctionEmitter(context);
                 final var functionEntity = (IceFunction) functionEmitter.visit(child);
-                context.getSymbolTable().putFunction(context.getCurrentFunction().getName(), context.getCurrentFunction());
+                context.getSymbolTable().putFunction(functionEntity.getName(), functionEntity);
                 unit.addFunction(functionEntity);
+            } else if (child instanceof SysyParser.ExternFuncDefContext externFuncDefContext) {
+                final var externFunctionEmitter = new ExternFunctionEmitter(context);
+                externFuncDefContext.accept(externFunctionEmitter);
+                unit.addFunction(externFunctionEmitter.getExternFunction());
             }
         }
         context.setCurrentIR(unit);

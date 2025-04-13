@@ -12,6 +12,7 @@ public class IceInstruction extends IceUser {
     }
 
     public enum InstructionType {
+        INTRINSIC,
         BRANCH,
         CMP,
         GEP,
@@ -37,6 +38,7 @@ public class IceInstruction extends IceUser {
         @Override
         public String toString() {
             return switch (this) {
+                case INTRINSIC -> "intrinsic";
                 case BRANCH -> "br";
                 case CMP -> "cmp";
                 case RET -> "ret";

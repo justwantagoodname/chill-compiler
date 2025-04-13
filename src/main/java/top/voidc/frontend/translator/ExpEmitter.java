@@ -1,5 +1,6 @@
 package top.voidc.frontend.translator;
 
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.xpath.XPath;
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
@@ -8,10 +9,12 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantData;
+import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.*;
 import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.misc.Log;
 import top.voidc.misc.StreamTools;
 
 /**
@@ -37,7 +40,14 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
     }
 
     protected boolean isInCond(SysyParser.ExpContext ctx) {
-        return !XPath.findAll(ctx, "ancestor::cond", context.getParser()).isEmpty();
+        ParserRuleContext cur = ctx;
+        while (cur.getParent() != null) {
+            if (cur instanceof SysyParser.CondContext) {
+                return true;
+            }
+            cur = cur.getParent();
+        }
+        return false;
     }
 
     private IceValue visitUnaryExp(SysyParser.ExpContext ctx) {
@@ -218,7 +228,18 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
      * @return true 如果当前的 lVal 是函数调用的参数中的表达式
      */
     private boolean isInFuncCall(SysyParser.LValContext ctx) {
-        return !XPath.findAll(ctx, "ancestor::funcCall", context.getParser()).isEmpty();
+        ParserRuleContext cur = ctx;
+        while (cur.getParent() != null) {
+            if (cur instanceof SysyParser.FuncCallContext) {
+                return true;
+            }
+            cur = cur.getParent();
+        }
+        return false;
+    }
+
+    private boolean isInAssignStmt(SysyParser.LValContext ctx) {
+        return ctx.parent instanceof SysyParser.AssignStmtContext;
     }
 
     @Override
@@ -229,17 +250,18 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         var targetVariable = context.getSymbolTable().get(name)
                 .orElseThrow(() -> new CompilationException("找不到变量 " + name, ctx, context));
 
-        if (!targetVariable.getType().isArray() && !ctx.exp().isEmpty()) {
+        if (!targetVariable.getType().isPointer() && !ctx.exp().isEmpty()) {
             throw new CompilationException("无法对 " + name + " 进行下标访问", ctx, context);
-        } else if (targetVariable.getType().isArray()) {
-            final var arrayPtrType = (IcePtrType<?>) targetVariable.getType();
+        } else if (targetVariable.getType() instanceof IcePtrType<?> arrayPtrType && arrayPtrType.getPointTo().isArray()) {
+            // 数组类型
             final var arrayType = (IceArrayType) arrayPtrType.getPointTo();
+            final var arrayDimSize = arrayType.getDimSize();
 
-            if (ctx.exp().size() > arrayType.getDimSize()) {
+            if (ctx.exp().size() > arrayDimSize) {
                 throw new CompilationException("数组 " + name + " 为 " + arrayType.getDimSize() + " 维，但访问了 " + ctx.exp().size() + "次", ctx, context);
             }
 
-            final var indices = ctx.exp().stream()
+            final var indices = new java.util.ArrayList<>(ctx.exp().stream()
                     .map(this::visit)
                     .map(indexVal -> {
                         if (indexVal.getType().isInteger()) {
@@ -254,14 +276,18 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
                             block.addInstruction(convertInstr);
                             return convertInstr;
                         }
-                    }).toList();
+                    }).toList());
 
+            indices.add(0, IceConstantInt.create(null, 0));
+
+            final var isFullAccess = indices.size() == arrayDimSize;
             final var gepInstr = new IceGEPInstruction(block, targetVariable, indices);
             block.addInstruction(gepInstr);
 
             // 此处需要视情况确定是否需要后续的load
-            if (isInFuncCall(ctx)) {
-                // 这是函数调用的参数，返回计算的指针结果即可
+            if (isInAssignStmt(ctx)
+                    || (isInFuncCall(ctx) && !isFullAccess)) {
+                // 这是函数调用的参数(并且不是完全的访问)/赋值的左边，返回计算的指针结果即可
                 return gepInstr;
             } else if (ctx.exp().size() < arrayType.getDimSize()) {
                 throw new CompilationException("数组 " + name + " 为 " + arrayType.getDimSize() + " 维，但仅访问了 " + ctx.exp().size() + "次", ctx, context);
@@ -271,9 +297,14 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         } else if (targetVariable instanceof IceConstantData) {
             // 是一个立即数（常量的情况）
             return ((IceConstantData) targetVariable).clone();
+        } else if (isInAssignStmt(ctx)) {
+            // 在赋值的左边，直接返回指针
+            return targetVariable;
         }
         // 其他情况，直接加载ptr指向的变量
 
+        // 立即数已经处理过了
+        Log.should(targetVariable.getType().isPointer(), "目标变量 " + targetVariable.getName() + " 不是指针类型");
         // 生成指令
         final var instr = new IceLoadInstruction(block, targetVariable);
         block.addInstruction(instr);

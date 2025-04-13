@@ -13,6 +13,7 @@ import top.voidc.ir.ice.instruction.IceConvertInstruction;
 import top.voidc.ir.ice.instruction.IceRetInstruction;
 import top.voidc.ir.ice.instruction.IceStoreInstruction;
 import top.voidc.ir.ice.type.IcePtrType;
+import top.voidc.misc.Log;
 
 /**
  * 访问函数的顶级块中的 item 来构建构建控制流图，每个class都对应一个基本块。
@@ -46,6 +47,7 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
         for (final var blockItem: ctx.blockItem()) {
             final var cfgEmitter = new CFGEmitter(context, innerIceBlock);
             innerIceBlock = cfgEmitter.visit(blockItem);
+            Log.should(innerIceBlock != null, "CFGEmitter visit blockItem should not return null");
             if (innerIceBlock.equals(currentFunction.getExitBlock())) {
                 // 如果当前块是 exitBlock，说明遇到了 return/break/continue 语句后面的语句均为死代码跳过
                 break;
@@ -86,6 +88,10 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
         final var lValue = expEmitter.visitLVal(ctx.lVal());
 
         final IcePtrType<?> lValueType = (IcePtrType<?>) lValue.getType();
+
+        if (lValueType.isConst()) {
+            throw new CompilationException("对常量 " + ctx.lVal().getText() + " 的修改", ctx, context);
+        }
 
         if (!rValue.getType().equals(lValueType.getPointTo())) {
             if (!rValue.getType().isConvertibleTo(lValueType.getPointTo())) {
@@ -163,7 +169,14 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
     }
 
     private boolean isNotInLoop(ParserRuleContext ctx) {
-        return XPath.findAll(ctx, "ancestor::whileStmt", context.getParser()).isEmpty();
+        ParserRuleContext cur = ctx;
+        while (cur.getParent() != null) {
+            if (cur instanceof SysyParser.WhileStmtContext) {
+                return true;
+            }
+            cur = cur.getParent();
+        }
+        return false;
     }
 
     /**
@@ -212,6 +225,22 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
 
         // 在这里直接返回 exitBlock 这样上一级遍历器就不会继续遍历当前块了
         return context.getCurrentFunction().getExitBlock();
+    }
+
+    /**
+     * 不改变控制流直接返回当前块
+     * @param ctx the parse tree
+     */
+    @Override
+    public IceBlock visitConstDecl(SysyParser.ConstDeclContext ctx) {
+        ctx.accept(new ConstDeclEmitter(context));
+        return currentBlock;
+    }
+
+    @Override
+    public IceBlock visitVarDecl(SysyParser.VarDeclContext ctx) {
+        ctx.accept(new VarDeclEmitter(context, currentBlock));
+        return currentBlock;
     }
 
     // 解析 Decl 元素

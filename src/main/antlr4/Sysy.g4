@@ -23,7 +23,7 @@ initVal: exp
 
 externFuncDef: 'extern' funcType Ident '(' (funcPrototypeParams)? ')' ';' ;
 
-funcPrototypeParams: funcPrototypeParam (',' funcPrototypeParam)* (',' '...')?;
+funcPrototypeParams: funcPrototypeParam (',' funcPrototypeParam)* (',' varArgs='...')?;
 
 funcPrototypeParam: primitiveType Ident? ('[' ']' funcFParamArrayItem*)? ;
 

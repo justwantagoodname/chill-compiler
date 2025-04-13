@@ -112,4 +112,16 @@ public class IceType {
     public boolean isPointer() {
         return this.getTypeEnum() == TypeEnum.PTR;
     }
+
+    public int getByteSize() {
+        return switch (this.getTypeEnum()) {
+            case I1 -> 1;
+            case I32, F32 -> 4;
+            case VOID -> 0;
+            case STRING -> 4; // 指针大小
+            case FUNCTION -> 4; // 指针大小
+            case ARRAY -> 4; // 指针大小
+            case PTR -> 4; // 指针大小
+        };
+    }
 }

@@ -20,7 +20,7 @@ import java.util.ArrayList;
  * 解析函数体每一条语句，具体由各自的visit方法处理
  */
 public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
-    private final IceContext context;
+    protected final IceContext context;
 
     public FunctionEmitter(IceContext context) {
         this.context = context;
@@ -50,21 +50,20 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
         // 处理参数声明
         if (ctx.funcFParams() != null) {
             for (final var param : ctx.funcFParams().funcFParam()) {
-                context.getCurrentFunction().addParameter(visitFuncFParam(param));
+                visitFuncFParam(param);
             }
         }
 
         // 处理函数体
-
-        new CFGEmitter(context, context.getCurrentFunction().getEntryBlock())
-                .visitBlock(ctx.block());
+        ctx.block().accept(new CFGEmitter(context, context.getCurrentFunction().getEntryBlock()));
 
         Log.should(context.getSymbolTable().getCurrentScopeName().equals(functionName + "::scope"),
                   "符号表没有被正确还原到顶级作用域");
 
         context.getSymbolTable().exitScope();
+        final var function = context.getCurrentFunction();
         context.setCurrentFunction(null);
-        return context.getCurrentFunction();
+        return function;
     }
 
     /**
@@ -77,13 +76,10 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
         final var typeLiteral = ctx.primitiveType().getText();
         final var name = ctx.Ident().getText();
         final var arraySize = new ArrayList<Integer>();
-        boolean isArray = false;
         if (ctx.children.size() > 2) {
-            isArray = true;
             if (!ctx.funcFParamArrayItem().isEmpty()) {
                 for (final var arraySizeItem : ctx.funcFParamArrayItem()) {
                     final var result = arraySizeItem.exp().accept(new ConstExpEvaluator(context));
-                    Log.should(result instanceof IceConstantInt, "Array size must be constant");
                     arraySize.add((int) ((IceConstantInt) result).getValue());
                 }
             }
@@ -91,11 +87,16 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
 
         var type = IceType.fromSysyLiteral(typeLiteral);
         type = !arraySize.isEmpty() ? IceArrayType.buildNestedArrayType(arraySize, type) : type;
-        type = isArray ? new IcePtrType<>(type) : type;
-        Log.should(!type.equals(IceType.VOID), "Function parameter cannot be void");
-        final var paramValue = new IceAllocaInstruction(context.getCurrentFunction().getEntryBlock(), name, type);
-        context.getSymbolTable().put(name, paramValue);
-        context.getCurrentFunction().getEntryBlock().addInstructionsAtFront(paramValue);
-        return paramValue;
+        Log.should(!type.isVoid(), "Function parameter cannot be void");
+        final var parameter = new IceValue(name, type); // 实际的参数
+
+        context.getCurrentFunction().addParameter(parameter);
+
+        final var parameterStackPtr = new IceAllocaInstruction(context.getCurrentFunction().getEntryBlock(),
+                name + ".addr",
+                type);
+        context.getSymbolTable().put(name, parameterStackPtr);
+        context.getCurrentFunction().getEntryBlock().addInstructionsAtFront(parameterStackPtr);
+        return parameterStackPtr;
     }
 }

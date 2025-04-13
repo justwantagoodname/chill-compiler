@@ -749,6 +749,7 @@ public class SysyParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class FuncPrototypeParamsContext extends ParserRuleContext {
+		public Token varArgs;
 		public List<FuncPrototypeParamContext> funcPrototypeParam() {
 			return getRuleContexts(FuncPrototypeParamContext.class);
 		}
@@ -802,7 +803,7 @@ public class SysyParser extends Parser {
 				setState(167);
 				match(T__1);
 				setState(168);
-				match(T__13);
+				((FuncPrototypeParamsContext)_localctx).varArgs = match(T__13);
 				}
 			}
 
