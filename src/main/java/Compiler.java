@@ -10,6 +10,8 @@ import top.voidc.misc.Log;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Objects;
 
 public class Compiler {
@@ -45,7 +47,13 @@ public class Compiler {
     }
 
     public void parseSource(IceContext context) throws IOException {
-        final var input = CharStreams.fromFileName(context.getSource().getAbsolutePath());
+        final var inputSource = Files.readString(
+                                    Paths.get(context.getSource().getAbsolutePath()));
+        final var headerStream = Compiler.class.getResourceAsStream("/lib.sy");
+        Log.should(headerStream != null, "lib.sy not found");
+        final var headerSource = new String(headerStream.readAllBytes());
+        headerStream.close();
+        final var input = CharStreams.fromString(headerSource + inputSource);
         final var lexer = new SysyLexer(input);
         final var tokenStream = new CommonTokenStream(lexer);
         final var parser = new SysyParser(tokenStream);
