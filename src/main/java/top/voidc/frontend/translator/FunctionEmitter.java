@@ -62,16 +62,24 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
         // 处理函数体
         final var funcEndBlock = ctx.block().accept(new CFGEmitter(context, context.getCurrentFunction().getEntryBlock()));
 
-        if (!funcEndBlock.equals(context.getCurrentFunction().getExitBlock())) {
-            // 不是终止块，说明没写return
+        if (!funcEndBlock.equals(context.getCurrentFunction().getExitBlock())
+                || funcEndBlock.getSuccessors().isEmpty()
+                || funcEndBlock.getInstructions().isEmpty()) {
+            // 不是终止块/空块/没有后继，说明没写return
             if (functionName.equals("main")) {
+                // main 函数需要返回 0
                 funcEndBlock.addInstruction(new IceRetInstruction(funcEndBlock, IceConstantData.create(0)));
-            } else if (context.getCurrentFunction().getReturnType().isVoid()) {
-                // 如果函数返回值是void，直接返回
+            } else if (context.getCurrentFunction().getReturnType().isVoid()
+                    && funcEndBlock.getSuccessors().isEmpty()) {
+                // 如果函数返回值是void并且没有后继，直接插入返回
                 funcEndBlock.addInstruction(new IceRetInstruction(funcEndBlock));
+            } else if (funcEndBlock.getInstructions().isEmpty()
+                    && funcEndBlock.getSuccessors().isEmpty()) {
+                // 是空块并且没有后继 插入 unreachable 后面自动丢弃了
+                funcEndBlock.addInstruction(new IceUnreachableInstruction(funcEndBlock));
             } else {
                 funcEndBlock.addInstruction(new IceUnreachableInstruction(funcEndBlock));
-                Log.w("函数 " + functionName + " 声明了返回值类型，但没有返回值");
+                Log.w("在 " + funcEndBlock.getName() + " 函数 " + functionName + " 声明了返回值类型，但没有返回值");
             }
         }
 

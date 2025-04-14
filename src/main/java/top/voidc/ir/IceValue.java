@@ -11,17 +11,17 @@ public class IceValue {
 
     protected IceType type;
 
-    private final Set<IceUser> uses; // 使用者
+    private final List<IceUser> uses; // 使用者
 
     public IceValue() {
         this.name = null;
-        this.uses = new HashSet<>();
+        this.uses = new ArrayList<>();
         this.type = IceType.VOID;
     }
 
     public IceValue(String name, IceType type) {
         this.name = name;
-        this.uses = new HashSet<>();
+        this.uses = new ArrayList<>();
         this.type = type;
     }
 

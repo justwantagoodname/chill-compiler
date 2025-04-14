@@ -3,9 +3,12 @@ package top.voidc.ir;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.misc.StreamTools;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 public class IceBlock extends IceUser {
     private final List<IceInstruction> instructions;
@@ -47,8 +50,18 @@ public class IceBlock extends IceUser {
         return (Iterable<IceBlock>) this.getOperands();
     }
 
+    public List<IceBlock> getSuccessors() {
+        return StreamTools.toList(successors());
+    }
+
     public Iterable<IceBlock> predecessors() {
-        return (Iterable<IceBlock>) this.getUsers();
+        return getPredecessors();
+    }
+
+    public List<IceBlock> getPredecessors() {
+        return StreamSupport.stream(getUsers().spliterator(), false)
+                .filter(iceUser -> iceUser instanceof IceBlock)
+                .map(iceUser -> (IceBlock) iceUser).toList();
     }
 
     public void addSuccessor(IceBlock block) {
