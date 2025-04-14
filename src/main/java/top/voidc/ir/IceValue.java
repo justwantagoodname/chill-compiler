@@ -60,9 +60,9 @@ public class IceValue {
      */
     public String getReferenceName() {
         if (name == null) {
-            return "%" + getType().toString() + "unnamed";
+            return getType() + " %" + getType() + "unnamed";
         } else {
-            return "%" + name;
+            return getType() + " %" + name;
         }
     }
 

@@ -13,6 +13,18 @@ public class IceBranchInstruction extends IceInstruction {
 
     private final boolean isConditional;
 
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        builder.append("br ");
+        if (isConditional) {
+            builder.append(getCondition().getReferenceName())
+                    .append(", ").append(getTrueBlock().getReferenceName())
+                    .append(", ").append(getFalseBlock().getReferenceName());
+        } else {
+            builder.append(getTargetBlock().getReferenceName());
+        }
+    }
+
     public IceBranchInstruction(IceBlock parent, IceValue condition, IceBlock trueBlock, IceBlock falseBlock) {
         super(parent, IceType.VOID);
         setInstructionType(InstructionType.BRANCH);

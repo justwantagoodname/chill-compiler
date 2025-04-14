@@ -41,4 +41,22 @@ public class IceIntrinsicInstruction extends IceInstruction {
     public List<IceValue> getParameters() {
         return getOperandsList();
     }
+
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        if (!getType().isVoid()) {
+            builder.append("%").append(getName()).append(" = ");
+        }
+        builder.append("call ").append(getType()).append(" @")
+                .append(intrinsicName).append("(");
+        
+        var params = getParameters();
+        for (int i = 0; i < params.size(); i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+            builder.append(params.get(i).getReferenceName());
+        }
+        builder.append(")");
+    }
 }

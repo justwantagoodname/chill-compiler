@@ -26,4 +26,15 @@ public class IceRetInstruction extends IceInstruction {
     public boolean isReturnVoid() {
         return getReturnValue().isEmpty();
     }
+
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        builder.append("ret ");
+        if (isReturnVoid()) {
+            builder.append("void");
+        } else {
+            var retValue = getReturnValue().get();
+            builder.append(retValue.getReferenceName());
+        }
+    }
 }

@@ -118,17 +118,16 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
     public IceBlock visitIfStmt(SysyParser.IfStmtContext ctx) {
         final var hasElse = ctx.elseStmt != null;
 
-        final var endBlock = new IceBlock(currentFunction);
+        final var endBlock = new IceBlock(currentFunction, "if.end" + currentFunction.generateLocalValueName());
 
-        var thenBlock = new IceBlock(currentFunction);
-        thenBlock = new CFGEmitter(context, thenBlock)
-                    .visit(ctx.thenStmt);
+        var thenBlock = new IceBlock(currentFunction, "if.then" + currentFunction.generateLocalValueName());
+        thenBlock = ctx.thenStmt.accept(new CFGEmitter(context, thenBlock));
         final var brInstr = new IceBranchInstruction(thenBlock, endBlock);
         thenBlock.addInstruction(brInstr);
 
         IceBlock elseBlock = endBlock;
         if (hasElse) {
-            elseBlock = new IceBlock(currentFunction);
+            elseBlock = new IceBlock(currentFunction, "if.else" + currentFunction.generateLocalValueName());
             elseBlock = new CFGEmitter(context, elseBlock)
                     .visit(ctx.elseStmt);
             final var elseBrInstr = new IceBranchInstruction(elseBlock, endBlock);

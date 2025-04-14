@@ -14,4 +14,11 @@ public class IceIcmpInstruction extends IceCmpInstruction {
         super(parent, cmpType, lhs, rhs);
         Log.should(lhs.getType().isInteger(), "all should be integer");
     }
+
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        builder.append("%").append(getName()).append(" = icmp ").append(cmpType).append(" ")
+                .append(getOperand(0).getReferenceName()).append(", ")
+                .append(getOperand(1).getReferenceName());
+    }
 }

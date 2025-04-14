@@ -24,9 +24,20 @@ public class IceCallInstruction extends IceInstruction {
     }
 
     @Override
-    public String toString() {
-        final var args = getArguments();
-        return "call " + getTarget().getReturnType() + " " + getTarget().getReferenceName()
-                + "(" + String.join(",", args.stream().map(IceValue::toString).toList()) +")";
+    public void getTextIR(StringBuilder builder) {
+        if (!getType().isVoid()) {
+            builder.append("%").append(getName()).append(" = ");
+        }
+        builder.append("call ").append(getTarget().getReturnType()).append(" ")
+                .append(getTarget().getReferenceName()).append("(");
+        
+        var args = getArguments();
+        for (int i = 0; i < args.size(); i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+            builder.append(args.get(i).getReferenceName());
+        }
+        builder.append(")");
     }
 }

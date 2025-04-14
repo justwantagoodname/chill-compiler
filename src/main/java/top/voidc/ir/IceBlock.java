@@ -57,7 +57,7 @@ public class IceBlock extends IceUser {
 
     @Override
     public String getReferenceName() {
-        return "label " + super.getReferenceName();
+        return "label %" + getName();
     }
 
     @Override

@@ -22,4 +22,19 @@ public class IceNegInstruction extends IceInstruction {
         setInstructionType(InstructionType.NEG);
         addOperand(operand);
     }
+
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        builder.append("%").append(getName()).append(" = ");
+        if (getType().isFloat()) {
+            builder.append("fneg");
+        } else {
+            builder.append("sub nsw");
+        }
+        builder.append(" ").append(getType()).append(" ");
+        if (!getType().isFloat()) {
+            builder.append("0, ");
+        }
+        builder.append(getOperand(0).getReferenceName());
+    }
 }
