@@ -37,18 +37,18 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
             case I32 -> {
                 final var value = ((IceConstantInt) exp).getValue();
                 yield switch (op) {
-                    case "-" -> IceConstantData.create(exp.getName(), -value);
+                    case "-" -> IceConstantData.create(-value);
                     case "+" -> exp;
-                    case "!" -> IceConstantData.create(exp.getName(), ~value);
+                    case "!" -> IceConstantData.create(~value);
                     default -> throw new IllegalStateException("Unexpected value: " + op);
                 };
             }
             case F32 -> {
                 final var value = ((IceConstantFloat) exp).getValue();
                 yield switch (op) {
-                    case "-" -> IceConstantData.create(null, -value);
+                    case "-" -> IceConstantData.create(-value);
                     case "+" -> exp;
-                    case "!" -> IceConstantData.create(null, value == 0 ? 1 : 0);
+                    case "!" -> IceConstantData.create(value == 0 ? 1 : 0);
                     default -> throw new IllegalStateException("Unexpected value: " + op);
                 };
             }
@@ -75,19 +75,19 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
                 long rhsValue = ((IceConstantInt) rhs).getValue();
 
                 yield switch (op) {
-                    case "+" -> IceConstantData.create(null, lhsValue + rhsValue);
-                    case "-" -> IceConstantData.create(null, lhsValue - rhsValue);
-                    case "*" -> IceConstantData.create(null, lhsValue * rhsValue);
-                    case "/" -> IceConstantData.create(null, lhsValue / rhsValue);
-                    case "%" -> IceConstantData.create(null, lhsValue % rhsValue);
-                    case "&&" -> IceConstantData.create(null, lhsValue != 0 && rhsValue != 0);
-                    case "||" -> IceConstantData.create(null, lhsValue != 0 || rhsValue != 0);
-                    case "<" -> IceConstantData.create(null, lhsValue < rhsValue);
-                    case ">" -> IceConstantData.create(null, lhsValue > rhsValue);
-                    case "<=" -> IceConstantData.create(null, lhsValue <= rhsValue);
-                    case ">=" -> IceConstantData.create(null, lhsValue >= rhsValue);
-                    case "==" -> IceConstantData.create(null, lhsValue == rhsValue);
-                    case "!=" -> IceConstantData.create(null, lhsValue != rhsValue);
+                    case "+" -> IceConstantData.create(lhsValue + rhsValue);
+                    case "-" -> IceConstantData.create(lhsValue - rhsValue);
+                    case "*" -> IceConstantData.create(lhsValue * rhsValue);
+                    case "/" -> IceConstantData.create(lhsValue / rhsValue);
+                    case "%" -> IceConstantData.create(lhsValue % rhsValue);
+                    case "&&" -> IceConstantData.create(lhsValue != 0 && rhsValue != 0);
+                    case "||" -> IceConstantData.create(lhsValue != 0 || rhsValue != 0);
+                    case "<" -> IceConstantData.create(lhsValue < rhsValue);
+                    case ">" -> IceConstantData.create(lhsValue > rhsValue);
+                    case "<=" -> IceConstantData.create(lhsValue <= rhsValue);
+                    case ">=" -> IceConstantData.create(lhsValue >= rhsValue);
+                    case "==" -> IceConstantData.create(lhsValue == rhsValue);
+                    case "!=" -> IceConstantData.create(lhsValue != rhsValue);
                     default -> throw new IllegalStateException("Unexpected value: " + op);
                 };
             }
@@ -96,18 +96,18 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
                 double rhsValue = ((IceConstantFloat) rhs).getValue();
 
                 yield switch (op) {
-                    case "+" -> IceConstantData.create(null, lhsValue + rhsValue);
-                    case "-" -> IceConstantData.create(null, lhsValue - rhsValue);
-                    case "*" -> IceConstantData.create(null, lhsValue * rhsValue);
-                    case "/" -> IceConstantData.create(null, lhsValue / rhsValue);
-                    case "&&" -> IceConstantData.create(null, lhsValue != 0 && rhsValue != 0);
-                    case "||" -> IceConstantData.create(null, lhsValue != 0 || rhsValue != 0);
-                    case "<" -> IceConstantData.create(null, lhsValue < rhsValue);
-                    case ">" -> IceConstantData.create(null, lhsValue > rhsValue);
-                    case "<=" -> IceConstantData.create(null, lhsValue <= rhsValue);
-                    case ">=" -> IceConstantData.create(null, lhsValue >= rhsValue);
-                    case "==" -> IceConstantData.create(null, lhsValue == rhsValue);
-                    case "!=" -> IceConstantData.create(null, lhsValue != rhsValue);
+                    case "+" -> IceConstantData.create(lhsValue + rhsValue);
+                    case "-" -> IceConstantData.create(lhsValue - rhsValue);
+                    case "*" -> IceConstantData.create(lhsValue * rhsValue);
+                    case "/" -> IceConstantData.create(lhsValue / rhsValue);
+                    case "&&" -> IceConstantData.create(lhsValue != 0 && rhsValue != 0);
+                    case "||" -> IceConstantData.create(lhsValue != 0 || rhsValue != 0);
+                    case "<" -> IceConstantData.create(lhsValue < rhsValue);
+                    case ">" -> IceConstantData.create(lhsValue > rhsValue);
+                    case "<=" -> IceConstantData.create(lhsValue <= rhsValue);
+                    case ">=" -> IceConstantData.create(lhsValue >= rhsValue);
+                    case "==" -> IceConstantData.create(lhsValue == rhsValue);
+                    case "!=" -> IceConstantData.create(lhsValue != rhsValue);
                     default -> throw new IllegalStateException("Unexpected value: " + op);
                 };
             }
@@ -158,12 +158,12 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
         final var literal = ctx.getText();
         if (ctx.IntConst() != null) {
             if (literal.startsWith("0x") || literal.startsWith("0X")) {
-                return IceConstantData.create(null, Long.decode(literal));
+                return IceConstantData.create(Long.decode(literal));
             } else {
-                return IceConstantData.create(null, Long.parseLong(literal));
+                return IceConstantData.create(Long.parseLong(literal));
             }
         } else if (ctx.FloatConst() != null) {
-            return IceConstantData.create(null, Double.parseDouble(literal));
+            return IceConstantData.create(Double.parseDouble(literal));
         }
         return null;
     }

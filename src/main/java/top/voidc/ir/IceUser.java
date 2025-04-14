@@ -42,8 +42,8 @@ public class IceUser extends IceValue {
 
     @Override
     public void getTextIR(StringBuilder builder) {
-        builder.append("IceUser with ")
+        builder.append("user with ")
                 .append(getOperandsList().size())
-                .append(" operands: ");
+                .append(" operand(s)");
     }
 }

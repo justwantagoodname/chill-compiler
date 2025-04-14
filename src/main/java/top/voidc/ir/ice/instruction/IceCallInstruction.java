@@ -26,7 +26,7 @@ public class IceCallInstruction extends IceInstruction {
     @Override
     public String toString() {
         final var args = getArguments();
-        return "call " + getTarget().getReturnType() + " " + getTarget().getSignature()
+        return "call " + getTarget().getReturnType() + " " + getTarget().getReferenceName()
                 + "(" + String.join(",", args.stream().map(IceValue::toString).toList()) +")";
     }
 }

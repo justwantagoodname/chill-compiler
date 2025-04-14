@@ -4,8 +4,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class IceFunction extends IceConstant {
     private int tempValueCounter = 0;
@@ -51,48 +50,31 @@ public class IceFunction extends IceConstant {
         return String.valueOf(tempValueCounter++);
     }
 
-    public Iterable<IceBlock> blocks() {
-        final var blocks = new ArrayList<IceBlock>();
-        blocks.add(entryBlock);
+    /**
+     * Get all blocks in the function.
+     * @return 当前函数的所有基本块
+     */
+    public List<IceBlock> blocks() {
+        final var blockSet = new HashSet<IceBlock>();
+        final Queue<IceBlock> blockQueue = new ArrayDeque<>();
+        blockQueue.add(entryBlock);
+        blockSet.add(entryBlock);
 
-        for (var i = 0; i < blocks.size(); i++) {
-            final var currentBlock = blocks.get(i);
+        while (!blockQueue.isEmpty()) {
+            final var currentBlock = blockQueue.poll();
             currentBlock.successors().forEach(block -> {
-                if (!blocks.contains(block)) {
-                    blocks.add(block);
+                if (!blockSet.contains(block)) {
+                    blockQueue.add(block);
+                    blockSet.add(block);
                 }
             });
         }
 
-        return blocks;
+        return blockSet.stream().toList();
     }
 
     public int getBlocksSize() {
-        final var blocks = new ArrayList<IceBlock>();
-        blocks.add(entryBlock);
-
-        for (var i = 0; i < blocks.size(); i++) {
-            final var currentBlock = blocks.get(i);
-            currentBlock.successors().forEach(block -> {
-                if (!blocks.contains(block)) {
-                    blocks.add(block);
-                }
-            });
-        }
-
-        return blocks.size();
-    }
-
-    @Override
-    public String toString() {
-        final var sb = new StringBuilder();
-        sb.append("define ").append(returnType).append(" @").append(getName()).append("(");
-        sb.append(String.join(", ", parameters.stream()
-                            .map(p -> p.getType() + " %" + p.getName()).toArray(String[]::new)));
-        sb.append(") {\n");
-        blocks().forEach(sb::append);
-        sb.append('}');
-        return sb.toString();
+        return blocks().size();
     }
 
     public IceBlock getEntryBlock() {
@@ -103,10 +85,29 @@ public class IceFunction extends IceConstant {
         return exitBlock;
     }
 
-    public String getSignature() {
+    public List<IceBlock> getBlocks() {
+        return blocks();
+    }
+
+    @Override
+    public String getReferenceName() {
         return "@" + getName() + "(" +
-                String.join(", ", parameters.stream()
-                        .map(p -> p.getType().toString()).toArray(String[]::new)) +
+                String.join(", ",
+                        parameters.stream()
+                                .map(IceValue::getType)
+                                .map(IceType::toString)
+                                .toList()) +
                 ")";
+    }
+
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        builder.append("define ")
+                .append(returnType)
+                .append(' ')
+                .append(getReferenceName())
+                .append(") {\n");
+        blocks().forEach(builder::append);
+        builder.append("\n}");
     }
 }

@@ -2,17 +2,17 @@ package top.voidc.ir;
 
 import top.voidc.ir.ice.constant.IceConstant;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.type.IceType;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class IceUnit extends IceValue {
-    public final String name;
     public final List<IceFunction> functions;
     public final List<IceConstant> globalVariables;
 
     public IceUnit(String name) {
-        this.name = name;
+        super(name, IceType.VOID);
         this.globalVariables = new ArrayList<>();
         this.functions = new ArrayList<>();
     }
@@ -33,9 +33,16 @@ public class IceUnit extends IceValue {
 
     @Override
     public String toString() {
-        final var sb = new StringBuffer();
-        globalVariables.stream().forEachOrdered(v -> sb.append(v.toString()).append("\n"));
-        functions.stream().forEachOrdered(f -> sb.append(f.toString()).append("\n"));
-        return sb.toString();
+        final var builder = new StringBuilder();
+        getTextIR(builder);
+        return builder.toString();
+    }
+
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        builder.append("; ").append(this.getName()).append('\n');
+
+        globalVariables.forEach(v -> {v.getTextIR(builder); builder.append('\n');});
+        functions.forEach(f -> {f.getTextIR(builder); builder.append('\n');});
     }
 }

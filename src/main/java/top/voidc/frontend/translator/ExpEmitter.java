@@ -104,21 +104,21 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
                     case I32 -> {
                         // 生成非指令
                         final var instr = new IceIcmpInstruction(block, IceCmpInstruction.CmpType.EQ,
-                                innerValue, IceConstantData.create(null, 0));
+                                innerValue, IceConstantData.create(0));
                         block.addInstruction(instr);
                         return instr;
                     }
                     case F32 -> {
                         // 生成非指令
                         final var instr = new IceFcmpInstruction(block, IceCmpInstruction.CmpType.EQ,
-                                innerValue, IceConstantData.create(null, 0F));
+                                innerValue, IceConstantData.create(0F));
                         block.addInstruction(instr);
                         return instr;
                     }
                     case I1 -> {
                         // 生成非指令
                         final var instr = new IceIcmpInstruction(block, IceCmpInstruction.CmpType.EQ,
-                                innerValue, IceConstantData.create(null, false));
+                                innerValue, IceConstantData.create(false));
                         block.addInstruction(instr);
                         return instr;
                     }
@@ -205,12 +205,12 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
 
         if (ctx.IntConst() != null) {
             if (literal.startsWith("0x") || literal.startsWith("0X")) {
-                return IceConstantData.create(null, Long.decode(literal));
+                return IceConstantData.create(Long.decode(literal));
             } else {
-                return IceConstantData.create(null, Long.parseLong(literal));
+                return IceConstantData.create(Long.parseLong(literal));
             }
         } else if (ctx.FloatConst() != null) {
-            return IceConstantData.create(null, Float.parseFloat(literal));
+            return IceConstantData.create(Float.parseFloat(literal));
         }
 
         throw new CompilationException("未知的数字类型: " + literal, ctx, context);
@@ -257,7 +257,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
 
         if (isSpecialFunction(ctx.Ident().getText())) {
             // 特殊函数 参数是行号
-            arguments.add(IceConstantInt.create(null, ctx.getStart().getLine()));
+            arguments.add(IceConstantInt.create(ctx.getStart().getLine()));
         }
 
         // 检查参数数量
@@ -338,7 +338,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
 
         // 对于[i32 x N]*类型的数组(全局数组和栈上数组)需要第一个0偏移
         if (needFirstZero) {
-            indices.add(0, IceConstantInt.create(null, 0));
+            indices.add(0, IceConstantInt.create(0));
         }
 
         final var gepInstr = new IceGEPInstruction(block, targetVariable, indices);

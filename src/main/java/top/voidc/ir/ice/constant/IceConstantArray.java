@@ -3,7 +3,6 @@ package top.voidc.ir.ice.constant;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.type.IceType;
-import top.voidc.misc.Tool;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -21,7 +20,7 @@ public class IceConstantArray extends IceConstantData {
         public final IceValue element;
         public final int repeat;
 
-        private DataArrayElement(IceValue element, int repeat) {
+        protected DataArrayElement(IceValue element, int repeat) {
             this.element = element;
             this.repeat = repeat;
         }
@@ -45,51 +44,89 @@ public class IceConstantArray extends IceConstantData {
     private boolean isPrivate = false;
     private boolean isUnnamedAddr = false;
 
-    public IceConstantArray(String name, IceArrayType arrayType, List<DataArrayElement> elements) {
-        super(name);
-        setType(arrayType);
+    public IceConstantArray(IceArrayType arrayType, List<DataArrayElement> elements) {
+        super(arrayType);
         this.elements = elements;
     }
 
-    public IceConstantArray(String name, IceArrayType arrayType) {
-        super(name);
-        setType(arrayType);
+    public IceConstantArray(IceArrayType arrayType) {
+        super(arrayType);
         this.elements = null;
         this.zeroInit = true;
     }
 
     @Override
     public IceConstantData castTo(IceType type) {
-        Tool.TODO();
-        return null;
-
+        if (type instanceof IceArrayType) {
+            return this.clone();
+        } else {
+            throw new IllegalStateException("Unexpected type: " + type);
+        }
     }
 
     @Override
     public IceConstantData clone() {
-        Tool.TODO();
+        if (isZeroInit()) {
+            return new IceConstantArray((IceArrayType) getType());
+        } else if (elements != null) {
+            final var newElements = new ArrayList<DataArrayElement>();
+            for (var element : elements) {
+                if (element.element instanceof IceConstantData) {
+                    newElements.add(new DataArrayElement(((IceConstantData) element.element).clone(), element.repeat));
+                } else {
+                    newElements.add(new DataArrayElement(element.element, element.repeat));
+                }
+            }
+            return new IceConstantArray((IceArrayType) getType(), newElements);
+        }
+
         return null;
     }
 
     /**
      * 以完全展开的形式返回数组的元素
+     * @apiNote 如果数组比较大，会返回一个很大的数组
      * @return 返回的数组
      */
     public List<IceValue> getFullElements() {
         final var result = new ArrayList<IceValue>();
-        elements.forEach(e -> {
-            for (int i = 0; i < e.repeat; i++) {
-                if (e.element instanceof IceConstantData) {
-                    result.add(((IceConstantData) e.element).clone());
-                } else {
-                    result.add(e.element);
-                }
+        if (zeroInit) {
+            final var type = (IceArrayType) getType();
+            for (int i = 0; i < type.getTotalSize(); i++) {
+                result.add(new IceConstantInt(0));
             }
-        });
-        return result;
+            return result;
+        } else {
+            assert elements != null;
+            elements.forEach(e -> {
+                for (int i = 0; i < e.repeat; i++) {
+                    if (e.element instanceof IceConstantData) {
+                        result.add(((IceConstantData) e.element).clone());
+                    } else {
+                        result.add(e.element);
+                    }
+                }
+            });
+            return result;
+        }
     }
 
     public IceValue get(List<Integer> arrayRef) {
+        if (zeroInit) {
+            switch (getInsideType().getTypeEnum()) {
+                case I1 -> {
+                    return new IceConstantBoolean(false);
+                }
+                case I8, I32 -> {
+                    return new IceConstantInt(0);
+                }
+                case F32 -> {
+                    return new IceConstantFloat(0F);
+                }
+
+                default -> throw new IllegalStateException("Unexpected value: " + getInsideType().getTypeEnum());
+            }
+        }
         return get(new ArrayDeque<>(arrayRef));
     }
 
@@ -100,6 +137,7 @@ public class IceConstantArray extends IceConstantData {
             return null;
         }
         int currentIndex = 0;
+        assert elements != null;
         for (var elementPair: elements) {
             currentIndex += elementPair.repeat;
             if (currentIndex > first) {
@@ -118,22 +156,32 @@ public class IceConstantArray extends IceConstantData {
     }
 
     public void addElement(IceValue element) {
+        if (zeroInit) {
+            throw new IllegalStateException("Cannot add element to zero initialized array");
+        }
+        assert elements != null;
         elements.add(new DataArrayElement(element));
     }
 
     public void addElement(IceValue element, int repeat) {
+        if (zeroInit) {
+            throw new IllegalStateException("Cannot add element to zero initialized array");
+        }
+        assert elements != null;
         elements.add(new DataArrayElement(element, repeat));
     }
 
     public record ElementRecord(IceValue value, List<Integer> position) {}
 
     public List<ElementRecord> getNonZeroElements() {
+        if (zeroInit) return new ArrayList<>();
         final var result = new ArrayList<ElementRecord>();
         this.getNonZeroElementsImpl(new ArrayList<>(), result);
         return result;
     }
 
     private void getNonZeroElementsImpl(List<Integer> currentPos, List<ElementRecord> result) {
+        assert elements != null;
         for (var i = 0; i < result.size(); i++) {
             final var e = elements.get(i);
             if (e.element instanceof IceConstantArray) {
@@ -172,6 +220,7 @@ public class IceConstantArray extends IceConstantData {
      */
     public boolean isConst() {
         if (zeroInit) return true;
+        assert elements != null;
         for (var element : elements) {
             if (element.element instanceof IceConstantArray) {
                 if (!((IceConstantArray) element.element).isConst()) {
@@ -207,12 +256,16 @@ public class IceConstantArray extends IceConstantData {
     }
 
     @Override
-    public String toString() {
+    public String getReferenceName() {
         if (zeroInit) {
-            return "zeroinitializer";
+            return getType() + " zeroinitializer";
+        } else {
+            assert elements != null;
+            return getType()
+                    + " ["
+                    + String.join(", ", elements.stream().map(DataArrayElement::toString).toList())
+                    + "]";
         }
-        if (getName() != null) return String.format("@%s = [%s]", getName(), String.join(", ", elements.stream().map(DataArrayElement::toString).toList()));
-        else return String.format("[%s]", String.join(", ", elements.stream().map(DataArrayElement::toString).toList()));
     }
 
     public IceType getInsideType() {
