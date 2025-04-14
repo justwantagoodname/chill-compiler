@@ -11,13 +11,6 @@ public class IceBlock extends IceUser {
     private final List<IceInstruction> instructions;
     private final IceFunction function; // 所属函数
 
-    @Override
-    public String toString() {
-        final StringBuffer sb = new StringBuffer(this.getName() + ":\n");
-        instructions.forEach(i -> sb.append("\t").append(i.toString()).append("\n"));
-        return sb.toString();
-    }
-
     public IceBlock(IceFunction parentFunction, String name) {
         super(name, IceType.VOID);
         this.function = parentFunction;
@@ -46,7 +39,7 @@ public class IceBlock extends IceUser {
         return instructions;
     }
 
-    public Iterable<IceInstruction> instructions() {
+    public List<IceInstruction> instructions() {
         return instructions;
     }
 
@@ -65,5 +58,16 @@ public class IceBlock extends IceUser {
     @Override
     public String getReferenceName() {
         return "label " + super.getReferenceName();
+    }
+
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        builder.append(this.getName()).append(":\n");
+        instructions
+                .forEach(instr -> {
+                    builder.append("\t");
+                    instr.getTextIR(builder);
+                    builder.append("\n");
+                });
     }
 }

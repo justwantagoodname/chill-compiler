@@ -100,7 +100,7 @@ public class IceInstruction extends IceUser {
     }
 
     @Override
-    public String toString() {
-        return this.getInstructionType().toString();
+    public void getTextIR(StringBuilder builder) {
+        builder.append(getInstructionType().toString()).append(" unimplemented");
     }
 }
