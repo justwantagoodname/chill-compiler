@@ -26,21 +26,24 @@ public class CondEmitter extends ExpEmitter {
      * 处理返回值不是 boolean 的情况将其转换为 boolean，并且直接生成转跳指令
      */
     private void handleRawValue(ParserRuleContext ctx, IceValue value) {
-        if (value != null && !value.getType().isBoolean()) {
-            // 内部不是布尔值，添加 CMP 指令
-            final var cmpInstr = switch (value.getType().getTypeEnum()) {
-                case I32 -> new IceIcmpInstruction(block, IceCmpInstruction.CmpType.NE, value,
-                        IceConstantData.create(0));
-                case F32 -> new IceFcmpInstruction(block, IceCmpInstruction.CmpType.NE, value,
-                        IceConstantData.create(0F));
-                default -> throw new CompilationException(
-                        value.getType().toString() + "不能转换为布尔值", ctx, context);
-            };
-            block.addInstruction(cmpInstr);
+        if (value != null) {
+            if (!value.getType().isBoolean()) {
+                // 内部不是布尔值，添加 CMP 指令
+                final var cmpInstr = switch (value.getType().getTypeEnum()) {
+                    case I32 -> new IceIcmpInstruction(block, IceCmpInstruction.CmpType.NE, value,
+                            IceConstantData.create(0));
+                    case F32 -> new IceFcmpInstruction(block, IceCmpInstruction.CmpType.NE, value,
+                            IceConstantData.create(0F));
+                    default -> throw new CompilationException(
+                            value.getType().toString() + "不能转换为布尔值", ctx, context);
+                };
+                block.addInstruction(cmpInstr);
+                value = cmpInstr;
+            }
 
             // 添加转跳指令
             final var ifBlocks = context.getIfLabelStack().peek();
-            final var brInstr = new IceBranchInstruction(block, cmpInstr, ifBlocks.trueLabel(), ifBlocks.falseLabel());
+            final var brInstr = new IceBranchInstruction(block, value, ifBlocks.trueLabel(), ifBlocks.falseLabel());
             block.addInstruction(brInstr);
         }
     }

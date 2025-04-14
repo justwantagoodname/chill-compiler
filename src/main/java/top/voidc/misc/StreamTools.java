@@ -9,6 +9,11 @@ import java.util.stream.*;
  */
 public class StreamTools {
 
+    public static <T> List<T> toList(Iterable<T> iterable) {
+        return StreamSupport.stream(iterable.spliterator(), false)
+                .collect(Collectors.toList());
+    }
+
     /**
      * 将两个 Stream 按照元素顺序合并成一个 Stream，类似 Python 的 zip 函数。
      * 如果两个流长度不同，将以较短的长度为准。
