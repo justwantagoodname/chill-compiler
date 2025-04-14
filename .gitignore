@@ -41,3 +41,4 @@ build/
 testcases/**/*.log
 testcases/**/*.actual.out
 testcases/**/*.s
+testcases/**/*.ll

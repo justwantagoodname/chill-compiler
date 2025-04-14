@@ -41,12 +41,9 @@ public class IceUser extends IceValue {
     }
 
     @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("IceUser with operands: ");
-        for (IceValue operand : operands) {
-            sb.append(operand).append(" ");
-        }
-        return sb.toString();
+    public void getTextIR(StringBuilder builder) {
+        builder.append("IceUser with ")
+                .append(getOperandsList().size())
+                .append(" operands: ");
     }
 }
