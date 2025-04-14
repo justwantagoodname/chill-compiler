@@ -1,45 +1,58 @@
 package top.voidc.optimizer.pass;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.constant.IceFunction;
 
-import java.util.ArrayList;
+class DominatorTreeTest {
+    private IceFunction function;
+    private IceBlock[] blocks;
+    private DominatorTree dominatorTree;
+    private IceBlock[] expectedDominators;
 
-public class DominatorTreeTest {
-    public static void main(String[] args) {
-        IceFunction function = new IceFunction("testFunction");
-
-        IceBlock[] b = {
+    @BeforeEach
+    void setUp() {
+        function = new IceFunction("testFunction");
+        blocks = new IceBlock[]{
             function.getEntryBlock(),
             new IceBlock(function, "b2"),
             new IceBlock(function, "b3"),
             new IceBlock(function, "b4"),
             new IceBlock(function, "b5"),
-            new IceBlock(function, "b6"),
+            new IceBlock(function, "b6")
         };
 
-        b[0].addSuccessor(b[1]);
+        // 构建CFG（控制流图）
+        blocks[0].addSuccessor(blocks[1]);     // entry -> b2
+        blocks[1].addSuccessor(blocks[2]);     // b2 -> b3
+        blocks[1].addSuccessor(blocks[3]);     // b2 -> b4
+        blocks[2].addSuccessor(blocks[4]);     // b3 -> b5
+        blocks[3].addSuccessor(blocks[4]);     // b4 -> b5
+        blocks[4].addSuccessor(blocks[5]);     // b5 -> b6
 
-        b[1].addSuccessor(b[2]);
-        b[1].addSuccessor(b[3]);
+        expectedDominators = new IceBlock[]{null, blocks[0], blocks[1], blocks[1], blocks[1], blocks[4]};
+        dominatorTree = new DominatorTree(function);
+    }
 
-        b[2].addSuccessor(b[4]);
-        b[3].addSuccessor(b[4]);
-
-        b[4].addSuccessor(b[5]);
-
-        IceBlock[] expected = {null, b[0], b[1], b[1], b[1], b[4]};
-        DominatorTree dominatorTree = new DominatorTree(function);
-        for (int i = 0; i < b.length; i++) {
-            IceBlock dom = dominatorTree.getDominator(b[i]);
-            if (dom != expected[i]) {
-                assert expected[i] != null;
-                System.out.println("Test failed on " + b[i].getName() + ": expected " + expected[i].getName() + ", but got " + dom.getName());
-                return;
+    @Test
+    void testDominatorRelations() {
+        for (int i = 0; i < blocks.length; i++) {
+            IceBlock actualDominator = dominatorTree.getDominator(blocks[i]);
+            IceBlock expectedDominator = expectedDominators[i];
+            
+            if (expectedDominator == null) {
+                // 对于入口块，其支配节点为null
+                assertEquals(null, actualDominator, 
+                    String.format("入口块 %s 的支配节点应该为null", blocks[i].getName()));
+            } else {
+                assertEquals(expectedDominator.getName(), actualDominator.getName(),
+                    String.format("块 %s 的支配节点应该为 %s，但得到了 %s", 
+                        blocks[i].getName(), 
+                        expectedDominator.getName(), 
+                        actualDominator.getName()));
             }
         }
-
-        System.out.println("Test passed: all dominators are correct.");
     }
 }
-
