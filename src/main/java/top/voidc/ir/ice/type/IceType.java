@@ -2,6 +2,7 @@ package top.voidc.ir.ice.type;
 
 public class IceType implements Comparable<IceType> {
     public static final IceType I1 = new IceType(TypeEnum.I1);
+    public static final IceType I8 = new IceType(TypeEnum.I8);
     public static final IceType I32 = new IceType(TypeEnum.I32);
     public static final IceType F32 = new IceType(TypeEnum.F32);
     public static final IceType VOID = new IceType(TypeEnum.VOID);
@@ -20,6 +21,7 @@ public class IceType implements Comparable<IceType> {
         FUNCTION,
         PTR,
         I1,
+        I8,
         I32,
         F32
     }
@@ -38,8 +40,9 @@ public class IceType implements Comparable<IceType> {
     public String toString() {
         return switch (this.getTypeEnum()) {
             case I1 -> "i1";
+            case I8 -> "i8";
             case I32 -> "i32";
-            case F32 -> "f32";
+            case F32 -> "float";
             case VOID -> "void";
             case STRING -> "str";
             case ARRAY -> "array";
@@ -130,7 +133,7 @@ public class IceType implements Comparable<IceType> {
 
     public int getByteSize() {
         return switch (this.getTypeEnum()) {
-            case I1 -> 1;
+            case I1, I8 -> 1;
             case I32, F32 -> 4;
             case VOID -> 0;
             case STRING -> 4; // 指针大小
@@ -138,5 +141,9 @@ public class IceType implements Comparable<IceType> {
             case ARRAY -> 4; // 指针大小
             case PTR -> 4; // 指针大小
         };
+    }
+
+    public IcePtrType<?> asPointer() {
+        return (IcePtrType<?>) this;
     }
 }

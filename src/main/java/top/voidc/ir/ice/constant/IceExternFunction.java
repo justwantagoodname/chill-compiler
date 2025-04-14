@@ -19,4 +19,22 @@ public class IceExternFunction extends IceFunction {
     public void setVArgs(boolean VArgs) {
         isVArgs = VArgs;
     }
+
+    @Override
+    public String getReferenceName() {
+        return "@" + getName() + "(" +
+                String.join(", ",
+                        getParameters().stream()
+                                .map(IceValue::getType)
+                                .map(IceType::toString)
+                                .toList())
+                + (isVArgs() ? ", ...)" : ")");
+    }
+
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        builder.append("declare ")
+                .append(getReturnType())
+                .append(" ").append(getReferenceName());
+    }
 }

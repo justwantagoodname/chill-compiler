@@ -81,13 +81,13 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
             // 内部是一个数组，递归填充
             final var subArrayType = ((IceArrayType) arrayDecl.getType()).getElementType();
             if (subArrayType instanceof IceArrayType) {
-                final var nestedArray = new IceConstantArray(null, (IceArrayType) subArrayType);
+                final var nestedArray = new IceConstantArray((IceArrayType) subArrayType);
                 arrayDecl.addElement(nestedArray);
             } else {
                 // 以0填充
                 switch (arrayDecl.getInsideType().getTypeEnum()) {
-                    case I32 -> arrayDecl.addElement(IceConstantData.create(null, 0), currentArraySize);
-                    case F32 -> arrayDecl.addElement(IceConstantData.create(null, 0.0), currentArraySize);
+                    case I32 -> arrayDecl.addElement(IceConstantData.create(0), currentArraySize);
+                    case F32 -> arrayDecl.addElement(IceConstantData.create(0F), currentArraySize);
                     default -> throw new IllegalStateException("Unexpected value: " + arrayDecl.getType());
                 }
             }
@@ -100,7 +100,7 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
                                  Integer currentArraySize,
                                  SysyParser.InitValContext initValItem) {
         final var subArrayType = ((IceArrayType) arrayDecl.getType()).getElementType();
-        final var nestedArray = new IceConstantArray(null, (IceArrayType) subArrayType, new ArrayList<>());
+        final var nestedArray = new IceConstantArray((IceArrayType) subArrayType, new ArrayList<>());
         fillArray(nestedArray, initValItem, arraySize, depth + 1);
         arrayDecl.addElement(nestedArray);
         currentArraySize--;
@@ -128,7 +128,7 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
         final var arraySize = getConstDeclSize(ctx);
         final var arrayType = IceArrayType.buildNestedArrayType(arraySize, elementType);
 
-        final var arrayDecl = new IceConstantArray(name, arrayType, new ArrayList<>());
+        final var arrayDecl = new IceConstantArray(arrayType, new ArrayList<>());
 
         // compute dimension size
         arraySize.add(1);
@@ -200,7 +200,7 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
 
         if (ctx.initVal() != null) {
             final var initVal = ctx.initVal();
-            final var initArray = new IceConstantArray(null, arrayType, new ArrayList<>());
+            final var initArray = new IceConstantArray(arrayType, new ArrayList<>());
             // compute dimension size
             arraySize.add(1);
 
@@ -221,7 +221,14 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
 
         if (ctx.initVal() != null) {
             handleVarInitVal(ctx.initVal(), globalVarDecl);
+        } else {
+            switch (varType.getTypeEnum()) {
+                case I32 -> globalVarDecl.setInitializer(IceConstantData.create(0));
+                case F32 -> globalVarDecl.setInitializer(IceConstantData.create(0.0));
+                default -> throw new IllegalStateException("Unexpected value: " + varType);
+            }
         }
+
         context.getSymbolTable().put(globalVarDecl.getName(), globalVarDecl);
         constants.add(globalVarDecl);
     }

@@ -5,8 +5,8 @@ import top.voidc.ir.ice.type.IceType;
 public class IceConstantBoolean extends IceConstantData {
     private final boolean value;
 
-    public IceConstantBoolean(String name, boolean value) {
-        super(name);
+    public IceConstantBoolean(boolean value) {
+        super(IceType.I1);
         this.setType(IceType.I1);
         this.value = value;
     }
@@ -16,25 +16,27 @@ public class IceConstantBoolean extends IceConstantData {
     }
 
     @Override
-    public String toString() {
-        if (getName() == null) {
-            return getType().toString() + ' ' + value;
-        }
-        return "@" + getName() + " = constant " +  getType() + " " + getValue();
-    }
-
-    @Override
     public IceConstantData castTo(IceType targetType) {
         return switch (targetType.getTypeEnum()) {
-            case I1 -> this;
-            case I32 -> new IceConstantInt(this.getName(), value ? 1 : 0);
-            case F32 -> new IceConstantFloat(this.getName(), getValue());
+            case I1 -> IceConstantData.create(value);
+            case I32 -> new IceConstantInt(value ? 1 : 0);
+            case F32 -> new IceConstantFloat(getValue());
             default -> throw new IllegalStateException("Unexpected value: " + type);
         };
     }
 
     @Override
     public IceConstantData clone() {
-        return new IceConstantBoolean(null, value);
+        return new IceConstantBoolean(value);
+    }
+
+    @Override
+    public String getReferenceName() {
+        return getType() + " " + getValue();
+    }
+
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        builder.append(getReferenceName());
     }
 }

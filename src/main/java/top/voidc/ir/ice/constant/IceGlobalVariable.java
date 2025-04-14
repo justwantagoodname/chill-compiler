@@ -12,18 +12,22 @@ public class IceGlobalVariable extends IceConstant {
         this.initializer = initializer;
     }
 
-    @Override
-    public String toString() {
-        if (initializer != null)
-            return String.format("%%%s = global %s %s", getName(), getType(), initializer);
-        else return String.format("%%%s = global %s", getName(), getType());
-    }
-
     public IceConstantData getInitializer() {
         return initializer;
     }
 
     public void setInitializer(IceConstantData initializer) {
         this.initializer = initializer;
+    }
+
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        builder.append(getReferenceName()).append(" = ")
+                .append(getType().asPointer().isConst() ? "constant " : "global ");
+        if (getInitializer() != null) {
+            getInitializer().getTextIR(builder);
+        } else {
+            builder.append(getType()).append(" zeroinitializer");
+        }
     }
 }

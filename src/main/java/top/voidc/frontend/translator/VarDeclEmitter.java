@@ -155,7 +155,7 @@ public class VarDeclEmitter extends ConstDeclEmitter {
      */
     protected void handleArrayInit(IceValue arrayPtr, List<Integer> arraySize, SysyParser.InitValContext ctx) {
         final var arrayShapeType = (IceArrayType) ((IcePtrType<?>) arrayPtr.getType()).getPointTo();
-        final var initArray = new IceConstantArray(null, arrayShapeType, new ArrayList<>());
+        final var initArray = new IceConstantArray(arrayShapeType, new ArrayList<>());
         // compute dimension size
         arraySize.add(1);
 
@@ -172,8 +172,8 @@ public class VarDeclEmitter extends ConstDeclEmitter {
                     IceType.VOID,
                     IceIntrinsicInstruction.MEMSET,
                     List.of(arrayPtr,
-                            IceConstantData.create(null, 0),
-                            IceConstantData.create(null, arrayByteSize))
+                            IceConstantData.create(0),
+                            IceConstantData.create(arrayByteSize))
             );
             currentBlock.addInstruction(instr);
         } else if (initArray.isConst() && arrayByteSize < COPY_THRESHOLD) {
@@ -189,17 +189,17 @@ public class VarDeclEmitter extends ConstDeclEmitter {
                     IceType.VOID,
                     IceIntrinsicInstruction.MEMSET,
                     List.of(arrayPtr,
-                            IceConstantData.create(null, 0),
-                            IceConstantData.create(null, arrayByteSize))
+                            IceConstantData.create(0),
+                            IceConstantData.create(arrayByteSize))
             );
             currentBlock.addInstruction(instr);
 
             initArray.getNonZeroElements().forEach(
                     elementRecord -> {
                         final var iceValueIndices = new ArrayList<>(elementRecord.position().stream().map(
-                                index -> (IceValue) IceConstantData.create(null, index)
+                                index -> (IceValue) IceConstantData.create(index)
                         ).toList());
-                        iceValueIndices.add(0, IceConstantInt.create(null, 0));
+                        iceValueIndices.add(0, IceConstantInt.create(0));
 
                         final var gep = new IceGEPInstruction(
                                 currentBlock,

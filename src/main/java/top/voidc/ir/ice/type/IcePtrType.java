@@ -2,6 +2,7 @@ package top.voidc.ir.ice.type;
 
 
 import top.voidc.ir.IceValue;
+import top.voidc.misc.Flag;
 
 import java.util.List;
 
@@ -21,7 +22,11 @@ public class IcePtrType<T extends IceType> extends IceType {
 
     @Override
     public String toString() {
-        return String.format("%s*", pointTo);
+        if (Boolean.TRUE.equals(Flag.get("-fenable-ptr-type"))) {
+            return "ptr";
+        } else {
+            return pointTo.toString() + "*";
+        }
     }
 
     @Override

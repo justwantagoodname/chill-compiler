@@ -5,9 +5,8 @@ import top.voidc.ir.ice.type.IceType;
 public class IceConstantInt extends IceConstantData {
     private final long value;
 
-    public IceConstantInt(String name, long value) {
-        super(name);
-        this.setType(IceType.I32);
+    public IceConstantInt(long value) {
+        super(IceType.I32);
         this.value = value;
     }
 
@@ -16,25 +15,22 @@ public class IceConstantInt extends IceConstantData {
     }
 
     @Override
-    public String toString() {
-        if (getName() == null) {
-            return getType().toString() + ' ' + value;
-        }
-        return "@" + getName() + " = constant " +  getType() + " " + getValue();
+    public String getReferenceName() {
+        return getType() + " " + value;
     }
 
     @Override
     public IceConstantData castTo(IceType targetType) {
         return switch (targetType.getTypeEnum()) {
-            case I32 -> this;
-            case I1 -> new IceConstantBoolean(this.getName(), value != 0);
-            case F32 -> new IceConstantFloat(this.getName(), (float) value);
+            case I32 -> this.clone();
+            case I1 -> new IceConstantBoolean(value != 0);
+            case F32 -> new IceConstantFloat((float) value);
             default -> throw new IllegalStateException("Unexpected value: " + type);
         };
     }
 
     @Override
     public IceConstantData clone() {
-        return new IceConstantInt(null, value);
+        return new IceConstantInt(value);
     }
 }

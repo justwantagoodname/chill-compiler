@@ -30,9 +30,9 @@ public class CondEmitter extends ExpEmitter {
             // 内部不是布尔值，添加 CMP 指令
             final var cmpInstr = switch (value.getType().getTypeEnum()) {
                 case I32 -> new IceIcmpInstruction(block, IceCmpInstruction.CmpType.NE, value,
-                        IceConstantData.create(null, 0));
+                        IceConstantData.create(0));
                 case F32 -> new IceFcmpInstruction(block, IceCmpInstruction.CmpType.NE, value,
-                        IceConstantData.create(null, 0F));
+                        IceConstantData.create(0F));
                 default -> throw new CompilationException(
                         value.getType().toString() + "不能转换为布尔值", ctx, context);
             };

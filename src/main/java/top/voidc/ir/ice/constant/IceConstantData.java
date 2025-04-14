@@ -2,9 +2,12 @@ package top.voidc.ir.ice.constant;
 
 import top.voidc.ir.ice.type.IceType;
 
+/**
+ * 所有字面常量的基类
+ */
 public abstract class IceConstantData extends IceConstant {
-    public IceConstantData(String name) {
-        super(name, IceType.VOID);
+    public IceConstantData(IceType type) {
+        super(null, type);
     }
 
     public abstract IceConstantData castTo(IceType type);
@@ -17,15 +20,15 @@ public abstract class IceConstantData extends IceConstant {
         return new IceConstantString(value);
     }
 
-    public static IceConstantData create(String name, double value) {
-        return new IceConstantFloat(name, value);
+    public static IceConstantData create(double value) {
+        return new IceConstantFloat(value);
     }
 
-    public static IceConstantData create(String name, long value) {
-        return new IceConstantInt(name, value);
+    public static IceConstantData create(long value) {
+        return new IceConstantInt(value);
     }
 
-    public static IceConstantData create(String name, boolean value) {
-        return new IceConstantBoolean(name, value);
+    public static IceConstantData create(boolean value) {
+        return new IceConstantBoolean(value);
     }
 }

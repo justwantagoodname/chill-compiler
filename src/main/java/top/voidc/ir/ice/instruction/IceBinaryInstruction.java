@@ -6,6 +6,8 @@ import top.voidc.ir.ice.type.IceType;
 
 public class IceBinaryInstruction extends IceInstruction {
 
+    private boolean isNSW = false;
+
     public IceBinaryInstruction(IceBlock parent,
                               InstructionType op,
                               String name,
@@ -51,12 +53,16 @@ public class IceBinaryInstruction extends IceInstruction {
     }
 
     public void addNSW() {
-        this.setMetadata("nsw", "true");
+        this.isNSW = true;
     }
 
     @Override
     public String toString() {
         return getName() + " = " + getInstructionType() + " " + getType() + " " +
                 getLhs() + ", " + getRhs();
+    }
+
+    public boolean isNSW() {
+        return isNSW;
     }
 }

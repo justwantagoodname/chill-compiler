@@ -61,4 +61,9 @@ public class IceBlock extends IceUser {
     public void addSuccessor(IceBlock block) {
         this.addOperand(block);
     }
+
+    @Override
+    public String getReferenceName() {
+        return "label " + super.getReferenceName();
+    }
 }
