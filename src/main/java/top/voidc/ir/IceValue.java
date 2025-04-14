@@ -52,11 +52,23 @@ public class IceValue {
 
     @Override
     public String toString() {
+        return getReferenceName();
+    }
+
+    /**
+     * 获取被引用时(作为操作数)的变量名
+     * @return 操作数的形式
+     */
+    public String getReferenceName() {
         if (name == null) {
             return "%" + getType().toString() + "unnamed";
         } else {
             return "%" + name;
         }
+    }
+
+    public void getTextIR(StringBuilder builder) {
+        builder.append(getReferenceName());
     }
 
     public void setAlign(int align) {

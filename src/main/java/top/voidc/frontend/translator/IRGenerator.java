@@ -20,11 +20,11 @@ public class IRGenerator extends SysyBaseVisitor<Void> {
     }
 
     public void generateIR() {
-//        try {
+        try {
             this.visit(context.getAst());
-//        } catch (CompilationException e) {
-//            handleCompilationException(e);
-//        }
+        } catch (CompilationException e) {
+            handleCompilationException(e);
+        }
     }
 
     public void handleCompilationException(CompilationException e) {
