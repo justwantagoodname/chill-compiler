@@ -23,7 +23,8 @@ public class IceLoadInstruction extends IceInstruction {
     }
 
     @Override
-    public String toString() {
-        return String.format("%%%s = load %s, %%%s", getName(), getSource().getType(), getSource().getName());
+    public void getTextIR(StringBuilder builder) {
+        builder.append("%").append(getName()).append(" = ").append(getInstructionType()).append(" ")
+                .append(getType()).append(", ").append(getSource().getReferenceName());
     }
 }

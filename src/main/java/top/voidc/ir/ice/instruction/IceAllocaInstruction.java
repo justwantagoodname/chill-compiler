@@ -16,7 +16,8 @@ public class IceAllocaInstruction extends IceInstruction {
     }
 
     @Override
-    public String toString() {
-        return "%" + getName() + " = " + getInstructionType() + " " + ((IcePtrType<?>) getType()).getPointTo();
+    public void getTextIR(StringBuilder builder) {
+        builder.append("%").append(getName()).append(" = ").append(getInstructionType()).append(" ")
+                .append(((IcePtrType<?>) getType()).getPointTo());
     }
 }

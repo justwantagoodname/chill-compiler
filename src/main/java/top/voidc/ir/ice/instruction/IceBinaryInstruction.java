@@ -57,9 +57,14 @@ public class IceBinaryInstruction extends IceInstruction {
     }
 
     @Override
-    public String toString() {
-        return getName() + " = " + getInstructionType() + " " + getType() + " " +
-                getLhs() + ", " + getRhs();
+    public void getTextIR(StringBuilder builder) {
+        builder.append("%").append(getName()).append(" = ").append(getInstructionType());
+        if (isNSW) {
+            builder.append(" nsw");
+        }
+        builder.append(" ").append(getType()).append(" ")
+                .append(getLhs().getReferenceName()).append(", ")
+                .append(getRhs().getReferenceName());
     }
 
     public boolean isNSW() {

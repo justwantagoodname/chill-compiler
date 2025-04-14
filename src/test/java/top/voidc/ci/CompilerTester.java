@@ -30,6 +30,7 @@ public class CompilerTester {
         private final File asm;
         private final File actualOutput;
         private final File compilerOutput;
+        private final File irOutput;
         private ResultStatus status;
 
         @Override
@@ -46,12 +47,14 @@ public class CompilerTester {
             this.asm = new File(testcase.src.getParentFile(), testcase.name() + ".s");
             this.actualOutput = new File(testcase.src.getParentFile(), testcase.name() + ".actual.out");
             this.compilerOutput = new File(testcase.src.getParentFile(), testcase.name() + ".compiler.log");
+            this.irOutput = new File(testcase.src.getParentFile(), testcase.name() + ".ll");
         }
 
         public void cleanup() {
             getAsm().delete();
             getActualOutput().delete();
             getCompilerOutput().delete();
+            getIrOutput().delete();
         }
 
         public ResultStatus getStatus() {
@@ -76,6 +79,10 @@ public class CompilerTester {
 
         public File getAsm() {
             return asm;
+        }
+
+        public File getIrOutput() {
+            return irOutput;
         }
     }
 

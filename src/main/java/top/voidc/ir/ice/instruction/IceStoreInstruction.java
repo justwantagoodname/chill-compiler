@@ -23,4 +23,12 @@ public class IceStoreInstruction extends IceInstruction {
         return getOperand(1);
     }
 
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        builder.append("store ")
+                .append(getValue().getReferenceName())
+                .append(", ")
+                .append(getTargetPtr().getReferenceName());
+    }
+
 }

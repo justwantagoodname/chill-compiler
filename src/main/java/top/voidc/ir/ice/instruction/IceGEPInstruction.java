@@ -58,4 +58,18 @@ public class IceGEPInstruction extends IceInstruction {
     public void setInBounds(boolean inBounds) {
         isInBounds = inBounds;
     }
+
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        builder.append("%").append(getName()).append(" = ").append(getInstructionType());
+        if (isInBounds) {
+            builder.append(" inbounds");
+        }
+        builder.append(" ").append(((IcePtrType<?>) getBasePtr().getType()).getPointTo())
+                .append(", ").append(getBasePtr().getReferenceName());
+        
+        for (int i = 1; i < getOperandsList().size(); i++) {
+            builder.append(", ").append(getOperand(i).getReferenceName());
+        }
+    }
 }

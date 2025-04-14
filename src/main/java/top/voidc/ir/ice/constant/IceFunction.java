@@ -56,21 +56,24 @@ public class IceFunction extends IceConstant {
      */
     public List<IceBlock> blocks() {
         final var blockSet = new HashSet<IceBlock>();
+        final var result = new ArrayList<IceBlock>();
         final Queue<IceBlock> blockQueue = new ArrayDeque<>();
         blockQueue.add(entryBlock);
+        result.add(entryBlock);
         blockSet.add(entryBlock);
 
         while (!blockQueue.isEmpty()) {
             final var currentBlock = blockQueue.poll();
             currentBlock.successors().forEach(block -> {
                 if (!blockSet.contains(block)) {
+                    result.add(block);
                     blockQueue.add(block);
                     blockSet.add(block);
                 }
             });
         }
 
-        return blockSet.stream().toList();
+        return result;
     }
 
     public int getBlocksSize() {
@@ -105,7 +108,12 @@ public class IceFunction extends IceConstant {
         builder.append("define ")
                 .append(returnType)
                 .append(' ')
-                .append(getReferenceName())
+                .append("@").append(getName())
+                .append("(")
+                .append(String.join(", ",
+                        parameters.stream()
+                                .map(IceValue::getReferenceName)
+                                .toList()))
                 .append(") {\n");
         blocks().forEach(block -> block.getTextIR(builder));
         builder.append("\n}");
