@@ -12,6 +12,7 @@ public class IceInstruction extends IceUser {
     }
 
     public enum InstructionType {
+        UNREACHABLE,
         INTRINSIC,
         BRANCH,
         CMP,
@@ -38,6 +39,7 @@ public class IceInstruction extends IceUser {
         @Override
         public String toString() {
             return switch (this) {
+                case UNREACHABLE -> "unreachable";
                 case INTRINSIC -> "intrinsic";
                 case BRANCH -> "br";
                 case CMP -> "cmp";
@@ -101,6 +103,6 @@ public class IceInstruction extends IceUser {
 
     @Override
     public void getTextIR(StringBuilder builder) {
-        builder.append(getInstructionType().toString()).append(" unimplemented");
+        builder.append(getInstructionType());
     }
 }

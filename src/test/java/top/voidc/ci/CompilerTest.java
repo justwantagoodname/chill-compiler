@@ -8,7 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-public class CompilerTester {
+public class CompilerTest {
     public static boolean ARM = false;
     public static boolean RV = false;
 
@@ -142,7 +142,7 @@ public class CompilerTester {
         assert testcaseFolder.exists() && testcaseFolder.isDirectory();
 
         final var testcases = Arrays.stream(Objects.requireNonNull(testcaseFolder.listFiles())).parallel()
-                .map(CompilerTester::createTestcaseFromFilePath)
+                .map(CompilerTest::createTestcaseFromFilePath)
                 .filter(Optional::isPresent).map(Optional::get).toList();
 
         System.out.printf("%d Testcases Found! \n", testcases.size());
