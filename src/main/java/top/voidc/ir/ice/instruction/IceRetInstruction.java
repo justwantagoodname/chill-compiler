@@ -24,7 +24,7 @@ public class IceRetInstruction extends IceInstruction {
     }
 
     public boolean isReturnVoid() {
-        return getReturnValue().isEmpty();
+        return getOperandsList().isEmpty();
     }
 
     @Override

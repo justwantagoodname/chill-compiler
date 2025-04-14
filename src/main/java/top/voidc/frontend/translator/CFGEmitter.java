@@ -7,6 +7,8 @@ import top.voidc.frontend.parser.SysyParser;
 import top.voidc.frontend.translator.exception.CompilationException;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceContext;
+import top.voidc.ir.ice.constant.IceConstantData;
+import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceConvertInstruction;
@@ -117,21 +119,25 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
     @Override
     public IceBlock visitIfStmt(SysyParser.IfStmtContext ctx) {
         final var hasElse = ctx.elseStmt != null;
+        final var ifName = currentFunction.generateLocalValueName();
 
-        final var endBlock = new IceBlock(currentFunction, "if.end" + currentFunction.generateLocalValueName());
-
-        var thenBlock = new IceBlock(currentFunction, "if.then" + currentFunction.generateLocalValueName());
-        thenBlock = ctx.thenStmt.accept(new CFGEmitter(context, thenBlock));
-        final var brInstr = new IceBranchInstruction(thenBlock, endBlock);
-        thenBlock.addInstruction(brInstr);
+        final var endBlock = new IceBlock(currentFunction, "if.end" + ifName);
+        final var thenBlock = new IceBlock(currentFunction, "if.then" + ifName);
+        final var thenEndBlock = ctx.thenStmt.accept(new CFGEmitter(context, thenBlock));
+        if (!thenEndBlock.equals(currentFunction.getExitBlock())) {
+            final var brInstr = new IceBranchInstruction(thenEndBlock, endBlock);
+            thenEndBlock.addInstruction(brInstr);
+        }
 
         IceBlock elseBlock = endBlock;
         if (hasElse) {
-            elseBlock = new IceBlock(currentFunction, "if.else" + currentFunction.generateLocalValueName());
-            elseBlock = new CFGEmitter(context, elseBlock)
+            elseBlock = new IceBlock(currentFunction, "if.else" + ifName);
+            final var elseEndBlock = new CFGEmitter(context, elseBlock)
                     .visit(ctx.elseStmt);
-            final var elseBrInstr = new IceBranchInstruction(elseBlock, endBlock);
-            elseBlock.addInstruction(elseBrInstr);
+            if (!elseEndBlock.equals(currentFunction.getExitBlock())) {
+                final var brInstr = new IceBranchInstruction(elseEndBlock, endBlock);
+                elseEndBlock.addInstruction(brInstr);
+            }
         }
 
         context.getIfLabelStack().push(
@@ -146,9 +152,10 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
     @Override
     public IceBlock visitWhileStmt(SysyParser.WhileStmtContext ctx) {
 
-        final var condBlock = new IceBlock(currentFunction);
-        final var bodyBlock = new IceBlock(currentFunction);
-        final var endBlock = new IceBlock(currentFunction);
+        final var whileName = currentFunction.generateLocalValueName();
+        final var condBlock = new IceBlock(currentFunction, "while.cond" + whileName);
+        final var bodyBlock = new IceBlock(currentFunction, "while.body" + whileName);
+        final var endBlock = new IceBlock(currentFunction, "while.end" + whileName);
         currentBlock.addInstruction(new IceBranchInstruction(currentBlock, condBlock));
 
         context.getLoopLabelStack().push(new IceContext.IceLoopLabel(condBlock, endBlock));
@@ -158,9 +165,11 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
                 .visitCond(ctx.cond());
         context.getIfLabelStack().pop();
 
-        final var bodyEmitter = new CFGEmitter(context, bodyBlock);
-        bodyEmitter.visit(ctx.stmt());
-        bodyBlock.addInstruction(new IceBranchInstruction(bodyBlock, condBlock));
+        final var bodyEndBlock = ctx.stmt().accept(new CFGEmitter(context, bodyBlock));
+
+        if (!bodyEndBlock.equals(currentFunction.getExitBlock())) {
+            bodyEndBlock.addInstruction(new IceBranchInstruction(bodyEndBlock, condBlock));
+        }
 
         context.getLoopLabelStack().pop();
 

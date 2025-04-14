@@ -4,11 +4,14 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.ir.IceContext;
+import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.instruction.IceAllocaInstruction;
+import top.voidc.ir.ice.instruction.IceRetInstruction;
 import top.voidc.ir.ice.instruction.IceStoreInstruction;
+import top.voidc.ir.ice.instruction.IceUnreachableInstruction;
 import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
@@ -57,7 +60,20 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
         }
 
         // 处理函数体
-        ctx.block().accept(new CFGEmitter(context, context.getCurrentFunction().getEntryBlock()));
+        final var funcEndBlock = ctx.block().accept(new CFGEmitter(context, context.getCurrentFunction().getEntryBlock()));
+
+        if (!funcEndBlock.equals(context.getCurrentFunction().getExitBlock())) {
+            // 不是终止块，说明没写return
+            if (functionName.equals("main")) {
+                funcEndBlock.addInstruction(new IceRetInstruction(funcEndBlock, IceConstantData.create(0)));
+            } else if (context.getCurrentFunction().getReturnType().isVoid()) {
+                // 如果函数返回值是void，直接返回
+                funcEndBlock.addInstruction(new IceRetInstruction(funcEndBlock));
+            } else {
+                funcEndBlock.addInstruction(new IceUnreachableInstruction(funcEndBlock));
+                Log.w("函数 " + functionName + " 声明了返回值类型，但没有返回值");
+            }
+        }
 
         Log.should(context.getSymbolTable().getCurrentScopeName().equals(functionName + "::scope"),
                   "符号表没有被正确还原到顶级作用域");
