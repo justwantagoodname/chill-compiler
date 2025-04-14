@@ -107,7 +107,7 @@ public class IceFunction extends IceConstant {
                 .append(' ')
                 .append(getReferenceName())
                 .append(") {\n");
-        blocks().forEach(builder::append);
+        blocks().forEach(block -> block.getTextIR(builder));
         builder.append("\n}");
     }
 }
