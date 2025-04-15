@@ -6,7 +6,6 @@ import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.StreamTools;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.StreamSupport;
 
@@ -34,8 +33,8 @@ public class IceBlock extends IceUser {
         instructions.add(instruction);
     }
 
-    public void addInstructionsAtFront(IceInstruction instructions) {
-        this.instructions.add(0, instructions);
+    public void addInstructionAtFront(IceInstruction instruction) {
+        this.instructions.add(0, instruction);
     }
 
     public List<IceInstruction> getInstructions() {

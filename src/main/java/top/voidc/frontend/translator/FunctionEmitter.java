@@ -125,10 +125,10 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
         final var store = new IceStoreInstruction(context.getCurrentFunction().getEntryBlock(),
                 parameterStackPtr,
                 parameter);
-        context.getCurrentFunction().getEntryBlock().addInstructionsAtFront(store);
+        context.getCurrentFunction().getEntryBlock().addInstructionAtFront(store);
 
         context.getSymbolTable().put(name, parameterStackPtr);
-        context.getCurrentFunction().getEntryBlock().addInstructionsAtFront(parameterStackPtr);
+        context.getCurrentFunction().getEntryBlock().addInstructionAtFront(parameterStackPtr);
         return parameterStackPtr;
     }
 }
