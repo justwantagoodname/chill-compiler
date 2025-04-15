@@ -15,7 +15,15 @@ public class IceBinaryInstruction extends IceInstruction {
                               IceValue lhs,
                               IceValue rhs) {
         super(parent, name, type);
-        setInstructionType(op);
+        switch (op) {
+            case DIV -> {
+                switch (lhs.getType().getTypeEnum()) {
+                    case I32 -> setInstructionType(InstructionType.SDIV);
+                    case F32 -> setInstructionType(InstructionType.FDIV);
+                }
+            }
+            default -> setInstructionType(op);
+        }
         addOperand(lhs);
         addOperand(rhs);
     }
@@ -26,7 +34,15 @@ public class IceBinaryInstruction extends IceInstruction {
                                 IceValue lhs,
                                 IceValue rhs) {
         super(parent, type);
-        setInstructionType(op);
+        switch (op) {
+            case DIV -> {
+                switch (lhs.getType().getTypeEnum()) {
+                    case I32 -> setInstructionType(InstructionType.SDIV);
+                    case F32 -> setInstructionType(InstructionType.FDIV);
+                }
+            }
+            default -> setInstructionType(op);
+        }
         addOperand(lhs);
         addOperand(rhs);
     }
@@ -63,8 +79,8 @@ public class IceBinaryInstruction extends IceInstruction {
             builder.append(" nsw");
         }
         builder.append(" ").append(getType()).append(" ")
-                .append(getLhs().getReferenceName()).append(", ")
-                .append(getRhs().getReferenceName());
+                .append(getLhs().getReferenceName(false)).append(", ")
+                .append(getRhs().getReferenceName(false));
     }
 
     public boolean isNSW() {

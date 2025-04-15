@@ -31,6 +31,7 @@ public class CompilerTest {
         private final File actualOutput;
         private final File compilerOutput;
         private final File irOutput;
+        private final File executableOutput;
         private ResultStatus status;
 
         public TestResult(Testcase testcase) {
@@ -40,6 +41,7 @@ public class CompilerTest {
             this.actualOutput = new File(testcase.src.getParentFile(), testcase.name() + ".actual.out");
             this.compilerOutput = new File(testcase.src.getParentFile(), testcase.name() + ".compiler.log");
             this.irOutput = new File(testcase.src.getParentFile(), testcase.name() + ".ll");
+            this.executableOutput = new File(testcase.src.getParentFile(), testcase.name() + ".exe");
         }
 
         public void cleanup() {
@@ -47,6 +49,11 @@ public class CompilerTest {
             actualOutput.delete();
             compilerOutput.delete();
             irOutput.delete();
+            executableOutput.delete();
+        }
+
+        public File getExecutableOutput() {
+            return executableOutput;
         }
 
         public ResultStatus getStatus() {
@@ -149,6 +156,78 @@ public class CompilerTest {
         SY_COMPILER_MAIN.invoke(null, (Object) args);
     }
 
+    public static void compileToExecutable(File llvmFile, File output) throws IOException, InterruptedException {
+        if (llvmFile == null || !llvmFile.exists()) {
+            throw new IllegalArgumentException("File does not exist: " + llvmFile);
+        }
+
+        ProcessBuilder builder = new ProcessBuilder();
+        builder.command("opt", "-passes=default<O2>", llvmFile.getAbsolutePath(), "-o", "-");
+        Process optProcess = builder.start();
+
+        // 将opt输出通过管道传递给clang
+        ProcessBuilder clangBuilder = new ProcessBuilder();
+        clangBuilder.command("clang", "-x", "ir", "-o", output.getAbsolutePath(), "-");
+        Process clangProcess = clangBuilder.start();
+
+        // 将opt的输出连接到clang的输入
+        try (InputStream optOutput = optProcess.getInputStream();
+             OutputStream clangInput = clangProcess.getOutputStream()) {
+            optOutput.transferTo(clangInput);
+        }
+
+        int optExitCode = optProcess.waitFor();
+        int clangExitCode = clangProcess.waitFor();
+
+        if (optExitCode != 0 || clangExitCode != 0) {
+            throw new RuntimeException("Compilation failed: opt exit code = " + optExitCode + 
+                                    ", clang exit code = " + clangExitCode);
+        }
+    }
+
+    public static void runExecutableAndCompare(TestResult result) throws IOException, InterruptedException {
+        File executable = result.getExecutableOutput();
+        if (!executable.exists()) {
+            throw new IllegalStateException("Executable file does not exist: " + executable);
+        }
+        
+        // 首先运行程序并获取标准输出
+        ProcessBuilder builder = new ProcessBuilder(executable.getAbsolutePath());
+        builder.redirectOutput(result.getActualOutput());
+        
+        // 如果有输入文件，将其内容作为输入
+        if (result.getTestcase().in() != null) {
+            builder.redirectInput(result.getTestcase().in());
+        }
+        
+        Process process = builder.start();
+        int exitCode = process.waitFor();
+        
+        // 将返回值追加到输出文件
+        try (FileWriter fw = new FileWriter(result.getActualOutput(), true);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+            if (result.getActualOutput().length() > 0) {
+                bw.newLine(); // 如果文件不为空，先添加换行
+            }
+            bw.write(String.valueOf(exitCode));
+        }
+        
+        // 比较输出
+        compareOutput(result);
+    }
+    
+    public static void compareOutput(TestResult result) throws IOException {
+        List<String> expectedLines = Files.readAllLines(result.getTestcase().out().toPath());
+        List<String> actualLines = Files.readAllLines(result.getActualOutput().toPath());
+        
+        if (!expectedLines.equals(actualLines)) {
+            result.setStatus(ResultStatus.WA);
+            throw new AssertionError("Output mismatch for testcase: " + result.getTestcase().name());
+        }
+        
+        result.setStatus(ResultStatus.AC);
+    }
+
     public static boolean verifyIR(File llvmFile) {
         if (llvmFile == null || !llvmFile.exists()) {
             throw new IllegalArgumentException("File does not exist: " + llvmFile);
@@ -172,7 +251,7 @@ public class CompilerTest {
             if (exitCode == 0) {
                 return true;  // 验证成功
             } else {
-                System.err.println("IR verification failed:\n===LLVM OUTPUT===" + errors + "===LLVM END===");
+                System.err.println("IR verification failed:\n===LLVM OUTPUT===\n" + errors + "===LLVM END===\n");
                 return false;
             }
 
@@ -191,13 +270,18 @@ public class CompilerTest {
             Log.setOutputStream(logStream); // 可选，记录日志
             compileSysySource(testcase, result.getAsm());
             assertTrue(result.getAsm().exists(), "Assembly file not generated");
+            // 验证IR格式
             assertTrue(verifyIR(result.getIrOutput()), "LLVM IR Format Error");
+            
+            // 生成并运行可执行文件
+            compileToExecutable(result.getIrOutput(), result.getExecutableOutput());
+            runExecutableAndCompare(result);
+            
+            result.cleanup();
         } catch (Exception e) {
             result.setStatus(ResultStatus.CE);
             fail("Compiling (" + testcase.src.getAbsolutePath()
                     + ") failed on: " + e.getMessage());
-        } finally {
-            result.cleanup();
         }
     }
 }
