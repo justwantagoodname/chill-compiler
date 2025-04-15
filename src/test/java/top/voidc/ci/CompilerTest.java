@@ -128,8 +128,6 @@ public class CompilerTest {
                 });
     }
 
-
-
     public static Optional<Testcase> createTestcaseFromFilePath(File pathname) {
         String[] filenameSegment = pathname.getName().split("\\.");
         if (filenameSegment.length != 2) return Optional.empty();
@@ -151,6 +149,39 @@ public class CompilerTest {
         SY_COMPILER_MAIN.invoke(null, (Object) args);
     }
 
+    public static boolean verifyIR(File llvmFile) {
+        if (llvmFile == null || !llvmFile.exists()) {
+            throw new IllegalArgumentException("File does not exist: " + llvmFile);
+        }
+
+        ProcessBuilder builder = new ProcessBuilder();
+        builder.command("opt", "-passes=verify", llvmFile.getAbsolutePath(), "-o", "-");
+
+        try {
+            Process process = builder.start();
+
+            // 获取错误输出
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            StringBuilder errors = new StringBuilder();
+            String line;
+            while ((line = errorReader.readLine()) != null) {
+                errors.append(line).append("\n");
+            }
+
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                return true;  // 验证成功
+            } else {
+                System.err.println("IR verification failed:\n===LLVM OUTPUT===" + errors + "===LLVM END===");
+                return false;
+            }
+
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     // 主测试方法：编译 + 检查输出文件存在
     @ParameterizedTest(name = "Compile: {0}")
     @MethodSource("provideTestcases")
@@ -160,6 +191,7 @@ public class CompilerTest {
             Log.setOutputStream(logStream); // 可选，记录日志
             compileSysySource(testcase, result.getAsm());
             assertTrue(result.getAsm().exists(), "Assembly file not generated");
+            assertTrue(verifyIR(result.getIrOutput()), "LLVM IR Format Error");
         } catch (Exception e) {
             result.setStatus(ResultStatus.CE);
             fail("Compiling (" + testcase.src.getAbsolutePath()
