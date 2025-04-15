@@ -1,36 +1,52 @@
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
 name: ARM Functional Test
 
 on:
   push:
-
   pull_request:
     branches: [ "main" ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-    - name: Test with Maven
-      run: mvn test -P arm-test --file pom.xml
+    env:
+      MAVEN_OPTS: "-Xss8M"
+      TESTCASE_DIR: "testcases/functional;testcases/h_functional"
 
-    - uses: actions/upload-artifact@v4
-      with:
-        name: result
-        path: testcases/functional
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Test with Maven
+        run: mvn clean test --file pom.xml
+
+      - name: Upload testcase results
+        uses: actions/upload-artifact@v4
+        with:
+          name: functional-testcases
+          path: |
+            testcases/functional
+            testcases/h_functional
+
+      - name: Upload JUnit test reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-reports
+          path: target/surefire-reports/
+
+      - name: Generate HTML test report
+        run: mvn site
+  
+      - name: Upload HTML test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-test-report
+          path: target/site/
+  
