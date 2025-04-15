@@ -14,6 +14,11 @@ public class Log {
         else log("DEBUG", format);
     }
 
+    public static void i(String format) {
+        if (DEBUG) log(ANSI_BLUE + "INFO" + ANSI_RESET, format);
+        else log("INFO", format);
+    }
+
     public static void w(String format) {
         if (DEBUG) log(ANSI_RED + "WARN" + ANSI_RESET, ANSI_RED + format + ANSI_RESET);
         else log("WARN", format);

@@ -1,23 +1,23 @@
 package top.voidc.ci;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import top.voidc.misc.Log;
 
-import java.io.File;
-import java.io.PrintStream;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.util.*;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CompilerTest {
-    public static boolean ARM = false;
-    public static boolean RV = false;
-
     public record Testcase(String name, File in, File out, File src) {
         @Override
         public String toString() {
-            return "Testcase{" +
-                    "name='" + name + '\'' +
-                    '}';
+            return name;
         }
     }
 
@@ -33,14 +33,6 @@ public class CompilerTest {
         private final File irOutput;
         private ResultStatus status;
 
-        @Override
-        public String toString() {
-            return "TestResult{" +
-                    "testcase=" + testcase +
-                    ", status=" + status +
-                    '}';
-        }
-
         public TestResult(Testcase testcase) {
             this.testcase = testcase;
             this.status = ResultStatus.RUNNING;
@@ -51,10 +43,10 @@ public class CompilerTest {
         }
 
         public void cleanup() {
-            getAsm().delete();
-            getActualOutput().delete();
-            getCompilerOutput().delete();
-            getIrOutput().delete();
+            asm.delete();
+            actualOutput.delete();
+            compilerOutput.delete();
+            irOutput.delete();
         }
 
         public ResultStatus getStatus() {
@@ -65,8 +57,8 @@ public class CompilerTest {
             this.status = status;
         }
 
-        public Testcase getTestcase() {
-            return testcase;
+        public File getAsm() {
+            return asm;
         }
 
         public File getCompilerOutput() {
@@ -77,16 +69,16 @@ public class CompilerTest {
             return actualOutput;
         }
 
-        public File getAsm() {
-            return asm;
-        }
-
         public File getIrOutput() {
             return irOutput;
         }
+
+        public Testcase getTestcase() {
+            return testcase;
+        }
     }
 
-    // BYD CG ONLY SOLUTION.
+    // 动态加载编译器类
     public static Class<?> SY_COMPILER;
     public static Method SY_COMPILER_MAIN;
 
@@ -99,98 +91,81 @@ public class CompilerTest {
         }
     }
 
-    public static Optional<Testcase> createTestcaseFromFilePath(File pathname) {
-        final var filenameSegment = pathname.getName().split("\\.");
-        assert filenameSegment.length == 2;
-        final var testCaseName = filenameSegment[0];
-        final var extName = filenameSegment[1];
-        final var outputData = new File(pathname.getParentFile(), testCaseName + "." + "out");
-        if (pathname.isDirectory() || !("sy".equals(extName)) || !outputData.exists()) {
-            return Optional.empty();
+    // 发现所有测试用例
+    public static Stream<Testcase> provideTestcases() {
+        final String ENV_NAME = "TESTCASE_DIR";
+        String testcasePaths = System.getenv(ENV_NAME);
+
+        if (testcasePaths == null || testcasePaths.isBlank()) {
+            testcasePaths = "testcases/functional;testcases/h_functional";
+            Log.i(String.format("环境变量 %s 未设置，使用默认路径: %s%n", ENV_NAME, testcasePaths));
+        } else {
+            Log.i(String.format("使用环境变量 %s = %s%n", ENV_NAME, testcasePaths));
         }
-        var inputData = new File(pathname.getParentFile(), testCaseName + ".in");
-        if (!inputData.exists()) inputData = null;
-        return Optional.of(new Testcase(testCaseName, inputData, outputData, pathname));
+
+        // 支持多个路径（用 ; 分隔）
+        String[] paths = testcasePaths.split(";");
+        List<File> validDirs = Arrays.stream(paths)
+                .map(String::trim)
+                .map(File::new)
+                .filter(file -> file.exists() && file.isDirectory())
+                .toList();
+
+        if (validDirs.isEmpty()) {
+            throw new IllegalStateException("未找到有效的测试用例目录，请检查 TESTCASE_DIR 设置");
+        }
+
+        // 遍历每个目录下的文件，构造 testcases
+        return validDirs.stream()
+                .flatMap(dir -> {
+                    File[] files = dir.listFiles();
+                    if (files == null) return Stream.empty();
+
+                    return Arrays.stream(files)
+                            .map(CompilerTest::createTestcaseFromFilePath)
+                            .filter(Optional::isPresent)
+                            .map(Optional::get);
+                });
+    }
+
+
+
+    public static Optional<Testcase> createTestcaseFromFilePath(File pathname) {
+        String[] filenameSegment = pathname.getName().split("\\.");
+        if (filenameSegment.length != 2) return Optional.empty();
+        String name = filenameSegment[0];
+        String ext = filenameSegment[1];
+        if (!"sy".equals(ext)) return Optional.empty();
+
+        File out = new File(pathname.getParentFile(), name + ".out");
+        if (!out.exists()) return Optional.empty();
+
+        File in = new File(pathname.getParentFile(), name + ".in");
+        if (!in.exists()) in = null;
+
+        return Optional.of(new Testcase(name, in, out, pathname));
     }
 
     public static void compileSysySource(Testcase testcase, File output) throws InvocationTargetException, IllegalAccessException {
-        assert testcase.src != null;
-
-        final var args = new String[]{"-S", "-o", output.getAbsolutePath(), testcase.src.getAbsolutePath()};
+        String[] args = {"-S", "-o", output.getAbsolutePath(), testcase.src.getAbsolutePath()};
         SY_COMPILER_MAIN.invoke(null, (Object) args);
     }
 
-    public static void main(String[] args) throws Exception {
-        System.out.println("Starting Testing...");
-        assert args.length == 2;
-
-        switch (args[0].toUpperCase()) {
-            case "ARM":
-                ARM = true;
-                break;
-            case "RISCV":
-                RV = true;
-                break;
-            default:
-                assert false;
-                break;
+    // 主测试方法：编译 + 检查输出文件存在
+    @ParameterizedTest(name = "Compile: {0}")
+    @MethodSource("provideTestcases")
+    public void testCompile(Testcase testcase) {
+        TestResult result = new TestResult(testcase);
+        try (PrintStream logStream = new PrintStream(result.getCompilerOutput())) {
+            Log.setOutputStream(logStream); // 可选，记录日志
+            compileSysySource(testcase, result.getAsm());
+            assertTrue(result.getAsm().exists(), "Assembly file not generated");
+        } catch (Exception e) {
+            result.setStatus(ResultStatus.CE);
+            fail("Compiling (" + testcase.src.getAbsolutePath()
+                    + ") failed on: " + e.getMessage());
+        } finally {
+            result.cleanup();
         }
-
-        System.out.println("=== [Phase] Finding testcases ===");
-        final var testcaseFolder = new File(args[1]);
-
-        assert testcaseFolder.exists() && testcaseFolder.isDirectory();
-
-        final var testcases = Arrays.stream(Objects.requireNonNull(testcaseFolder.listFiles())).parallel()
-                .map(CompilerTest::createTestcaseFromFilePath)
-                .filter(Optional::isPresent).map(Optional::get).toList();
-
-        System.out.printf("%d Testcases Found! \n", testcases.size());
-
-        final var testResults = testcases.stream().map(TestResult::new).toList();
-
-        System.out.println("Cleanup Done");
-
-        System.out.println("=== [Phase] Cleanup ===");
-
-        testResults.parallelStream().forEach(TestResult::cleanup);
-
-        System.out.println("=== [Phase] Compile sysy source(s) ===");
-        for (var result : testResults) {
-            try (final var logFileStream = new PrintStream(result.getCompilerOutput())) {
-//                System.setErr(logFileStream);
-//                System.setOut(logFileStream);
-//                Log.setOutputStream(logFileStream);
-                Log.d("==== [Begin New Src] ====");
-//                try {
-                    compileSysySource(result.getTestcase(), result.getAsm());
-//                } catch (Exception e) {
-                    // NOTE: Redirect System.err here. shouldn't move out.
-//                    e.printStackTrace();
-//                } finally {
-//                    if (!result.getAsm().exists()) {
-//                        result.setStatus(ResultStatus.CE);
-//                    }
-//                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        final var CESize = testResults.parallelStream()
-                .filter(testResult -> testResult.getStatus() == ResultStatus.CE).count();
-
-
-
-        if (CESize > 0) {
-            testResults.parallelStream()
-                    .filter(testResult -> testResult.getStatus() == ResultStatus.CE).forEach(
-                            System.out::println
-                    );
-            throw new Exception(CESize + " testcase(s) compile failed. Abort.");
-        }
-
-        System.out.println("=== [Phase] Cleanup ===");
-        testResults.parallelStream().filter(testResult -> testResult.getStatus() != ResultStatus.CE).forEach(TestResult::cleanup);
     }
 }
