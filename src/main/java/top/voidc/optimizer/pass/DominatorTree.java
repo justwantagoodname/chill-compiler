@@ -66,6 +66,17 @@ public class DominatorTree {
         return dfsSortedBlocks[idom[index]];
     }
 
+    public ArrayList<IceBlock> getDominatees(IceBlock block) {
+        int index = dfsBlockIndex.get(block);
+
+        ArrayList<IceBlock> result = new ArrayList<>();
+        for (int i : successors.get(index)) {
+            result.add(dfsSortedBlocks[i]);
+        }
+
+        return result;
+    }
+
     public ArrayList<IceBlock> dfsOnTree(IceBlock startBlock) {
         ArrayList<IceBlock> result = new ArrayList<>();
         Stack<Integer> stack = new Stack<>();
