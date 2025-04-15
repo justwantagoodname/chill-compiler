@@ -59,11 +59,7 @@ public class IceValue {
      * @return 操作数的形式
      */
     public String getReferenceName(boolean withType) {
-        if (name == null) {
-            return (withType ? getType() + " %" : "%") + getType() + "unnamed";
-        } else {
-            return (withType ? getType() + " %" : "%") + name;
-        }
+        return (withType ? getType() + " %" : "%") + getName();
     }
 
     public String getReferenceName() {

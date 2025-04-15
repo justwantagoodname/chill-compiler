@@ -16,9 +16,9 @@ public class IceConstantFloat extends IceConstantData {
     }
 
     @Override
-    public String getReferenceName() {
+    public String getReferenceName(boolean withType) {
         final var bits = Double.doubleToRawLongBits(value);
-        return getType() + " 0x" + Long.toHexString(bits).toUpperCase();
+        return (withType ? getType() + " " : "") + " 0x" + Long.toHexString(bits).toUpperCase();
     }
 
     @Override
