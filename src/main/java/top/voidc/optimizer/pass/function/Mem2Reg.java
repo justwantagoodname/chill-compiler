@@ -2,6 +2,7 @@ package top.voidc.optimizer.pass.function;
 
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IcePtrType;
+import top.voidc.optimizer.pass.DominatorTree;
 import top.voidc.optimizer.pass.Pass;
 
 import top.voidc.ir.IceBlock;
@@ -10,7 +11,6 @@ import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceAllocaInstruction;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.type.IceArrayType;
-import top.voidc.ir.ice.type.IcePtrType;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -22,12 +22,34 @@ import java.util.Hashtable;
  * This pass will try to delete alloca instructions, and replace them with ice-ir registers.
  */
 public class Mem2Reg implements Pass<IceFunction> {
-    @Override
-    public void run(IceFunction target) {
-        // hashtable: IceValue -> counting
-        Hashtable<IceValue, Integer> allocaTable = new Hashtable<>();
+    private static Hashtable<IceBlock, ArrayList<IceBlock>> createDominanceFontierTable(IceFunction function, DominatorTree domTree) {
+        Hashtable<IceBlock, ArrayList<IceBlock>> result = new Hashtable<>();
+        for (IceBlock x : function.getBlocks()) {
+            result.put(x, new ArrayList<>());
+        }
 
-        for (IceInstruction instr : target.getEntryBlock().getInstructions()) {
+        for (IceBlock x : function.getBlocks()) {
+            IceBlock dominator = domTree.getDominator(x);
+
+            if (x.getPredecessors().size() >= 2) {
+                for (IceBlock p : x.getPredecessors()) {
+                    IceBlock runner = p;
+                    while (runner != dominator) {
+                        result.get(runner).add(x);
+                        runner = domTree.getDominator(runner);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private static Hashtable<IceValue, Integer> createAllocaTable(IceFunction function) {
+        // hashtable: IceValue -> counting
+        Hashtable<IceValue, Integer> result = new Hashtable<>();
+
+        for (IceInstruction instr : function.getEntryBlock().getInstructions()) {
             if (instr instanceof IceAllocaInstruction value) {
                 IceType type = ((IcePtrType<?>) value.getType()).getPointTo();
 
@@ -35,10 +57,17 @@ public class Mem2Reg implements Pass<IceFunction> {
                     continue;
                 }
 
-                allocaTable.put(instr, 0);
+                result.put(instr, 0);
             }
         }
 
+        return result;
+    }
 
+    @Override
+    public void run(IceFunction target) {
+        Hashtable<IceValue, Integer> allocaTable = createAllocaTable(target);
+        DominatorTree domTree = new DominatorTree(target);
+        Hashtable<IceBlock, ArrayList<IceBlock>> dfTable = createDominanceFontierTable(target, domTree);
     }
 }
