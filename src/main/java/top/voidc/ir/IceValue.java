@@ -58,12 +58,16 @@ public class IceValue {
      * 获取被引用时(作为操作数)的变量名
      * @return 操作数的形式
      */
-    public String getReferenceName() {
+    public String getReferenceName(boolean withType) {
         if (name == null) {
-            return getType() + " %" + getType() + "unnamed";
+            return (withType ? getType() + " %" : "%") + getType() + "unnamed";
         } else {
-            return getType() + " %" + name;
+            return (withType ? getType() + " %" : "%") + name;
         }
+    }
+
+    public String getReferenceName() {
+        return getReferenceName(true);
     }
 
     public void getTextIR(StringBuilder builder) {

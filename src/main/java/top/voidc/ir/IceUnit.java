@@ -1,6 +1,7 @@
 package top.voidc.ir;
 
 import top.voidc.ir.ice.constant.IceConstant;
+import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.type.IceType;
 
@@ -42,7 +43,9 @@ public class IceUnit extends IceValue {
     public void getTextIR(StringBuilder builder) {
         builder.append("; ").append(this.getName()).append('\n');
 
-        globalVariables.forEach(v -> {v.getTextIR(builder); builder.append('\n');});
+        globalVariables.stream()
+                .filter(globalVariable -> !(globalVariable instanceof IceConstantData))
+                .forEach(v -> {v.getTextIR(builder); builder.append('\n');});
         functions.forEach(f -> {f.getTextIR(builder); builder.append('\n');});
     }
 }

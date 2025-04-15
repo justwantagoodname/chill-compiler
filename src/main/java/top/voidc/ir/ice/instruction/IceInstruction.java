@@ -28,6 +28,8 @@ public class IceInstruction extends IceUser {
         SUB,
         MUL,
         DIV,
+        SDIV,
+        FDIV,
         MOD,
         SHL,
         SHR,
@@ -55,6 +57,8 @@ public class IceInstruction extends IceUser {
                 case SUB -> "sub";
                 case MUL -> "mul";
                 case DIV -> "div";
+                case SDIV -> "sdiv";
+                case FDIV -> "fdiv";
                 case MOD -> "mod";
                 case SHL -> "shl";
                 case SHR -> "shr";
