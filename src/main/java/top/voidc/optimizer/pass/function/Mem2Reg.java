@@ -1,18 +1,19 @@
 package top.voidc.optimizer.pass.function;
 
+import top.voidc.ir.IceBlock;
+import top.voidc.ir.IceValue;
+
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.instruction.IcePHINode;
 import top.voidc.ir.ice.instruction.IceStoreInstruction;
-import top.voidc.ir.ice.type.IcePtrType;
-import top.voidc.optimizer.pass.DominatorTree;
-import top.voidc.optimizer.pass.Pass;
-
-import top.voidc.ir.IceBlock;
-import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceAllocaInstruction;
+import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.type.IceArrayType;
+
+import top.voidc.optimizer.pass.DominatorTree;
+import top.voidc.optimizer.pass.Pass;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
