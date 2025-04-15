@@ -1,6 +1,8 @@
 package top.voidc.optimizer.pass.function;
 
 import top.voidc.ir.ice.instruction.IceInstruction;
+import top.voidc.ir.ice.instruction.IcePHINode;
+import top.voidc.ir.ice.instruction.IceStoreInstruction;
 import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.optimizer.pass.DominatorTree;
 import top.voidc.optimizer.pass.Pass;
@@ -14,6 +16,8 @@ import top.voidc.ir.ice.type.IceArrayType;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Queue;
+import java.util.ArrayDeque;
 
 /**
  * Memory to Register Promotion
@@ -45,9 +49,8 @@ public class Mem2Reg implements Pass<IceFunction> {
         return result;
     }
 
-    private static Hashtable<IceValue, Integer> createAllocaTable(IceFunction function) {
-        // hashtable: IceValue -> counting
-        Hashtable<IceValue, Integer> result = new Hashtable<>();
+    private static ArrayList<IceValue> createPromotableList(IceFunction function) {
+        ArrayList<IceValue> result = new ArrayList<>();
 
         for (IceInstruction instr : function.getEntryBlock().getInstructions()) {
             if (instr instanceof IceAllocaInstruction value) {
@@ -57,17 +60,75 @@ public class Mem2Reg implements Pass<IceFunction> {
                     continue;
                 }
 
-                result.put(instr, 0);
+                result.add(instr);
             }
         }
 
         return result;
     }
 
+    private static IceValue findValueStored(IceBlock block, IceValue value) {
+        for (IceInstruction instr : block.getInstructions()) {
+            if (instr instanceof IceStoreInstruction store) {
+                if (store.getTargetPtr() == value) {
+                    return store.getValue();
+                }
+            }
+        }
+        return null;
+    }
+
+    private static void insertPhi(IceValue value, IceFunction function, Hashtable<IceBlock, ArrayList<IceBlock>> dfTable) {
+        // pair for workList queue
+        // block: the block that stores the value, value: the value to be stored
+        Queue<IceBlock> workList = new ArrayDeque<>();
+
+        // phi node for each block, value: phi node if the block has already inserted a phi node
+        // for the given value, null if not
+        Hashtable<IceBlock, IcePHINode> phiTable = new Hashtable<>();
+
+        // add all blocks that store value to workList
+        for (IceBlock block : function.getBlocks()) {
+            for (IceInstruction instr : block.getInstructions()) {
+                if (instr instanceof IceStoreInstruction store) {
+                    if (store.getTargetPtr() == value) {
+                        workList.add(block);
+                    }
+                }
+            }
+        }
+
+        // TODO: need to be check!
+        while (!workList.isEmpty()) {
+            IceBlock block = workList.poll();
+
+            for (IceBlock dominator : dfTable.get(block)) {
+                if (!phiTable.containsKey(dominator)) {
+                    IcePHINode phiNode = new IcePHINode(dominator, value.getName(), value.getType());
+                    phiTable.put(dominator, phiNode);
+                    dominator.addInstructionAtFront(phiNode);
+                }
+
+                IcePHINode phiNode = phiTable.get(dominator);
+                if (!phiNode.containsBranch(block)) {
+                    phiNode.addBranch(block, findValueStored(block, value));
+                }
+
+                if (!workList.contains(dominator)) {
+                    workList.add(dominator);
+                }
+            }
+        }
+    }
+
     @Override
     public void run(IceFunction target) {
-        Hashtable<IceValue, Integer> allocaTable = createAllocaTable(target);
+        ArrayList<IceValue> promotableValues = createPromotableList(target);
         DominatorTree domTree = new DominatorTree(target);
         Hashtable<IceBlock, ArrayList<IceBlock>> dfTable = createDominanceFontierTable(target, domTree);
+
+        for (IceValue value : promotableValues) {
+            insertPhi(value, target, dfTable);
+        }
     }
 }

@@ -26,9 +26,18 @@ public class IcePHINode extends IceInstruction {
 //    public List<IcePHIBranch> getBranches() {
 //        return branches;
 //    }
-
     public void addBranch(IceBlock block, IceValue value) {
         branches.add(new IcePHIBranch(block, value));
+    }
+
+    public boolean containsBranch(IceBlock branch) {
+        for (IcePHIBranch b : branches) {
+            if (b.block() == branch) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
