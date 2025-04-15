@@ -52,7 +52,7 @@ public class IceConstantString extends IceConstantArray {
      * 反正 sysy 不支持字符串转义所以无所谓了
      */
     @Override
-    public String getReferenceName() {
-        return getType() + " c\"" + value + "\\00\"";
+    public String getReferenceName(boolean withType) {
+        return (withType ? getType() + " " : "") + " c\"" + value + "\\00\"";
     }
 }

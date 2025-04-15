@@ -31,8 +31,8 @@ public class IceConstantBoolean extends IceConstantData {
     }
 
     @Override
-    public String getReferenceName() {
-        return getType() + " " + getValue();
+    public String getReferenceName(boolean withType) {
+        return (withType ? getType() + " " : "") + getValue();
     }
 
     @Override

@@ -9,9 +9,10 @@ public class IceConstant extends IceUser {
         super(name, type);
     }
 
+
     @Override
-    public String getReferenceName() {
-        return "@" + getName();
+    public String getReferenceName(boolean withType) {
+        return (withType ? getType() + " @" : "@") + getName();
     }
 
     @Override

@@ -15,8 +15,8 @@ public class IceConstantInt extends IceConstantData {
     }
 
     @Override
-    public String getReferenceName() {
-        return getType() + " " + value;
+    public String getReferenceName(boolean withType) {
+        return (withType ? getType() + " " : "") + getValue();
     }
 
     @Override
