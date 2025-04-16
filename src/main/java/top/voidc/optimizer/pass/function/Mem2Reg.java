@@ -27,7 +27,22 @@ import java.util.ArrayDeque;
  * This pass will try to delete alloca instructions, and replace them with ice-ir registers.
  */
 public class Mem2Reg implements Pass<IceFunction> {
-    private static Hashtable<IceBlock, ArrayList<IceBlock>> createDominanceFontierTable(IceFunction function, DominatorTree domTree) {
+    /**
+     * Create a dominance frontier table for the given function.
+     * <br>
+     * for each node X in the CFG:
+     *     if X has >= 2 predecessors:
+     *         for each predecessor P of X:
+     *             runner = P
+     *             while runner != idom(X):
+     *                 DF[runner].add(X)
+     *                 runner = idom(runner)
+     *
+     * @param function the function to create the dominance fontier table for
+     * @param domTree the dominator tree of the function
+     * @return the dominance frontier table
+     */
+    private static Hashtable<IceBlock, ArrayList<IceBlock>> createDominanceFrontierTable(IceFunction function, DominatorTree domTree) {
         Hashtable<IceBlock, ArrayList<IceBlock>> result = new Hashtable<>();
         for (IceBlock x : function.getBlocks()) {
             result.put(x, new ArrayList<>());
@@ -50,6 +65,13 @@ public class Mem2Reg implements Pass<IceFunction> {
         return result;
     }
 
+    /**
+     * Create a list of all values that can be promoted to registers.
+     * Scanning the function's entry block for alloca instructions.
+     *
+     * @param function the function to create the list for
+     * @return the list of values that can be promoted
+     */
     private static ArrayList<IceValue> createPromotableList(IceFunction function) {
         ArrayList<IceValue> result = new ArrayList<>();
 
@@ -126,7 +148,7 @@ public class Mem2Reg implements Pass<IceFunction> {
     public void run(IceFunction target) {
         ArrayList<IceValue> promotableValues = createPromotableList(target);
         DominatorTree domTree = new DominatorTree(target);
-        Hashtable<IceBlock, ArrayList<IceBlock>> dfTable = createDominanceFontierTable(target, domTree);
+        Hashtable<IceBlock, ArrayList<IceBlock>> dfTable = createDominanceFrontierTable(target, domTree);
 
         for (IceValue value : promotableValues) {
             insertPhi(value, target, dfTable);
