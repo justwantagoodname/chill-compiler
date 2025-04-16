@@ -18,7 +18,7 @@ public class IceFcmpInstruction extends IceCmpInstruction {
     @Override
     public void getTextIR(StringBuilder builder) {
         builder.append("%").append(getName()).append(" = fcmp ").append(cmpType).append(" ")
-                .append(getOperand(0).getReferenceName()).append(", ")
-                .append(getOperand(1).getReferenceName());
+                .append(getOperand(0).getReferenceName(true)).append(", ")
+                .append(getOperand(1).getReferenceName(false));
     }
 }
