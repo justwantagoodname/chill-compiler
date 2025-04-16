@@ -61,7 +61,7 @@ public class VarDeclEmitter extends ConstDeclEmitter {
                 currentFunction.getEntryBlock(), varType);
 
         // 首先在栈上分配空间
-        currentFunction.getEntryBlock().addInstruction(varStackPtr);
+        currentFunction.getEntryBlock().addInstructionsAtFront(varStackPtr);
 
         if (ctx.initVal() != null) {
             var initValue = ctx.initVal().exp().accept(new ExpEmitter(context, currentBlock));
@@ -93,7 +93,7 @@ public class VarDeclEmitter extends ConstDeclEmitter {
                 currentFunction.getEntryBlock(), arrayType);
         ((IcePtrType<?>)varStackPtr.getType()).setConst(true);
 
-        currentFunction.getEntryBlock().addInstruction(varStackPtr);
+        currentFunction.getEntryBlock().addInstructionsAtFront(varStackPtr);
 
         handleArrayInit(varStackPtr, arraySize, ctx.initVal());
 
@@ -110,7 +110,7 @@ public class VarDeclEmitter extends ConstDeclEmitter {
         // 在栈上分配空间
         final var varStackPtr = new IceAllocaInstruction(
                 currentFunction.getEntryBlock(), arrayType);
-        currentFunction.getEntryBlock().addInstruction(varStackPtr);
+        currentFunction.getEntryBlock().addInstructionsAtFront(varStackPtr);
 
         if (ctx.initVal() != null) handleArrayInit(varStackPtr, arraySize, ctx.initVal());
 
