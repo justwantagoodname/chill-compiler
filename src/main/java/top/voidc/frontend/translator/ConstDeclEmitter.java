@@ -143,7 +143,7 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
         ((IcePtrType<?>) constArrayDecl.getType()).setConst(true);
 
         context.getSymbolTable().put(name, constArrayDecl);
-        constants.add(arrayDecl);
+        constants.add(constArrayDecl);
     }
 
     /**

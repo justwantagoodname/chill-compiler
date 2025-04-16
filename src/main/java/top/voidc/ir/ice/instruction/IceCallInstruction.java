@@ -28,8 +28,8 @@ public class IceCallInstruction extends IceInstruction {
         if (!getType().isVoid()) {
             builder.append("%").append(getName()).append(" = ");
         }
-        builder.append("call ").append(getTarget().getReturnType()).append(" ")
-                .append(getTarget().getReferenceName()).append("(");
+        builder.append("call ").append(getTarget().getReturnType()).append(" @")
+                .append(getTarget().getName()).append("(");
         
         var args = getArguments();
         for (int i = 0; i < args.size(); i++) {
