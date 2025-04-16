@@ -127,7 +127,8 @@ public class Mem2Reg implements Pass<IceFunction> {
 
             for (IceBlock dominator : dfTable.get(block)) {
                 if (!phiTable.containsKey(dominator)) {
-                    IcePHINode phiNode = new IcePHINode(dominator, value.getName(), value.getType());
+                    IceType type = ((IcePtrType<?>) value.getType()).getPointTo();
+                    IcePHINode phiNode = new IcePHINode(dominator, value.getName(), type);
                     phiTable.put(dominator, phiNode);
                     dominator.addInstructionAtFront(phiNode);
                 }
