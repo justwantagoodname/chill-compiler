@@ -281,7 +281,7 @@ public class CompilerTest {
         } catch (Exception e) {
             result.setStatus(ResultStatus.CE);
             fail("Compiling (" + testcase.src.getAbsolutePath()
-                    + ") failed on: " + e.getMessage());
+                    + ") failed on:\n " + e);
         }
     }
 }
