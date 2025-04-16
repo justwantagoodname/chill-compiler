@@ -8,6 +8,7 @@ import top.voidc.ir.IceUnit;
 import top.voidc.misc.AssemblyBuilder;
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
+import top.voidc.optimizer.PassManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +43,11 @@ public class Compiler {
 
         parseSource(context);
         generator.generateIR();
+
+        final var passManager = new PassManager(context);
+        passManager.scanPackage("top.voidc.optimizer.pass");
+
+        passManager.runAll();
 
         emitLLVM();
 
