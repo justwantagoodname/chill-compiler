@@ -24,6 +24,18 @@ public class IceUser extends IceValue {
         operands.add(operand);
     }
 
+    public void setOperand(int index, IceValue operand) {
+        if (index < 0 || index >= operands.size()) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + operands.size());
+        }
+        IceValue oldOperand = operands.get(index);
+        if (oldOperand != null) {
+            oldOperand.removeUse(this);
+        }
+        operand.addUse(this);
+        operands.set(index, operand);
+    }
+
     public IceValue getOperand(int i) {
         return operands.get(i);
     }
