@@ -119,25 +119,13 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
     @Override
     public IceBlock visitIfStmt(SysyParser.IfStmtContext ctx) {
         final var hasElse = ctx.elseStmt != null;
-        final var ifName = currentFunction.generateLocalValueName();
+        final var ifName = currentFunction.generateLabelName();
 
         final var endBlock = new IceBlock(currentFunction, "if.end" + ifName);
         final var thenBlock = new IceBlock(currentFunction, "if.then" + ifName);
-        final var thenEndBlock = ctx.thenStmt.accept(new CFGEmitter(context, thenBlock));
-        if (!thenEndBlock.equals(currentFunction.getExitBlock())) {
-            final var brInstr = new IceBranchInstruction(thenEndBlock, endBlock);
-            thenEndBlock.addInstruction(brInstr);
-        }
-
         IceBlock elseBlock = endBlock;
         if (hasElse) {
             elseBlock = new IceBlock(currentFunction, "if.else" + ifName);
-            final var elseEndBlock = new CFGEmitter(context, elseBlock)
-                    .visit(ctx.elseStmt);
-            if (!elseEndBlock.equals(currentFunction.getExitBlock())) {
-                final var brInstr = new IceBranchInstruction(elseEndBlock, endBlock);
-                elseEndBlock.addInstruction(brInstr);
-            }
         }
 
         context.getIfLabelStack().push(
@@ -145,6 +133,21 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
         final var condEmitter = new CondEmitter(context, currentBlock);
         condEmitter.visitCond(ctx.cond());
         context.getIfLabelStack().pop();
+
+        final var thenEndBlock = ctx.thenStmt.accept(new CFGEmitter(context, thenBlock));
+        if (!thenEndBlock.equals(currentFunction.getExitBlock())) {
+            final var brInstr = new IceBranchInstruction(thenEndBlock, endBlock);
+            thenEndBlock.addInstruction(brInstr);
+        }
+
+        if (hasElse) {
+            final var elseEndBlock = new CFGEmitter(context, elseBlock)
+                    .visit(ctx.elseStmt);
+            if (!elseEndBlock.equals(currentFunction.getExitBlock())) {
+                final var brInstr = new IceBranchInstruction(elseEndBlock, endBlock);
+                elseEndBlock.addInstruction(brInstr);
+            }
+        }
 
         return endBlock;
     }

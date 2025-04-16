@@ -99,7 +99,7 @@ public class IceInstruction extends IceUser {
     }
 
     public IceInstruction(IceBlock parent, IceType type) {
-        super(parent.getFunction().generateLocalValueName(), type);
+        super(type.isVoid() ? null : parent.getFunction().generateLocalValueName(), type);
         this.parent = parent;
     }
 

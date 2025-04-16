@@ -21,7 +21,7 @@ public class IceBlock extends IceUser {
     }
 
     public IceBlock(IceFunction parentFunction) {
-        super(parentFunction.generateLocalValueName(), IceType.VOID);
+        super("L" + parentFunction.generateLocalValueName(), IceType.VOID);
         this.function = parentFunction;
         this.instructions = new ArrayList<>();
     }

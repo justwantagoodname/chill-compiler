@@ -8,6 +8,7 @@ import java.util.*;
 
 public class IceFunction extends IceConstant {
     private int tempValueCounter = 0;
+    private int blockLabelCounter = 0;
     private final List<IceType> parameterTypes;
     private IceType returnType;
 
@@ -48,6 +49,25 @@ public class IceFunction extends IceConstant {
 
     public String generateLocalValueName() {
         return String.valueOf(tempValueCounter++);
+    }
+
+    public String generateLocalValueName(String name) {
+        final var ret =  name + (blockLabelCounter == 0 ? "" : blockLabelCounter);
+        blockLabelCounter++;
+        return ret;
+    }
+
+    public String generateLabelName() {
+        return String.valueOf(blockLabelCounter++);
+    }
+
+    public String generateLabelName(String name) {
+        if (name.equals("exit") || name.equals("entry")) {
+            return name;
+        }
+        final var ret = name + (blockLabelCounter == 0 ? "" : blockLabelCounter);
+        blockLabelCounter++;
+        return ret;
     }
 
     /**
