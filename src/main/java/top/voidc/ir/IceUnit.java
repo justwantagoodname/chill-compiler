@@ -9,8 +9,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class IceUnit extends IceValue {
-    public final List<IceFunction> functions;
-    public final List<IceConstant> globalVariables;
+    public List<IceFunction> getFunctions() {
+        return functions;
+    }
+
+    public List<IceConstant> getGlobalVariables() {
+        return globalVariables;
+    }
+
+    private final List<IceFunction> functions;
+    private final List<IceConstant> globalVariables;
 
     public IceUnit(String name) {
         super(name, IceType.VOID);
@@ -46,4 +54,6 @@ public class IceUnit extends IceValue {
         globalVariables.forEach(v -> {v.getTextIR(builder); builder.append('\n');});
         functions.forEach(f -> {f.getTextIR(builder); builder.append('\n');});
     }
+
+
 }
