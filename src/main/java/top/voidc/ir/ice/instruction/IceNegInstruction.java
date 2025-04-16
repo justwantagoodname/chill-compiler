@@ -35,6 +35,6 @@ public class IceNegInstruction extends IceInstruction {
         if (!getType().isFloat()) {
             builder.append("0, ");
         }
-        builder.append(getOperand(0).getReferenceName());
+        builder.append(getOperand(0).getReferenceName(false));
     }
 }

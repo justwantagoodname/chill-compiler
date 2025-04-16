@@ -33,7 +33,8 @@ public class IceConstantArray extends IceConstantData {
         @Override
         public String toString() {
             if (repeat > 1) {
-                return "(" + element + " x " + repeat + ")";
+                assert element.equals(IceConstantData.create(0));
+                return "[" + element + " x " + repeat + "] zeroinitializer";
             }
             return element.toString();
         }
@@ -255,17 +256,23 @@ public class IceConstantArray extends IceConstantData {
         isUnnamedAddr = unnamedAddr;
     }
 
+
     @Override
-    public String getReferenceName() {
+    public String getReferenceName(boolean withType) {
         if (zeroInit) {
-            return getType() + " zeroinitializer";
+            return (withType ? getType() : "") + " zeroinitializer";
         } else {
             assert elements != null;
-            return getType()
+            return (withType ? getType() : "")
                     + " ["
                     + String.join(", ", elements.stream().map(DataArrayElement::toString).toList())
                     + "]";
         }
+    }
+
+    @Override
+    public String getReferenceName() {
+        return getReferenceName(true);
     }
 
     public IceType getInsideType() {

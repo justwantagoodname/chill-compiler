@@ -152,7 +152,7 @@ public class CompilerTest {
     }
 
     public static void compileSysySource(Testcase testcase, File output) throws InvocationTargetException, IllegalAccessException {
-        String[] args = {"-S", "-o", output.getAbsolutePath(), testcase.src.getAbsolutePath()};
+        String[] args = {"-S", "-o", output.getAbsolutePath(), testcase.src.getAbsolutePath(), "-fenable-ptr-type"};
         SY_COMPILER_MAIN.invoke(null, (Object) args);
     }
 

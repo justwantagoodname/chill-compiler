@@ -22,7 +22,7 @@ public class IceGlobalVariable extends IceConstant {
 
     @Override
     public void getTextIR(StringBuilder builder) {
-        builder.append(getReferenceName()).append(" = ")
+        builder.append(getReferenceName(false)).append(" = ")
                 .append(getType().asPointer().isConst() ? "constant " : "global ");
         if (getInitializer() != null) {
             getInitializer().getTextIR(builder);
