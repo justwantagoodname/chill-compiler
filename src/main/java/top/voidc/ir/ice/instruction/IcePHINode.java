@@ -3,6 +3,7 @@ package top.voidc.ir.ice.instruction;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.misc.Log;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 public class IcePHINode extends IceInstruction {
     record IcePHIBranch(IceBlock block, IceValue value) {};
     private List<IcePHIBranch> branches;
+    private IceValue valueToBeMerged;
 
 //    public IcePHINode(IceBlock parent, String name, IceType type, List<IceBlock> branches) {
 //        super(parent, name, type);
@@ -38,6 +40,14 @@ public class IcePHINode extends IceInstruction {
         }
 
         return false;
+    }
+
+    public IceValue getValueToBeMerged() {
+        return valueToBeMerged;
+    }
+
+    public void setValueToBeMerged(IceValue valueToBeMerged) {
+        this.valueToBeMerged = valueToBeMerged;
     }
 
     @Override

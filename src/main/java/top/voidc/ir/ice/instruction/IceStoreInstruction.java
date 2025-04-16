@@ -19,6 +19,11 @@ public class IceStoreInstruction extends IceInstruction {
         return getOperand(0);
     }
 
+    public void setTargetPtr(IceValue targetPtr) {
+        Log.should(targetPtr.getType().isPointer(), "store 目标指针类型设置错误");
+        setOperand(0, targetPtr);
+    }
+
     public IceValue getValue() {
         return getOperand(1);
     }

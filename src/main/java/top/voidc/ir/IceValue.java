@@ -45,6 +45,10 @@ public class IceValue {
         uses.add(user);
     }
 
+    public void removeUse(IceUser user) {
+        uses.remove(user);
+    }
+
     public Iterable<? extends IceUser> getUsers() {
         return uses;
     }
