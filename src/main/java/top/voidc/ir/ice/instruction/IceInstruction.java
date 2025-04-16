@@ -36,7 +36,8 @@ public class IceInstruction extends IceUser {
         AND,
         OR,
         XOR,
-        RET;
+        RET,
+        PHI;
 
         @Override
         public String toString() {
@@ -66,6 +67,7 @@ public class IceInstruction extends IceUser {
                 case OR -> "or";
                 case XOR -> "xor";
                 case NEG -> "neg";
+                case PHI -> "phi";
             };
         }
 

@@ -22,6 +22,10 @@ public class IceLoadInstruction extends IceInstruction {
         return getOperand(0);
     }
 
+    public void setSource(IceValue source) {
+        setOperand(0, source);
+    }
+
     @Override
     public void getTextIR(StringBuilder builder) {
         builder.append("%").append(getName()).append(" = ").append(getInstructionType()).append(" ")
