@@ -241,7 +241,7 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
      */
     @Override
     public IceBlock visitConstDecl(SysyParser.ConstDeclContext ctx) {
-        ctx.accept(new ConstDeclEmitter(context));
+        ctx.accept(new VarDeclEmitter(context, currentBlock));
         return currentBlock;
     }
 

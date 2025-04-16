@@ -4,6 +4,7 @@ import top.voidc.frontend.parser.SysyLexer;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.frontend.translator.IRGenerator;
 import top.voidc.ir.IceContext;
+import top.voidc.ir.IceUnit;
 import top.voidc.misc.AssemblyBuilder;
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
@@ -34,6 +35,7 @@ public class Compiler {
     }
 
     public void compile() throws IOException {
+        context.setCurrentIR(new IceUnit(Flag.get("source")));
         IRGenerator generator = new IRGenerator(context);
         parseLibSource(context);
         generator.generateIR();

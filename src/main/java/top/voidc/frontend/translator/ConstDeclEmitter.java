@@ -36,10 +36,6 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
         return constants;
     }
 
-    protected boolean isGlobalVarDecl(ParseTree ctx) {
-        return ctx instanceof SysyParser.DeclContext declCtx && declCtx.parent instanceof SysyParser.CompUnitContext;
-    }
-
     protected IceValue visitArrayInitValExp(SysyParser.ExpContext ctx, IceType targetType) {
         // 内部是一个表达式，这个表达式应该是一个常量表达式
         var constValue = ctx.accept(new ConstExpEvaluator(context));
@@ -78,17 +74,22 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
             visited.add(initValItem);
         }
         if (currentArraySize > 0) {
-            // 内部是一个数组，递归填充
-            final var subArrayType = ((IceArrayType) arrayDecl.getType()).getElementType();
-            if (subArrayType instanceof IceArrayType) {
-                final var nestedArray = new IceConstantArray((IceArrayType) subArrayType);
-                arrayDecl.addElement(nestedArray);
+            if (currentArraySize.equals(arraySize.get(depth))) {
+                // 一个没动 全零
+                arrayDecl.setZeroInit(true);
             } else {
-                // 以0填充
-                switch (arrayDecl.getInsideType().getTypeEnum()) {
-                    case I32 -> arrayDecl.addElement(IceConstantData.create(0), currentArraySize);
-                    case F32 -> arrayDecl.addElement(IceConstantData.create(0F), currentArraySize);
-                    default -> throw new IllegalStateException("Unexpected value: " + arrayDecl.getType());
+                final var subArrayType = ((IceArrayType) arrayDecl.getType()).getElementType();
+                if (subArrayType instanceof IceArrayType) {
+                    // 内部是一个数组，递归填充
+                    final var nestedArray = new IceConstantArray((IceArrayType) subArrayType);
+                    arrayDecl.addElement(nestedArray);
+                } else {
+                    // 以0填充
+                    switch (arrayDecl.getInsideType().getTypeEnum()) {
+                        case I32 -> arrayDecl.addElement(IceConstantData.create(0), currentArraySize);
+                        case F32 -> arrayDecl.addElement(IceConstantData.create(0F), currentArraySize);
+                        default -> throw new IllegalStateException("Unexpected value: " + arrayDecl.getType());
+                    }
                 }
             }
         }
@@ -162,7 +163,7 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
         }
         constValue.setName(name);
         context.getSymbolTable().put(constValue.getName(), constValue);
-        constants.add(constValue);
+//        constants.add(constValue); // 不用加入全局常量中
     }
 
     @Override

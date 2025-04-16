@@ -31,4 +31,12 @@ public abstract class IceConstantData extends IceConstant {
     public static IceConstantData create(boolean value) {
         return new IceConstantBoolean(value);
     }
+
+    public static IceConstantData create(char value) {
+        return new IceConstantByte((byte) value);
+    }
+
+    public static IceConstantData create(byte value) {
+        return new IceConstantByte(value);
+    }
 }

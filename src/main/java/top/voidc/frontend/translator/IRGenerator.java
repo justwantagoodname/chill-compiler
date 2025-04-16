@@ -38,7 +38,7 @@ public class IRGenerator extends SysyBaseVisitor<Void> {
 
     @Override
     public Void visitCompUnit(SysyParser.CompUnitContext ctx) {
-        final var unit = new IceUnit(Flag.get("source"));
+        final var unit = context.getCurrentIR();
 
         context.getSymbolTable().createScope("global");
 
@@ -57,7 +57,6 @@ public class IRGenerator extends SysyBaseVisitor<Void> {
                 unit.addFunction(externFunctionEmitter.getExternFunction());
             }
         }
-        context.setCurrentIR(unit);
         return null;
     }
 }

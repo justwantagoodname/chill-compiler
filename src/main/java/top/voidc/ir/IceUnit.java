@@ -43,9 +43,7 @@ public class IceUnit extends IceValue {
     public void getTextIR(StringBuilder builder) {
         builder.append("; ").append(this.getName()).append('\n');
 
-        globalVariables.stream()
-                .filter(globalVariable -> !(globalVariable instanceof IceConstantData))
-                .forEach(v -> {v.getTextIR(builder); builder.append('\n');});
+        globalVariables.forEach(v -> {v.getTextIR(builder); builder.append('\n');});
         functions.forEach(f -> {f.getTextIR(builder); builder.append('\n');});
     }
 }
