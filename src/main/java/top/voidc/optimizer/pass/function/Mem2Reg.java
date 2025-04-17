@@ -3,6 +3,7 @@ package top.voidc.optimizer.pass.function;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 
+import top.voidc.ir.ice.constant.IceUndef;
 import top.voidc.ir.ice.instruction.*;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.type.IcePtrType;
@@ -267,6 +268,8 @@ public class Mem2Reg implements Pass<IceFunction> {
         for (IceValue value : promotableValues) {
             insertPhi(value, target, dfTable);
             valueStack.put(value, new Stack<>());
+            IceType type = ((IcePtrType<?>) value.getType()).getPointTo();
+            valueStack.get(value).push(IceUndef.get(type));
         }
 
         // rename 中，每个 store, load 相当于为变量产生了一个别名
