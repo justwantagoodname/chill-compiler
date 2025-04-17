@@ -110,7 +110,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
                     }
                     case F32 -> {
                         // 生成非指令
-                        final var instr = new IceFcmpInstruction(block, IceCmpInstruction.CmpType.EQ,
+                        final var instr = new IceFcmpInstruction(block, IceCmpInstruction.CmpType.OEQ,
                                 innerValue, IceConstantData.create(0F));
                         block.addInstruction(instr);
                         return instr;

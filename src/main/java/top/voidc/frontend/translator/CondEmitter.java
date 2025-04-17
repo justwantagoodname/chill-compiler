@@ -32,7 +32,7 @@ public class CondEmitter extends ExpEmitter {
                 final var cmpInstr = switch (value.getType().getTypeEnum()) {
                     case I32 -> new IceIcmpInstruction(block, IceCmpInstruction.CmpType.NE, value,
                             IceConstantData.create(0));
-                    case F32 -> new IceFcmpInstruction(block, IceCmpInstruction.CmpType.NE, value,
+                    case F32 -> new IceFcmpInstruction(block, IceCmpInstruction.CmpType.ONE, value,
                             IceConstantData.create(0F));
                     default -> throw new CompilationException(
                             value.getType().toString() + "不能转换为布尔值", ctx, context);

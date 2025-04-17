@@ -201,7 +201,18 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
         if (ctx.exp() != null) {
             final var expEmitter = new ExpEmitter(context, currentBlock);
             final var retValue = expEmitter.visit(ctx.exp());
-            retInstruction = new IceRetInstruction(currentBlock, retValue);
+
+            if (!retValue.getType().equals(currentFunction.getReturnType())) {
+                if (!retValue.getType().isConvertibleTo(currentFunction.getReturnType())) {
+                    throw new CompilationException("返回值类型和函数返回类型不符合", ctx, context);
+                }
+                final var convRetValue =
+                        new IceConvertInstruction(currentBlock, currentFunction.getReturnType(), retValue);
+                currentBlock.addInstruction(convRetValue);
+                retInstruction = new IceRetInstruction(currentBlock, convRetValue);
+            } else {
+                retInstruction = new IceRetInstruction(currentBlock, retValue);
+            }
         } else {
             retInstruction = new IceRetInstruction(currentBlock);
         }
