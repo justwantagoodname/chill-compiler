@@ -8,6 +8,8 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * 代表了一个字面数组常量，但是里面的元素有可能不是常量可以是一个表达式的值
@@ -33,8 +35,8 @@ public class IceConstantArray extends IceConstantData {
         @Override
         public String toString() {
             if (repeat > 1) {
-                assert element.equals(IceConstantData.create(0));
-                return "[" + element + " x " + repeat + "] zeroinitializer";
+                assert element instanceof IceConstantInt constantInt && constantInt.getValue() == 0;
+                return IntStream.range(0, repeat).mapToObj(i -> element.toString()).collect(Collectors.joining(", "));
             }
             return element.toString();
         }
