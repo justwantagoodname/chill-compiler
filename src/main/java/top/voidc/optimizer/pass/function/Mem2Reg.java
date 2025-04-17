@@ -16,7 +16,7 @@ import java.util.*;
 
 /**
  * Memory to Register Promotion
- *
+ * <br>
  * This pass creates SSA IR, and promotes memory accesses to register accesses.
  * This pass will try to delete alloca instructions, and replace them with ice-ir registers.
  */
@@ -235,11 +235,9 @@ public class Mem2Reg implements Pass<IceFunction> {
             for (IceInstruction instr : successor.getInstructions()) {
                 // 所有 phi 指令都应当在 block 的开头
                 // 因此，如果遇到第一个不是 phi 指令的指令，则说明已经处理结束
-                if (!(instr instanceof IcePHINode)) {
+                if (!(instr instanceof IcePHINode phiNode)) {
                     break;
                 }
-
-                IcePHINode phiNode = (IcePHINode) instr;
 
                 // 如果当前 phi 指令的 valueToBeMerged 在 valueStack 中，则获取栈顶元素并添加到 phi 指令的参数中
                 if (valueStack.containsKey(phiNode.getValueToBeMerged())) {
