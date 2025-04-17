@@ -157,11 +157,7 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
     public IceConstantData visitNumber(SysyParser.NumberContext ctx) {
         final var literal = ctx.getText();
         if (ctx.IntConst() != null) {
-            if (literal.startsWith("0x") || literal.startsWith("0X")) {
-                return IceConstantData.create(Long.decode(literal));
-            } else {
-                return IceConstantData.create(Long.parseLong(literal));
-            }
+            return IceConstantData.create(Long.decode(literal));
         } else if (ctx.FloatConst() != null) {
             return IceConstantData.create(Double.parseDouble(literal));
         }
