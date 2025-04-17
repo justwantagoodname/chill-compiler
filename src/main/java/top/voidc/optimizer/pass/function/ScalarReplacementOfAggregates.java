@@ -111,7 +111,7 @@ public class ScalarReplacementOfAggregates implements Pass<IceFunction> {
 
                     // TODO: 如果做高维数组展开，这个地方可能要替换
                     // 由于 promotableList 中的 alloca 都只被静态使用，所以可以直接转换
-                    IceConstantInt arrayIndex = (IceConstantInt) gep.getOperand(1);
+                    IceConstantInt arrayIndex = (IceConstantInt) gep.getOperand(2);
                     IceValue newAlloca = newAllocaList.get((int) arrayIndex.getValue());
 
                     // gep 相当于设置了一个别名，因此将 gep 的别名设置为 newAlloca

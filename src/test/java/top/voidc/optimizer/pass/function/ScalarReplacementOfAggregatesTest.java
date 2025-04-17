@@ -80,7 +80,7 @@ public class ScalarReplacementOfAggregatesTest {
 
         IceBlock entry = function.getEntryBlock();
         IceInstruction arr = new IceAllocaInstruction(entry, "arr", new IceArrayType(IceType.I32, 10));
-        IceInstruction getPtr = new IceGEPInstruction(entry, arr, List.of(new IceConstantInt(3)));
+        IceInstruction getPtr = new IceGEPInstruction(entry, arr, List.of(new IceConstantInt(0), new IceConstantInt(3)));
         IceInstruction store = new IceStoreInstruction(entry, getPtr, new IceConstantInt(42));
         entry.addInstruction(arr);
         entry.addInstruction(getPtr);
@@ -88,7 +88,7 @@ public class ScalarReplacementOfAggregatesTest {
         entry.addSuccessor(function.getExitBlock());
 
         IceBlock exit = function.getExitBlock();
-        IceInstruction getPtr2 = new IceGEPInstruction(exit, arr, List.of(new IceConstantInt(3)));
+        IceInstruction getPtr2 = new IceGEPInstruction(exit, arr, List.of(new IceConstantInt(0), new IceConstantInt(3)));
         IceInstruction x = new IceLoadInstruction(exit, "x", getPtr2);
         IceInstruction ret = new IceRetInstruction(exit, x);
         exit.addInstruction(getPtr2);
