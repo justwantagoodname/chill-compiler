@@ -20,6 +20,7 @@ public class IcePHINode extends IceInstruction {
     }
 
     public void addBranch(IceBlock block, IceValue value) {
+        super.addOperand(value);
         branches.add(new IcePHIBranch(block, value));
     }
 
@@ -62,6 +63,17 @@ public class IcePHINode extends IceInstruction {
             IceBlock branch = branches.get(i).block();
             IceValue value = branches.get(i).value();
             builder.append("[ ").append(value.getReferenceName(false)).append(", ").append(branch.getReferenceName(false)).append(" ]");
+        }
+    }
+
+    @Override
+    public void replaceOperand(IceValue oldOperand, IceValue newOperand) {
+        super.replaceOperand(oldOperand, newOperand);
+        for (int i = 0; i < branches.size(); ++i) {
+            if (branches.get(i).value() == oldOperand) {
+                branches.set(i, new IcePHIBranch(branches.get(i).block(), newOperand));
+                return;
+            }
         }
     }
 }
