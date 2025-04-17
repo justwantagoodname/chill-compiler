@@ -204,4 +204,39 @@ public class Mem2RegTest {
             + "exit:\n" + "\tret i32 %z_ptr.2\n" + "\n" + "}";
         assertEquals(expected, actual.toString());
     }
+
+    private static IceFunction createFunctionRetValueNeverInitialized() {
+        IceFunction function = new IceFunction("testFunction");
+        function.setReturnType(IceType.I32);
+        IceBlock entry = function.getEntryBlock();
+        IceInstruction alloca = new IceAllocaInstruction(entry, "a", IceType.I32);
+        entry.addInstruction(alloca);
+        entry.addSuccessor(function.getExitBlock());
+        IceBlock exit = function.getExitBlock();
+        IceInstruction load = new IceLoadInstruction(exit, "val", alloca);
+        IceInstruction ret = new IceRetInstruction(exit, load);
+        exit.addInstruction(load);
+        exit.addInstruction(ret);
+        return function;
+    }
+
+    @Test
+    public void testFunctionRetValueNeverInitialized() {
+        IceFunction function = createFunctionRetValueNeverInitialized();
+        Mem2Reg pass = new Mem2Reg();
+
+        StringBuilder before = new StringBuilder();
+        function.getTextIR(before);
+
+        pass.run(function);
+
+        StringBuilder actual = new StringBuilder();
+        function.getTextIR(actual);
+
+        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
+
+        String expected = "define i32 @testFunction() {\n" + "entry:\n" + "exit:\n"
+            + "\tret i32 undef\n" + "\n" + "}";
+        assertEquals(expected, actual.toString());
+    }
 }
