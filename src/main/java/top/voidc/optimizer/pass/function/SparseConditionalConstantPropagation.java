@@ -122,18 +122,8 @@ class SCCPSolver {
     }
 
     private void processInstruction(IceInstruction inst) {
+        // 在此处处理 branch 指令，将下面语句注释，同时保留以备未来 debug
 //        if (inst instanceof IceBranchInstruction) return;
-
-        // 替换当前指令中的所有常量操作数
-//        List<IceValue> operands = inst.getOperandsList();
-//        for (int i = 0; i < operands.size(); ++i) {
-//            IceValue opr = inst.getOperand(i);
-//            ValueLatticeElement lat = getLattice(opr);
-//            if (lat.isConstant()) {
-//                IceConstant constant = lat.getConstant().orElseThrow();
-//                inst.replaceOperand(opr, constant);
-//            }
-//        }
 
         if (inst instanceof IceBinaryInstruction bin) {
             visitBin(bin);
