@@ -178,7 +178,7 @@ public class Mem2RegTest {
         StringBuilder actual = new StringBuilder();
         function.getTextIR(actual);
 
-//        Log.d("Before:\n" + before.toString() + "After:\n" + actual.toString());
+//        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
 
         String expected = "define i32 @example(i32 %x, i32 %y) {\n" + "entry:\n"
             + "\t%cmp = icmp sgt i32 %x, i32 0\n" + "\tbr i1 %cmp, label %then, label %else\n"
