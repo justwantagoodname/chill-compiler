@@ -23,6 +23,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
+          
+      - name: Install LLVM toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y llvm clang
 
       - name: Test with Maven
         run: mvn clean test --file pom.xml
@@ -49,4 +54,3 @@ jobs:
         with:
           name: html-test-report
           path: target/site/
-  

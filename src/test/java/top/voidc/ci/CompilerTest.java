@@ -167,7 +167,7 @@ public class CompilerTest {
 
         // 将opt输出通过管道传递给clang
         ProcessBuilder clangBuilder = new ProcessBuilder();
-        clangBuilder.command("clang", "-x", "ir", "-o", output.getAbsolutePath(), "-");
+        clangBuilder.command("clang", "-x", "ir", "-o", output.getAbsolutePath(), "-", "-Ltestcases/libsysy", "-lsysy");
         Process clangProcess = clangBuilder.start();
 
         // 将opt的输出连接到clang的输入
@@ -178,6 +178,11 @@ public class CompilerTest {
 
         int optExitCode = optProcess.waitFor();
         int clangExitCode = clangProcess.waitFor();
+
+        if (clangExitCode != 0) {
+            clangProcess.getErrorStream().transferTo(System.err);
+        }
+
 
         if (optExitCode != 0 || clangExitCode != 0) {
             throw new RuntimeException("Compilation failed: opt exit code = " + optExitCode + 
@@ -202,18 +207,34 @@ public class CompilerTest {
         
         Process process = builder.start();
         int exitCode = process.waitFor();
-        
+
         // 将返回值追加到输出文件
-        try (FileWriter fw = new FileWriter(result.getActualOutput(), true);
-             BufferedWriter bw = new BufferedWriter(fw)) {
-            if (result.getActualOutput().length() > 0) {
-                bw.newLine(); // 如果文件不为空，先添加换行
-            }
-            bw.write(String.valueOf(exitCode));
-        }
-        
+        appendCode(exitCode, result.getActualOutput());
+
         // 比较输出
         compareOutput(result);
+    }
+
+    public static void appendCode(int code, File file) throws IOException {
+        boolean endsWithNewline = true;
+
+        // 判断最后一个字符是否是 '\n'
+        if (file.exists() && file.length() > 0) {
+            try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+                raf.seek(file.length() - 1);
+                int lastByte = raf.read();
+                endsWithNewline = (lastByte == '\n');
+            }
+        }
+
+        // 追加写入 code（带换行）
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, true))) {
+            if (!endsWithNewline) {
+                writer.newLine();
+            }
+            writer.write(Integer.toString(code));
+            writer.newLine(); // 保持追加后仍是换行结尾
+        }
     }
     
     public static void compareOutput(TestResult result) throws IOException {
@@ -277,11 +298,11 @@ public class CompilerTest {
             compileToExecutable(result.getIrOutput(), result.getExecutableOutput());
             runExecutableAndCompare(result);
             
-            result.cleanup();
+//            result.cleanup();
         } catch (Exception e) {
             result.setStatus(ResultStatus.CE);
             fail("Compiling (" + testcase.src.getAbsolutePath()
-                    + ") failed on: " + e.getMessage());
+                    + ") failed on:\n " + e);
         }
     }
 }

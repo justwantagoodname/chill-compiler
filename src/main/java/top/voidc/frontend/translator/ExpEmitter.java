@@ -69,14 +69,14 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
 
     private IceValue visitUnaryExp(SysyParser.ExpContext ctx) {
         // 一元运算符
-        final var innerValue = visit(ctx.exp(0));
         switch (ctx.unaryOp.getText()) {
             case "+" -> {
                 // 一元加法什么也不做
-                return innerValue;
+                return visit(ctx.exp(0));
             }
             case "-" -> {
                 // 取负
+                final var innerValue = visit(ctx.exp(0));
                 switch (innerValue.getType().getTypeEnum()) {
                     case I32, F32 -> {
                         // 生成负数指令
@@ -100,6 +100,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
                 if (shouldUseInvertLogical(ctx)) {
                     return this.visitLogicNotExp(ctx);
                 }
+                final var innerValue = visit(ctx.exp(0));
                 switch (innerValue.getType().getTypeEnum()) {
                     case I32 -> {
                         // 生成非指令
@@ -110,7 +111,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
                     }
                     case F32 -> {
                         // 生成非指令
-                        final var instr = new IceFcmpInstruction(block, IceCmpInstruction.CmpType.EQ,
+                        final var instr = new IceFcmpInstruction(block, IceCmpInstruction.CmpType.OEQ,
                                 innerValue, IceConstantData.create(0F));
                         block.addInstruction(instr);
                         return instr;
@@ -204,11 +205,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         final var literal = ctx.getText();
 
         if (ctx.IntConst() != null) {
-            if (literal.startsWith("0x") || literal.startsWith("0X")) {
-                return IceConstantData.create(Long.decode(literal));
-            } else {
-                return IceConstantData.create(Long.parseLong(literal));
-            }
+            return IceConstantData.create(Long.decode(literal));
         } else if (ctx.FloatConst() != null) {
             return IceConstantData.create(Float.parseFloat(literal));
         }

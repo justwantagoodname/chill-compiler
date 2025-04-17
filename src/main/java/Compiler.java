@@ -4,9 +4,11 @@ import top.voidc.frontend.parser.SysyLexer;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.frontend.translator.IRGenerator;
 import top.voidc.ir.IceContext;
+import top.voidc.ir.IceUnit;
 import top.voidc.misc.AssemblyBuilder;
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
+import top.voidc.optimizer.PassManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,12 +36,18 @@ public class Compiler {
     }
 
     public void compile() throws IOException {
+        context.setCurrentIR(new IceUnit(Flag.get("source")));
         IRGenerator generator = new IRGenerator(context);
         parseLibSource(context);
         generator.generateIR();
 
         parseSource(context);
         generator.generateIR();
+
+        final var passManager = new PassManager(context);
+        passManager.scanPackage("top.voidc.optimizer.pass");
+
+        passManager.runAll();
 
         emitLLVM();
 

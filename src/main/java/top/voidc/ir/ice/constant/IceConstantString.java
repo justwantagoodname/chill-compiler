@@ -17,9 +17,9 @@ public class IceConstantString extends IceConstantArray {
         byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
         List<DataArrayElement> elements = new ArrayList<>();
         for (byte b : bytes) {
-            elements.add(new DataArrayElement(new IceConstantInt(b), 1));
+            elements.add(new DataArrayElement(new IceConstantByte(b), 1));
         }
-        elements.add(new DataArrayElement(new IceConstantInt(0), 1));
+        elements.add(new DataArrayElement(new IceConstantByte((byte) 0), 1));
         return elements;
     }
 
@@ -35,6 +35,7 @@ public class IceConstantString extends IceConstantArray {
     public IceConstantData castTo(IceType type) {
         return switch (type.getTypeEnum()) {
             case STRING -> this.clone();
+            case ARRAY -> (IceConstantArray) this.clone();
             default -> throw new IllegalStateException("Unexpected value: " + type);
         };
     }

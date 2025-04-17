@@ -41,9 +41,8 @@ public class IceConstantArray extends IceConstantData {
     }
 
     private final List<DataArrayElement> elements;
+
     private boolean zeroInit = false;
-    private boolean isPrivate = false;
-    private boolean isUnnamedAddr = false;
 
     public IceConstantArray(IceArrayType arrayType, List<DataArrayElement> elements) {
         super(arrayType);
@@ -91,12 +90,11 @@ public class IceConstantArray extends IceConstantData {
      */
     public List<IceValue> getFullElements() {
         final var result = new ArrayList<IceValue>();
-        if (zeroInit) {
+        if (isZeroInit()) {
             final var type = (IceArrayType) getType();
             for (int i = 0; i < type.getTotalSize(); i++) {
                 result.add(new IceConstantInt(0));
             }
-            return result;
         } else {
             assert elements != null;
             elements.forEach(e -> {
@@ -108,8 +106,8 @@ public class IceConstantArray extends IceConstantData {
                     }
                 }
             });
-            return result;
         }
+        return result;
     }
 
     public IceValue get(List<Integer> arrayRef) {
@@ -182,8 +180,9 @@ public class IceConstantArray extends IceConstantData {
     }
 
     private void getNonZeroElementsImpl(List<Integer> currentPos, List<ElementRecord> result) {
+        if (zeroInit) return;
         assert elements != null;
-        for (var i = 0; i < result.size(); i++) {
+        for (var i = 0; i < elements.size(); i++) {
             final var e = elements.get(i);
             if (e.element instanceof IceConstantArray) {
                 currentPos.add(i);
@@ -193,16 +192,20 @@ public class IceConstantArray extends IceConstantData {
                 final var currentIndex = new ArrayList<>(currentPos);
                 currentIndex.add(i);
                 if (e.element instanceof IceConstantData) {
-                    if (e.element instanceof IceConstantInt constantInt && constantInt.getValue() != 0) {;
-                        result.add(new ElementRecord(
-                                constantInt.clone(),
-                                currentIndex
-                        ));
-                    } else if (e.element instanceof IceConstantFloat constantFloat && constantFloat.getValue() != 0) {
-                        result.add(new ElementRecord(
-                                constantFloat.clone(),
-                                currentIndex
-                        ));
+                    if (e.element instanceof IceConstantInt constantInt) {
+                        if (constantInt.getValue() != 0) {
+                            result.add(new ElementRecord(
+                                    constantInt.clone(),
+                                    currentIndex
+                            ));
+                        }
+                    } else if (e.element instanceof IceConstantFloat constantFloat) {
+                        if (constantFloat.getValue() != 0) {
+                            result.add(new ElementRecord(
+                                    constantFloat.clone(),
+                                    currentIndex
+                            ));
+                        }
                     } else {
                         throw new IllegalStateException("Unexpected value: " + e.element);
                     }
@@ -240,26 +243,13 @@ public class IceConstantArray extends IceConstantData {
         return zeroInit;
     }
 
-    public boolean isPrivate() {
-        return isPrivate;
+    public void setZeroInit(boolean zeroInit) {
+        this.zeroInit = zeroInit;
     }
-
-    public void setPrivate(boolean aPrivate) {
-        isPrivate = aPrivate;
-    }
-
-    public boolean isUnnamedAddr() {
-        return isUnnamedAddr;
-    }
-
-    public void setUnnamedAddr(boolean unnamedAddr) {
-        isUnnamedAddr = unnamedAddr;
-    }
-
 
     @Override
     public String getReferenceName(boolean withType) {
-        if (zeroInit) {
+        if (isZeroInit()) {
             return (withType ? getType() : "") + " zeroinitializer";
         } else {
             assert elements != null;
