@@ -4,10 +4,8 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
-import top.voidc.ir.ice.instruction.IceBinaryInstruction;
-import top.voidc.ir.ice.instruction.IceInstruction;
+import top.voidc.ir.ice.instruction.*;
 import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
-import top.voidc.ir.ice.instruction.IceRetInstruction;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.Log;
 
@@ -23,7 +21,13 @@ public class SparseConditionalConstantPropagationTest {
         IceBlock exit = function.getExitBlock();
         IceInstruction add = new IceBinaryInstruction(entry, InstructionType.ADD, "add", IceType.I32,
                 new IceConstantInt(1), new IceConstantInt(2));
+        IceInstruction icmp1 = new IceIcmpInstruction(entry, IceIcmpInstruction.CmpType.EQ,
+                new IceConstantInt(1), new IceConstantInt(2));
+        IceInstruction icmp2 = new IceIcmpInstruction(entry, IceIcmpInstruction.CmpType.EQ,
+                new IceConstantInt(3), new IceConstantInt(3));
         entry.addInstruction(add);
+        entry.addInstruction(icmp1);
+        entry.addInstruction(icmp2);
         entry.addSuccessor(exit);
 
         IceInstruction ret = new IceRetInstruction(exit, add);
