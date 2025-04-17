@@ -225,7 +225,7 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
         } else {
             switch (varType.getTypeEnum()) {
                 case I32 -> globalVarDecl.setInitializer(IceConstantData.create(0));
-                case F32 -> globalVarDecl.setInitializer(IceConstantData.create(0.0));
+                case F32 -> globalVarDecl.setInitializer(IceConstantData.create(0.0F));
                 default -> throw new IllegalStateException("Unexpected value: " + varType);
             }
         }
