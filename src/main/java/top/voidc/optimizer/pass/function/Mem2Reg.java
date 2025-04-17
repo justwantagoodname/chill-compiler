@@ -140,11 +140,6 @@ public class Mem2Reg implements Pass<IceFunction> {
     // 重命名计数器
     private static int renameCounter = 0;
 
-    // 版本对
-    // 用来存储 rename 阶段对每个 block 中最后一次使用 value 的具体 instance
-    // 用于 Hashtable 的 key
-    private record VersionPair(IceBlock block, IceValue value) {}
-
     private static IceValue createNewName(IceValue value) {
         String newName = value.getName() + "." + renameCounter++;
         // 这里需要注意的是，value.getType() 返回的是指针类型
