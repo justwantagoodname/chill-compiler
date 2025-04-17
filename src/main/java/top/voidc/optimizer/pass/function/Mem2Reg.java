@@ -1,5 +1,6 @@
 package top.voidc.optimizer.pass.function;
 
+import javassist.tools.reflect.Compiler;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 
@@ -10,8 +11,10 @@ import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.type.IceArrayType;
 
+import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.optimizer.pass.DominatorTree;
-import top.voidc.optimizer.pass.Pass;
+
+import top.voidc.misc.annotation.Pass;
 
 import java.util.*;
 
@@ -21,7 +24,8 @@ import java.util.*;
  * This pass creates SSA IR, and promotes memory accesses to register accesses.
  * This pass will try to delete alloca instructions, and replace them with ice-ir registers.
  */
-public class Mem2Reg implements Pass<IceFunction> {
+@Pass
+public class Mem2Reg implements CompilePass<IceFunction> {
     /**
      * Create a dominance frontier table for the given function.
      * <br>
@@ -260,6 +264,7 @@ public class Mem2Reg implements Pass<IceFunction> {
 
     @Override
     public void run(IceFunction target) {
+        renameCounter = 0;
         ArrayList<IceValue> promotableValues = createPromotableList(target);
         DominatorTree domTree = new DominatorTree(target);
         Hashtable<IceBlock, ArrayList<IceBlock>> dfTable = createDominanceFrontierTable(target, domTree);
@@ -286,5 +291,10 @@ public class Mem2Reg implements Pass<IceFunction> {
                 throw new RuntimeException("Unexpected value type when removing alloca in mem2reg: " + value.getClass());
             }
         }
+    }
+
+    @Override
+    public String getName() {
+        return "Mem2Reg";
     }
 }

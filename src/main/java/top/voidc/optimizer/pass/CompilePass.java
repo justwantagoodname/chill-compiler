@@ -1,7 +1,7 @@
 package top.voidc.optimizer.pass;
 
-public interface CompilePass {
+public interface CompilePass <T> {
     String getName();
 
-    void run();
+    void run(T target);
 }

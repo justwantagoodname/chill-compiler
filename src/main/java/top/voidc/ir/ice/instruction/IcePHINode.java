@@ -60,7 +60,7 @@ public class IcePHINode extends IceInstruction {
 
             IceBlock branch = branches.get(i).block();
             IceValue value = branches.get(i).value();
-            builder.append("[ ").append(value.getReferenceName()).append(", ").append(branch.getReferenceName()).append(" ]");
+            builder.append("[ ").append(value.getReferenceName(false)).append(", ").append(branch.getReferenceName(false)).append(" ]");
         }
     }
 }
