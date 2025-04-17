@@ -32,10 +32,20 @@ public class Mem2RegTest {
         IceFunction function = createOneBlockFunction();
         Mem2Reg pass = new Mem2Reg();
 
-        StringBuilder sb = new StringBuilder();
-        function.getTextIR(sb);
-        System.out.println(sb);
+//        StringBuilder before = new StringBuilder();
+//        function.getTextIR(before);
+
         pass.run(function);
+
+        StringBuilder actual = new StringBuilder();
+        function.getTextIR(actual);
+
+//        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
+
+        // Check if the alloca instructions are removed
+        String expected = "define void @testFunction() {\n" + "entry:\n"
+            + "\t%d = alloca [10 x i32]\n" + "\n" + "}";
+        assertEquals(expected, actual.toString());
     }
 
     public static IceFunction createThreeBlocksFunction() {
