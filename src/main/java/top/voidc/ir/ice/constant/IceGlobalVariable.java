@@ -6,6 +6,9 @@ import top.voidc.ir.ice.type.IceType;
 public class IceGlobalVariable extends IceConstant {
 
     private IceConstantData initializer;
+    private boolean isPrivate = false;
+    private boolean isUnnamedAddr = false;
+
 
     public IceGlobalVariable(String name, IceType type, IceConstantData initializer) {
         super(name, new IcePtrType<>(type));
@@ -29,5 +32,21 @@ public class IceGlobalVariable extends IceConstant {
         } else {
             builder.append(getType()).append(" zeroinitializer");
         }
+    }
+
+    public boolean isPrivate() {
+        return isPrivate;
+    }
+
+    public void setPrivate(boolean aPrivate) {
+        isPrivate = aPrivate;
+    }
+
+    public boolean isUnnamedAddr() {
+        return isUnnamedAddr;
+    }
+
+    public void setUnnamedAddr(boolean unnamedAddr) {
+        isUnnamedAddr = unnamedAddr;
     }
 }

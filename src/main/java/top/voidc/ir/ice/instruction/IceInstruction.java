@@ -25,8 +25,11 @@ public class IceInstruction extends IceUser {
         BINARY,
         NEG,
         ADD,
+        FADD,
         SUB,
+        FSUB,
         MUL,
+        FMUL,
         DIV,
         SDIV,
         FDIV,
@@ -55,12 +58,15 @@ public class IceInstruction extends IceUser {
                 case STORE -> "store";
                 case BINARY -> "binary";
                 case ADD -> "add";
+                case FADD -> "fadd";
                 case SUB -> "sub";
+                case FSUB -> "fsub";
                 case MUL -> "mul";
+                case FMUL -> "fmul";
                 case DIV -> "div";
                 case SDIV -> "sdiv";
                 case FDIV -> "fdiv";
-                case MOD -> "mod";
+                case MOD -> "srem";
                 case SHL -> "shl";
                 case SHR -> "shr";
                 case AND -> "and";
@@ -95,7 +101,7 @@ public class IceInstruction extends IceUser {
     }
 
     public IceInstruction(IceBlock parent, IceType type) {
-        super(parent.getFunction().generateLocalValueName(), type);
+        super(type.isVoid() ? null : parent.getFunction().generateLocalValueName(), type);
         this.parent = parent;
     }
 

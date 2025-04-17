@@ -22,6 +22,24 @@ public class IceBinaryInstruction extends IceInstruction {
                     case F32 -> setInstructionType(InstructionType.FDIV);
                 }
             }
+            case ADD -> {
+                switch (lhs.getType().getTypeEnum()) {
+                    case I32 -> setInstructionType(InstructionType.ADD);
+                    case F32 -> setInstructionType(InstructionType.FADD);
+                }
+            }
+            case SUB -> {
+                switch (lhs.getType().getTypeEnum()) {
+                    case I32 -> setInstructionType(InstructionType.SUB);
+                    case F32 -> setInstructionType(InstructionType.SUB);
+                }
+            }
+            case MUL -> {
+                switch (lhs.getType().getTypeEnum()) {
+                    case I32 -> setInstructionType(InstructionType.MUL);
+                    case F32 -> setInstructionType(InstructionType.FMUL);
+                }
+            }
             default -> setInstructionType(op);
         }
         addOperand(lhs);
@@ -39,6 +57,24 @@ public class IceBinaryInstruction extends IceInstruction {
                 switch (lhs.getType().getTypeEnum()) {
                     case I32 -> setInstructionType(InstructionType.SDIV);
                     case F32 -> setInstructionType(InstructionType.FDIV);
+                }
+            }
+            case ADD -> {
+                switch (lhs.getType().getTypeEnum()) {
+                    case I32 -> setInstructionType(InstructionType.ADD);
+                    case F32 -> setInstructionType(InstructionType.FADD);
+                }
+            }
+            case SUB -> {
+                switch (lhs.getType().getTypeEnum()) {
+                    case I32 -> setInstructionType(InstructionType.SUB);
+                    case F32 -> setInstructionType(InstructionType.FSUB);
+                }
+            }
+            case MUL -> {
+                switch (lhs.getType().getTypeEnum()) {
+                    case I32 -> setInstructionType(InstructionType.MUL);
+                    case F32 -> setInstructionType(InstructionType.FMUL);
                 }
             }
             default -> setInstructionType(op);

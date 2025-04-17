@@ -5,10 +5,7 @@ import top.voidc.frontend.translator.exception.CompilationException;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.constant.IceConstantArray;
-import top.voidc.ir.ice.constant.IceConstantData;
-import top.voidc.ir.ice.constant.IceConstantInt;
-import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.constant.*;
 import top.voidc.ir.ice.instruction.*;
 import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.type.IcePtrType;
@@ -36,36 +33,6 @@ public class VarDeclEmitter extends ConstDeclEmitter {
     /**
      * 常量直接变字面量
      */
-    @Override
-    protected void visitConstSingleDef(SysyParser.ConstDefContext ctx) {
-        final var constType = getConstType(ctx);
-        final var name = ctx.Ident().getText();
-        final var constExp = ctx.initVal().exp();
-
-        final var constStackPtr = new IceAllocaInstruction(
-                currentFunction.getEntryBlock(), constType);
-
-        ((IcePtrType<?>) constStackPtr.getType()).setConst(true);
-
-        // 首先在栈上分配空间
-        currentFunction.getEntryBlock().addInstruction(constStackPtr);
-
-        if (constExp != null) {
-            var initValue = constExp.accept(new ExpEmitter(context, currentBlock));
-            if (!initValue.getType().equals(constType)) {
-                if (!initValue.getType().isConvertibleTo(constType)) {
-                    throw new CompilationException("Cannot convert " + initValue.getType() + " to " + constType,
-                            ctx, context);
-                }
-                initValue = new IceConvertInstruction(
-                        currentFunction.getEntryBlock(),
-                        constType, initValue);
-            }
-            final var store = new IceStoreInstruction(currentBlock, constStackPtr, initValue);
-            currentBlock.addInstruction(store);
-        }
-        context.getSymbolTable().put(name, constStackPtr);
-    }
 
     @Override
     protected IceValue visitArrayInitValExp(SysyParser.ExpContext ctx, IceType targetType) {
@@ -94,7 +61,7 @@ public class VarDeclEmitter extends ConstDeclEmitter {
                 currentFunction.getEntryBlock(), varType);
 
         // 首先在栈上分配空间
-        currentFunction.getEntryBlock().addInstruction(varStackPtr);
+        currentFunction.getEntryBlock().addInstructionsAtFront(varStackPtr);
 
         if (ctx.initVal() != null) {
             var initValue = ctx.initVal().exp().accept(new ExpEmitter(context, currentBlock));
@@ -126,7 +93,7 @@ public class VarDeclEmitter extends ConstDeclEmitter {
                 currentFunction.getEntryBlock(), arrayType);
         ((IcePtrType<?>)varStackPtr.getType()).setConst(true);
 
-        currentFunction.getEntryBlock().addInstruction(varStackPtr);
+        currentFunction.getEntryBlock().addInstructionsAtFront(varStackPtr);
 
         handleArrayInit(varStackPtr, arraySize, ctx.initVal());
 
@@ -143,7 +110,7 @@ public class VarDeclEmitter extends ConstDeclEmitter {
         // 在栈上分配空间
         final var varStackPtr = new IceAllocaInstruction(
                 currentFunction.getEntryBlock(), arrayType);
-        currentFunction.getEntryBlock().addInstruction(varStackPtr);
+        currentFunction.getEntryBlock().addInstructionsAtFront(varStackPtr);
 
         if (ctx.initVal() != null) handleArrayInit(varStackPtr, arraySize, ctx.initVal());
 
@@ -165,23 +132,41 @@ public class VarDeclEmitter extends ConstDeclEmitter {
 
         final var arrayByteSize = arrayShapeType.getTotalSize() * arrayShapeType.getElementType().getByteSize();
 
+        final var nonZeroElements = initArray.getNonZeroElements();
+        final var isConstInit = nonZeroElements.stream().allMatch(elem -> elem.value() instanceof IceConstantData);
+
         // 这个只是一个容器，真正初始化由 memcpy 和 gep 完成
-        if (initArray.isZeroInit()) {
+        if (nonZeroElements.isEmpty()) {
             final var instr = new IceIntrinsicInstruction(
                     currentBlock,
                     IceType.VOID,
                     IceIntrinsicInstruction.MEMSET,
                     List.of(arrayPtr,
-                            IceConstantData.create(0),
-                            IceConstantData.create(arrayByteSize))
+                            IceConstantData.create((byte) 0),
+                            IceConstantData.create(arrayByteSize),
+                            IceConstantData.create(false)
+                    )
             );
             currentBlock.addInstruction(instr);
-        } else if (initArray.isConst() && arrayByteSize < COPY_THRESHOLD) {
-            // 使用 memcpy
-            initArray.setName("__const." + currentFunction.getName() + "." + arrayPtr.getName());
-            initArray.setPrivate(true);
-            initArray.setUnnamedAddr(true);
-            context.getCurrentIR().addGlobalDecl(initArray);
+        } else if (isConstInit && arrayByteSize <= COPY_THRESHOLD) {
+            // 全常量数组 使用 memcpy
+            final var globalCopyArray = new IceGlobalVariable(
+                    "__const." + currentFunction.getName() + "." + arrayPtr.getName(),
+                    arrayShapeType, initArray);
+            globalCopyArray.setPrivate(true);
+            globalCopyArray.setUnnamedAddr(true);
+
+            context.getCurrentIR().addGlobalDecl(globalCopyArray);
+
+            final var memcpyInstr = new IceIntrinsicInstruction(currentBlock, IceType.VOID, IceIntrinsicInstruction.MEMCPY,
+                                            List.of(
+                                                    arrayPtr, // dst
+                                                    globalCopyArray, // src
+                                                    IceConstantData.create(arrayByteSize),
+                                                    IceConstantData.create(false)
+                                            ));
+            currentBlock.addInstruction(memcpyInstr);
+
         } else {
             // memset + GEP + store
             final var instr = new IceIntrinsicInstruction(
@@ -189,12 +174,14 @@ public class VarDeclEmitter extends ConstDeclEmitter {
                     IceType.VOID,
                     IceIntrinsicInstruction.MEMSET,
                     List.of(arrayPtr,
-                            IceConstantData.create(0),
-                            IceConstantData.create(arrayByteSize))
+                            IceConstantData.create((byte) 0),
+                            IceConstantData.create(arrayByteSize),
+                            IceConstantData.create(false)
+                    )
             );
             currentBlock.addInstruction(instr);
 
-            initArray.getNonZeroElements().forEach(
+            nonZeroElements.forEach(
                     elementRecord -> {
                         final var iceValueIndices = new ArrayList<>(elementRecord.position().stream().map(
                                 index -> (IceValue) IceConstantData.create(index)
