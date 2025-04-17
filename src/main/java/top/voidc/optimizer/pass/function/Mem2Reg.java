@@ -152,8 +152,6 @@ public class Mem2Reg implements Pass<IceFunction> {
         // 本层递归中，每种变量的 store 数量计数器
         Hashtable<IceValue, Integer> defCounter = new Hashtable<>();
 
-
-
         List<IceInstruction> blockInstructions = block.getInstructions();
         for (int index = 0; index < blockInstructions.size(); ++index) {
             IceInstruction instr = blockInstructions.get(index);
