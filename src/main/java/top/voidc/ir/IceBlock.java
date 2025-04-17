@@ -33,6 +33,10 @@ public class IceBlock extends IceUser {
         instructions.add(instruction);
     }
 
+    public void removeInstruction(IceInstruction instruction) {
+        instructions.remove(instruction);
+    }
+
     public void addInstructionAtFront(IceInstruction instruction) {
         this.instructions.add(0, instruction);
     }
