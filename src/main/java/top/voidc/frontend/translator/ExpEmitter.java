@@ -69,14 +69,14 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
 
     private IceValue visitUnaryExp(SysyParser.ExpContext ctx) {
         // 一元运算符
-        final var innerValue = visit(ctx.exp(0));
         switch (ctx.unaryOp.getText()) {
             case "+" -> {
                 // 一元加法什么也不做
-                return innerValue;
+                return visit(ctx.exp(0));
             }
             case "-" -> {
                 // 取负
+                final var innerValue = visit(ctx.exp(0));
                 switch (innerValue.getType().getTypeEnum()) {
                     case I32, F32 -> {
                         // 生成负数指令
@@ -100,6 +100,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
                 if (shouldUseInvertLogical(ctx)) {
                     return this.visitLogicNotExp(ctx);
                 }
+                final var innerValue = visit(ctx.exp(0));
                 switch (innerValue.getType().getTypeEnum()) {
                     case I32 -> {
                         // 生成非指令
