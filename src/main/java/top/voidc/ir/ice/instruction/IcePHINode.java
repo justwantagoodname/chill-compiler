@@ -13,23 +13,24 @@ public class IcePHINode extends IceInstruction {
     private List<IcePHIBranch> branches;
     private IceValue valueToBeMerged;
 
-//    public IcePHINode(IceBlock parent, String name, IceType type, List<IceBlock> branches) {
-//        super(parent, name, type);
-//        setInstructionType(InstructionType.PHI);
-//        this.branches = branches;
-//    }
-
     public IcePHINode(IceBlock parent, String name, IceType type) {
         super(parent, name, type);
         setInstructionType(InstructionType.PHI);
         this.branches = new ArrayList<>();
     }
 
-//    public List<IcePHIBranch> getBranches() {
-//        return branches;
-//    }
     public void addBranch(IceBlock block, IceValue value) {
         branches.add(new IcePHIBranch(block, value));
+    }
+
+    public IceValue getIncomingValue(IceBlock block) {
+        for (IcePHIBranch b : branches) {
+            if (b.block() == block) {
+                return b.value();
+            }
+        }
+
+        throw new RuntimeException("PHI node does not have incoming value for block: " + block.getName());
     }
 
     public boolean containsBranch(IceBlock branch) {
