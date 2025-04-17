@@ -8,6 +8,7 @@ import top.voidc.frontend.translator.exception.CompilationException;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceConstantArray;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceGlobalVariable;
@@ -343,6 +344,60 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         return gepInstr;
     }
 
+    private IceValue handleVariableAccess(SysyParser.LValContext ctx, IceValue targetVariable) {
+        if (isInAssignStmt(ctx)) {
+            // 在赋值的左边，直接返回指针
+            return targetVariable;
+        } else {
+            // 其他情况，加载ptr指向的变量
+            final var loadInstr = new IceLoadInstruction(block, targetVariable);
+            block.addInstruction(loadInstr);
+            return loadInstr;
+        }
+    }
+
+    /**
+     * 判断一个 IceValue到底是不是数组
+     * 传入的一定是一个指针
+     * 数组有全局/栈上/参数
+     */
+    private boolean isArrayType(IceValue targetVariable) {
+        Log.should(targetVariable.getType().isPointer(), "传入的不是指针！");
+        if (targetVariable.getType() instanceof IcePtrType<?> variablePointer) {
+            return variablePointer.getPointTo().isArray() // 指向数组的指针 全局/栈上数组
+                    || variablePointer.getPointTo().isPointer(); // 二级指针 是参数数组
+        }
+        return false; // 只是普通变量
+    }
+
+    private boolean isParamArrayType(IceValue targetVariable) {
+        Log.should(targetVariable.getType().isPointer(), "传入的不是指针！");
+        if (targetVariable.getType() instanceof IcePtrType<?> variablePointer) {
+            return variablePointer.getPointTo().isPointer(); // 二级指针 是参数数组
+        }
+        return false;
+    }
+
+    private IceType getParamType(SysyParser.LValContext ctx) {
+        ParserRuleContext cur = ctx;
+        SysyParser.ExpContext param = null;
+        while (cur.getParent() != null) {
+            if (cur instanceof SysyParser.ExpContext expContext) param = expContext;
+
+            if (cur instanceof SysyParser.FuncCallContext funcCallContext) {
+                final var funcName = funcCallContext.Ident().getText();
+                final var function = context.getSymbolTable().getFunction(funcName)
+                        .orElseThrow(() -> new CompilationException("找不到函数" + funcName, ctx, context));
+
+                final var paramIndex = funcCallContext.funcRParams().exp().indexOf(param);
+                return function.getParameterTypes().get(paramIndex);
+            }
+
+            cur = cur.getParent();
+        }
+        throw new CompilationException("编译器内部错误", ctx, context);
+    }
+
     /**
      * 解析对于变量的访问
      * 需要决定是值还是指针
@@ -364,17 +419,30 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         // 确保目标变量是指针类型
         Log.should(targetVariable.getType().isPointer(), "目标变量 " + targetVariable.getName() + " 不是指针类型");
 
-        // 处理数组访问
+        // 处理数组和变量访问
+
+        // 没有数组下标访问 有可能是变量也有可能是对数组的引用
         if (ctx.exp().isEmpty()) {
-            // 没有数组下标访问
-            if (isInAssignStmt(ctx)) {
-                // 在赋值的左边，直接返回指针
-                return targetVariable;
+            if (isArrayType(targetVariable)) {
+                if (isInFuncCall(ctx)) {
+                    final var funcParamType = getParamType(ctx);
+                    if (!funcParamType.isPointer()) {
+                        throw new CompilationException("参数与类型不匹配", ctx, context);
+                    }
+                    if (isParamArrayType(targetVariable)) {
+                        // 先加载在栈上的指针
+                        final var loadInstr = new IceLoadInstruction(block, targetVariable);
+                        block.addInstruction(loadInstr);
+                        return loadInstr;
+                    } else {
+                        // 直接返回指针
+                        return targetVariable;
+                    }
+                } else {
+                    throw new CompilationException("raw use of " + targetVariable.getName(), ctx, context);
+                }
             } else {
-                // 其他情况，加载ptr指向的变量
-                final var loadInstr = new IceLoadInstruction(block, targetVariable);
-                block.addInstruction(loadInstr);
-                return loadInstr;
+                return handleVariableAccess(ctx, targetVariable);
             }
         }
 
@@ -387,7 +455,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         if (targetVariable instanceof IceGlobalVariable) {
             // 全局数组：[i32 x N]*类型，直接用GEP，需要第一个0偏移
             final var gepInstr = handleArrayAccess(name, arrayPtr, ctx, true);
-            if (isInAssignStmt(ctx)) {
+            if (isInAssignStmt(ctx) || (isInFuncCall(ctx) && getParamType(ctx).isPointer())) {
                 return gepInstr;
             } else {
                 final var loadInstr = new IceLoadInstruction(block, gepInstr);
@@ -402,7 +470,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
                 arrayPtr = loadInstr;
                 
                 final var gepInstr = handleArrayAccess(name, arrayPtr, ctx, false);
-                if (isInAssignStmt(ctx)) {
+                if (isInAssignStmt(ctx) || (isInFuncCall(ctx) && getParamType(ctx).isPointer())) {
                     return gepInstr;
                 } else {
                     final var finalLoadInstr = new IceLoadInstruction(block, gepInstr);
@@ -412,7 +480,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
             } else if (arrayPtrType.getPointTo().isArray()) {
                 // 栈上数组：[i32 x N]*类型，直接用GEP，需要第一个0偏移
                 final var gepInstr = handleArrayAccess(name, arrayPtr, ctx, true);
-                if (isInAssignStmt(ctx)) {
+                if (isInAssignStmt(ctx) || (isInFuncCall(ctx) && getParamType(ctx).isPointer())) {
                     return gepInstr;
                 } else {
                     final var loadInstr = new IceLoadInstruction(block, gepInstr);
