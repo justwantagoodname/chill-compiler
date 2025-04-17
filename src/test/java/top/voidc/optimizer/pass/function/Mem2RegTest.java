@@ -67,16 +67,15 @@ public class Mem2RegTest {
         IceFunction function = createThreeBlocksFunction();
         Mem2Reg pass = new Mem2Reg();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("Before:\n");
-        function.getTextIR(sb);
+//        StringBuilder before = new StringBuilder();
+//        function.getTextIR(before);
 
         pass.run(function);
 
-        sb.append("\nAfter:\n");
-        function.getTextIR(sb);
+        StringBuilder actual = new StringBuilder();
+        function.getTextIR(actual);
 
-        System.out.println(sb);
+//        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
 
         // Check if the alloca instruction is removed
         assertEquals(0, function.getEntryBlock().getInstructions().size());
