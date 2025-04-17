@@ -2,7 +2,6 @@ package top.voidc.optimizer.pass.function;
 
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.constant.IceConstant;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
@@ -10,6 +9,8 @@ import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
 import top.voidc.ir.ice.instruction.IceCmpInstruction.CmpType;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.type.IceArrayType;
+
+import top.voidc.misc.Log;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,10 +32,20 @@ public class Mem2RegTest {
         IceFunction function = createOneBlockFunction();
         Mem2Reg pass = new Mem2Reg();
 
-        StringBuilder sb = new StringBuilder();
-        function.getTextIR(sb);
-        System.out.println(sb);
+//        StringBuilder before = new StringBuilder();
+//        function.getTextIR(before);
+
         pass.run(function);
+
+        StringBuilder actual = new StringBuilder();
+        function.getTextIR(actual);
+
+//        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
+
+        // Check if the alloca instructions are removed
+        String expected = "define void @testFunction() {\n" + "entry:\n"
+            + "\t%d = alloca [10 x i32]\n" + "\n" + "}";
+        assertEquals(expected, actual.toString());
     }
 
     public static IceFunction createThreeBlocksFunction() {
@@ -66,16 +77,15 @@ public class Mem2RegTest {
         IceFunction function = createThreeBlocksFunction();
         Mem2Reg pass = new Mem2Reg();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("Before:\n");
-        function.getTextIR(sb);
+//        StringBuilder before = new StringBuilder();
+//        function.getTextIR(before);
 
         pass.run(function);
 
-        sb.append("\nAfter:\n");
-        function.getTextIR(sb);
+        StringBuilder actual = new StringBuilder();
+        function.getTextIR(actual);
 
-        System.out.println(sb);
+//        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
 
         // Check if the alloca instruction is removed
         assertEquals(0, function.getEntryBlock().getInstructions().size());
@@ -83,6 +93,7 @@ public class Mem2RegTest {
 
     private static IceFunction createComplexPhiFunction() {
         IceFunction function = new IceFunction("example");
+        function.setReturnType(IceType.I32);
         IceValue x = new IceValue("x", IceType.I32);
         IceValue y = new IceValue("y", IceType.I32);
         function.addParameter(x);
@@ -95,6 +106,7 @@ public class Mem2RegTest {
         IceBlock loopBlock = new IceBlock(function, "loop");
         IceBlock loopBodyBlock = new IceBlock(function, "loop_body");
         IceBlock afterLoopBlock = new IceBlock(function, "after_loop");
+        IceBlock exit = function.getExitBlock();
 
         // entry:
         IceInstruction z_ptr = new IceAllocaInstruction(entry, "z_ptr", IceType.I32);
@@ -105,8 +117,6 @@ public class Mem2RegTest {
         entry.addInstruction(i_ptr);
         entry.addInstruction(cmp);
         entry.addInstruction(outEntry);
-        entry.addSuccessor(thenBlock);
-        entry.addSuccessor(elseBlock);
 
         // then:
         IceInstruction add = new IceBinaryInstruction(thenBlock, InstructionType.ADD, "add", IceType.I32, x, y);
@@ -115,7 +125,6 @@ public class Mem2RegTest {
         thenBlock.addInstruction(add);
         thenBlock.addInstruction(store);
         thenBlock.addInstruction(outThen);
-        thenBlock.addSuccessor(ifEndBlock);
 
         // else:
         IceInstruction sub = new IceBinaryInstruction(elseBlock, InstructionType.SUB, "sub", IceType.I32, x, y);
@@ -124,14 +133,12 @@ public class Mem2RegTest {
         elseBlock.addInstruction(sub);
         elseBlock.addInstruction(store2);
         elseBlock.addInstruction(outElse);
-        elseBlock.addSuccessor(ifEndBlock);
 
         // ifend:
         IceInstruction store3 = new IceStoreInstruction(ifEndBlock, i_ptr, new IceConstantInt(0));
         IceInstruction outIfEnd = new IceBranchInstruction(ifEndBlock, loopBlock);
         ifEndBlock.addInstruction(store3);
         ifEndBlock.addInstruction(outIfEnd);
-        ifEndBlock.addSuccessor(loopBlock);
 
         // loop:
         IceInstruction i_val = new IceLoadInstruction(loopBlock, "i_val", i_ptr);
@@ -140,8 +147,6 @@ public class Mem2RegTest {
         loopBlock.addInstruction(i_val);
         loopBlock.addInstruction(cond);
         loopBlock.addInstruction(outLoop);
-        loopBlock.addSuccessor(loopBodyBlock);
-        loopBlock.addSuccessor(afterLoopBlock);
 
         // loop_body:
         IceInstruction z_val = new IceLoadInstruction(loopBodyBlock, "z_val", z_ptr);
@@ -156,13 +161,15 @@ public class Mem2RegTest {
         loopBodyBlock.addInstruction(i_next);
         loopBodyBlock.addInstruction(store5);
         loopBodyBlock.addInstruction(outLoopBody);
-        loopBodyBlock.addSuccessor(loopBlock);
 
         // after_loop:
+        afterLoopBlock.addSuccessor(exit);
+
+        // exit:
         IceInstruction final_z = new IceLoadInstruction(afterLoopBlock, "final_z", z_ptr);
-        IceInstruction outAfterLoop = new IceRetInstruction(afterLoopBlock, final_z);
-        afterLoopBlock.addInstruction(final_z);
-        afterLoopBlock.addInstruction(outAfterLoop);
+        IceInstruction ret = new IceRetInstruction(afterLoopBlock, final_z);
+        exit.addInstruction(final_z);
+        exit.addInstruction(ret);
 
         return function;
     }
@@ -172,18 +179,29 @@ public class Mem2RegTest {
         IceFunction function = createComplexPhiFunction();
         Mem2Reg pass = new Mem2Reg();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("Before:\n");
-        function.getTextIR(sb);
+//        StringBuilder before = new StringBuilder();
+//        function.getTextIR(before);
 
         pass.run(function);
 
-        sb.append("\nAfter:\n");
-        function.getTextIR(sb);
+        StringBuilder actual = new StringBuilder();
+        function.getTextIR(actual);
 
-        System.out.println(sb);
+//        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
 
-        // Check if the alloca instruction is removed
-        assertEquals(0, function.getEntryBlock().getInstructions().size());
+        String expected = "define i32 @example(i32 %x, i32 %y) {\n" + "entry:\n"
+            + "\t%cmp = icmp sgt i32 %x, i32 0\n" + "\tbr i1 %cmp, label %then, label %else\n"
+            + "then:\n" + "\t%add = add i32 i32 %x, i32 %y\n" + "\tbr label %ifend\n" + "else:\n"
+            + "\t%sub = sub i32 i32 %x, i32 %y\n" + "\tbr label %ifend\n" + "ifend:\n"
+            + "\t%z_ptr.0 = phi i32 [ i32 %sub, label %else ], [ i32 %add, label %then ]\n"
+            + "\tbr label %loop\n" + "loop:\n"
+            + "\t%i_ptr.1 = phi i32 [ i32 0, label %ifend ], [ i32 %i_next, label %loop_body ]\n"
+            + "\t%z_ptr.2 = phi i32 [ i32 %z_ptr.0, label %ifend ], [ i32 %z_new, label %loop_body ]\n"
+            + "\t%cond = icmp slt i32 %i_ptr.1, i32 5\n"
+            + "\tbr i1 %cond, label %loop_body, label %after_loop\n" + "loop_body:\n"
+            + "\t%z_new = add i32 i32 %z_ptr.2, i32 %i_ptr.1\n"
+            + "\t%i_next = add i32 i32 %i_ptr.1, i32 1\n" + "\tbr label %loop\n" + "after_loop:\n"
+            + "exit:\n" + "\tret i32 %z_ptr.2\n" + "\n" + "}";
+        assertEquals(expected, actual.toString());
     }
 }
