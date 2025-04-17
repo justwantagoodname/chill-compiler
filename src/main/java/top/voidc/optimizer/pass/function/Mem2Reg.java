@@ -159,12 +159,10 @@ public class Mem2Reg implements Pass<IceFunction> {
                 // 获取当前 store 的目标指针
                 IceValue value = store.getTargetPtr();
                 if (valueStack.containsKey(value)) {
-                    // 创建新版本并更新 store 的目标指针
-                    IceValue nextValue = createNewName(value);
-                    valueStack.get(value).push(nextValue);
-
                     // 记录变量别名：store 相当于将 目标地址的变量 设置别名为 源变量
-                    aliasTable.put(nextValue, store.getValue());
+                    // 因此，将新的别名压入栈中
+                    valueStack.get(value).push(store.getValue());
+
                     // 删除 store 指令
                     block.removeInstruction(instr);
 
