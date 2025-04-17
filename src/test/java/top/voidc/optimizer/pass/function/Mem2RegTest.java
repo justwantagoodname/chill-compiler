@@ -82,6 +82,7 @@ public class Mem2RegTest {
 
     private static IceFunction createComplexPhiFunction() {
         IceFunction function = new IceFunction("example");
+        function.setReturnType(IceType.I32);
         IceValue x = new IceValue("x", IceType.I32);
         IceValue y = new IceValue("y", IceType.I32);
         function.addParameter(x);
@@ -104,8 +105,6 @@ public class Mem2RegTest {
         entry.addInstruction(i_ptr);
         entry.addInstruction(cmp);
         entry.addInstruction(outEntry);
-        entry.addSuccessor(thenBlock);
-        entry.addSuccessor(elseBlock);
 
         // then:
         IceInstruction add = new IceBinaryInstruction(thenBlock, InstructionType.ADD, "add", IceType.I32, x, y);
@@ -114,7 +113,6 @@ public class Mem2RegTest {
         thenBlock.addInstruction(add);
         thenBlock.addInstruction(store);
         thenBlock.addInstruction(outThen);
-        thenBlock.addSuccessor(ifEndBlock);
 
         // else:
         IceInstruction sub = new IceBinaryInstruction(elseBlock, InstructionType.SUB, "sub", IceType.I32, x, y);
@@ -123,14 +121,12 @@ public class Mem2RegTest {
         elseBlock.addInstruction(sub);
         elseBlock.addInstruction(store2);
         elseBlock.addInstruction(outElse);
-        elseBlock.addSuccessor(ifEndBlock);
 
         // ifend:
         IceInstruction store3 = new IceStoreInstruction(ifEndBlock, i_ptr, new IceConstantInt(0));
         IceInstruction outIfEnd = new IceBranchInstruction(ifEndBlock, loopBlock);
         ifEndBlock.addInstruction(store3);
         ifEndBlock.addInstruction(outIfEnd);
-        ifEndBlock.addSuccessor(loopBlock);
 
         // loop:
         IceInstruction i_val = new IceLoadInstruction(loopBlock, "i_val", i_ptr);
@@ -139,8 +135,6 @@ public class Mem2RegTest {
         loopBlock.addInstruction(i_val);
         loopBlock.addInstruction(cond);
         loopBlock.addInstruction(outLoop);
-        loopBlock.addSuccessor(loopBodyBlock);
-        loopBlock.addSuccessor(afterLoopBlock);
 
         // loop_body:
         IceInstruction z_val = new IceLoadInstruction(loopBodyBlock, "z_val", z_ptr);
@@ -155,7 +149,6 @@ public class Mem2RegTest {
         loopBodyBlock.addInstruction(i_next);
         loopBodyBlock.addInstruction(store5);
         loopBodyBlock.addInstruction(outLoopBody);
-        loopBodyBlock.addSuccessor(loopBlock);
 
         // after_loop:
         IceInstruction final_z = new IceLoadInstruction(afterLoopBlock, "final_z", z_ptr);

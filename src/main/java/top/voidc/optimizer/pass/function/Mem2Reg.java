@@ -207,24 +207,13 @@ public class Mem2Reg implements Pass<IceFunction> {
                 }
             } else  {
                 // 如果是其它类型的指令，应当对其所有变量改名
-                // 检查其中是否有 存在别名 的变量，如果有，加入修改列表
-                Queue<Integer> queue = new ArrayDeque<>();
+                // 检查其中是否有 存在别名 的变量，如果有，修改
                 List<IceValue> operands = instr.getOperandsList();
                 for (int i = 0; i < operands.size(); i++) {
                     IceValue operand = operands.get(i);
                     if (aliasTable.containsKey(operand)) {
-                        queue.add(i);
-                    }
-                }
-
-                // 遍历操作数列表，将存在别名的操作数替换为其别名
-                while (!queue.isEmpty()) {
-                    int index_ = queue.poll();
-                    IceValue operand = operands.get(index_);
-                    if (aliasTable.containsKey(operand)) {
-                        // 如果当前操作数在 aliasTable 中，则获取其别名
                         IceValue alias = aliasTable.get(operand);
-                        instr.setOperand(index_, alias);
+                        instr.setOperand(i, alias);
                     }
                 }
             }
