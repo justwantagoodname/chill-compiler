@@ -30,7 +30,7 @@ public class IceGlobalVariable extends IceConstant {
         if (getInitializer() != null) {
             getInitializer().getTextIR(builder);
         } else {
-            builder.append(getType()).append(" zeroinitializer");
+            builder.append(((IcePtrType<?>) getType()).getPointTo()).append(" zeroinitializer");
         }
     }
 
