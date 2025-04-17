@@ -10,6 +10,8 @@ import top.voidc.ir.ice.instruction.IceCmpInstruction.CmpType;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.type.IceArrayType;
 
+import top.voidc.misc.Log;
+
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -95,6 +97,7 @@ public class Mem2RegTest {
         IceBlock loopBlock = new IceBlock(function, "loop");
         IceBlock loopBodyBlock = new IceBlock(function, "loop_body");
         IceBlock afterLoopBlock = new IceBlock(function, "after_loop");
+        IceBlock exit = function.getExitBlock();
 
         // entry:
         IceInstruction z_ptr = new IceAllocaInstruction(entry, "z_ptr", IceType.I32);
@@ -151,10 +154,13 @@ public class Mem2RegTest {
         loopBodyBlock.addInstruction(outLoopBody);
 
         // after_loop:
+        afterLoopBlock.addSuccessor(exit);
+
+        // exit:
         IceInstruction final_z = new IceLoadInstruction(afterLoopBlock, "final_z", z_ptr);
-        IceInstruction outAfterLoop = new IceRetInstruction(afterLoopBlock, final_z);
-        afterLoopBlock.addInstruction(final_z);
-        afterLoopBlock.addInstruction(outAfterLoop);
+        IceInstruction ret = new IceRetInstruction(afterLoopBlock, final_z);
+        exit.addInstruction(final_z);
+        exit.addInstruction(ret);
 
         return function;
     }
@@ -165,17 +171,29 @@ public class Mem2RegTest {
         Mem2Reg pass = new Mem2Reg();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Before:\n");
-        function.getTextIR(sb);
+//        sb.append("Before:\n");
+//        function.getTextIR(sb);
 
         pass.run(function);
 
-        sb.append("\nAfter:\n");
+//        sb.append("\nAfter:\n");
         function.getTextIR(sb);
 
-        System.out.println(sb);
+//        Log.d(sb.toString());
 
-        // Check if the alloca instruction is removed
-        assertEquals(0, function.getEntryBlock().getInstructions().size());
+        String expected = "define i32 @example(i32 %x, i32 %y) {\n" + "entry:\n"
+            + "\t%cmp = icmp sgt i32 %x, i32 0\n" + "\tbr i1 %cmp, label %then, label %else\n"
+            + "then:\n" + "\t%add = add i32 i32 %x, i32 %y\n" + "\tbr label %ifend\n" + "else:\n"
+            + "\t%sub = sub i32 i32 %x, i32 %y\n" + "\tbr label %ifend\n" + "ifend:\n"
+            + "\t%z_ptr.1 = phi i32 [ i32 %sub, label %else ], [ i32 %add, label %then ]\n"
+            + "\tbr label %loop\n" + "loop:\n"
+            + "\t%i_ptr.3 = phi i32 [ i32 0, label %ifend ], [ i32 %i_next, label %loop_body ]\n"
+            + "\t%z_ptr.4 = phi i32 [ i32 %z_ptr.1, label %ifend ], [ i32 %z_new, label %loop_body ]\n"
+            + "\t%cond = icmp slt i32 %i_ptr.3, i32 5\n"
+            + "\tbr i1 %cond, label %loop_body, label %after_loop\n" + "loop_body:\n"
+            + "\t%z_new = add i32 i32 %z_ptr.4, i32 %i_ptr.3\n"
+            + "\t%i_next = add i32 i32 %i_ptr.3, i32 1\n" + "\tbr label %loop\n" + "after_loop:\n"
+            + "exit:\n" + "\tret i32 %z_ptr.4\n" + "\n" + "}";
+        assertEquals(expected, sb.toString());
     }
 }
