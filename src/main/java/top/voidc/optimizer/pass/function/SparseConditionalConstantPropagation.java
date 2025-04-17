@@ -1,13 +1,11 @@
 package top.voidc.optimizer.pass.function;
 
-import com.ibm.icu.impl.UResource;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceUser;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.*;
 import top.voidc.ir.ice.instruction.*;
 import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
-import top.voidc.ir.ice.type.IceType;
 
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.misc.annotation.Pass;
@@ -21,7 +19,7 @@ enum LatticeValue {
 }
 
 class ValueLatticeElement {
-    private LatticeValue state = LatticeValue.Undefined;
+    private LatticeValue state;
     private IceConstant constant;
 
     ValueLatticeElement(IceConstant constant) {
@@ -36,6 +34,7 @@ class ValueLatticeElement {
     public LatticeValue getState() {
         return state;
     }
+
     public Optional<IceConstant> getConstant() {
         return state == LatticeValue.Constant ? Optional.of(constant) : Optional.empty();
     }
@@ -58,6 +57,7 @@ class ValueLatticeElement {
     public boolean isConstant() {
         return state == LatticeValue.Constant;
     }
+
     public boolean isOverdefined() {
         return state == LatticeValue.Overdefined;
     }
@@ -67,7 +67,8 @@ class SCCPSolver {
     private final IceFunction function;
 
     // 边分析器用的记录
-    private record Edge(IceBlock from, IceBlock to) {}
+    private record Edge(IceBlock from, IceBlock to) {
+    }
 
     private final Map<IceValue, ValueLatticeElement> valueLattice = new HashMap<>();
     private final Set<IceBlock> executableBlocks = new HashSet<>();
@@ -98,35 +99,109 @@ class SCCPSolver {
             instWorkList.add(inst);
         }
 
-        IceInstruction terminate = block.getInstructions().isEmpty() ? null : block.getInstructions().get(block.getInstructions().size() - 1);
-        if (terminate instanceof IceBranchInstruction br) {
-            ValueLatticeElement condLat = getLattice(br.getCondition());
-            if (condLat.isConstant()) {
-                IceConstantBoolean cond = (IceConstantBoolean) condLat.getConstant().orElseThrow();
-                markEdgeExecutable(block, cond.getValue() == 1 ? br.getTrueBlock() : br.getFalseBlock());
-            } else {
-                markEdgeExecutable(block, br.getTrueBlock());
-                markEdgeExecutable(block, br.getFalseBlock());
-            }
-        }
+        // 不知道在这里处理边是不是对的
+        // 先删了
+//        IceInstruction terminator = block.getInstructions().get(block.getInstructions().size() - 1);
+//        if (terminator instanceof IceBranchInstruction br) {
+//            visitBranch(br);
+//        }
     }
 
     private void processEdge(Edge edge) {
+        IceBlock from = edge.from;
         IceBlock to = edge.to;
 
         for (IceInstruction inst : to.getInstructions()) {
             if (inst instanceof IcePHINode phiNode) {
-                visitPHI(phiNode, to);
+                visitPHI(phiNode, from);
             }
         }
+
+        // 标记边到达的块可执行
+        markBlockExecutable(to);
     }
 
     private void processInstruction(IceInstruction inst) {
-        if (inst instanceof IceBranchInstruction) return;
+//        if (inst instanceof IceBranchInstruction) return;
+
+        // 替换当前指令中的所有常量操作数
+//        List<IceValue> operands = inst.getOperandsList();
+//        for (int i = 0; i < operands.size(); ++i) {
+//            IceValue opr = inst.getOperand(i);
+//            ValueLatticeElement lat = getLattice(opr);
+//            if (lat.isConstant()) {
+//                IceConstant constant = lat.getConstant().orElseThrow();
+//                inst.replaceOperand(opr, constant);
+//            }
+//        }
 
         if (inst instanceof IceBinaryInstruction bin) {
             visitBin(bin);
+        } else if (inst instanceof IceIcmpInstruction cmp) {
+            // 先处理是 icmp 的情况
+            visitIcmp(cmp);
+        } else if (inst instanceof IceBranchInstruction br) {
+            visitBranch(br);
         }
+    }
+
+    private void visitBranch(IceBranchInstruction inst) {
+        // 如果没有条件，直接标记分支可执行
+        if (!inst.isConditional()) {
+            markEdgeExecutable(inst.getParent(), inst.getTargetBlock());
+            return;
+        }
+
+        ValueLatticeElement condLat = getLattice(inst.getCondition());
+        if (condLat.isConstant()) {
+            IceConstantBoolean cond = (IceConstantBoolean) condLat.getConstant().orElseThrow();
+            markEdgeExecutable(inst.getParent(), cond.getValue() == 1 ? inst.getTrueBlock() : inst.getFalseBlock());
+
+            // 删除不能走的分支
+            if (cond.getValue() == 1) {
+                // 删除 false 分支
+                IceBranchInstruction trueBranch = new IceBranchInstruction(inst.getParent(), inst.getTrueBlock());
+                inst.getParent().addInstruction(trueBranch);
+                inst.getParent().removeInstruction(inst);
+            } else {
+                // 删除 true 分支
+                IceBranchInstruction falseBranch = new IceBranchInstruction(inst.getParent(), inst.getFalseBlock());
+                inst.getParent().addInstruction(falseBranch);
+                inst.getParent().removeInstruction(inst);
+            }
+        } else {
+            markEdgeExecutable(inst.getParent(), inst.getTrueBlock());
+            markEdgeExecutable(inst.getParent(), inst.getFalseBlock());
+        }
+    }
+
+    private void visitIcmp(IceIcmpInstruction inst) {
+        var operands = inst.getOperandsList();
+        ValueLatticeElement a = getLattice(operands.get(0));
+        ValueLatticeElement b = getLattice(operands.get(1));
+        ValueLatticeElement lat = getLattice(inst);
+        if (a.isConstant() && b.isConstant()) {
+            // icmp 指令的操作数是整数类型，因此这里可以直接强制转换为整数
+            IceConstantInt ca = (IceConstantInt) a.getConstant().orElseThrow();
+            IceConstantInt cb = (IceConstantInt) b.getConstant().orElseThrow();
+            long va = ca.getValue();
+            long vb = cb.getValue();
+
+            boolean result = switch (inst.getCmpType()) {
+                case EQ -> va == vb;
+                case NE -> va != vb;
+                case SLT -> va < vb;
+                case SLE -> va <= vb;
+                case SGT -> va > vb;
+                case SGE -> va >= vb;
+                default -> throw new IllegalArgumentException("Unsupported comparison type: " + inst.getCmpType());
+            };
+
+            lat.markConstant(new IceConstantBoolean(result));
+        } else if (a.isOverdefined() || b.isOverdefined()) {
+            lat.markOverdefined();
+        }
+        enqueueUsers(inst);
     }
 
     private <T extends Number> T calculateHelper(T opr1, T opr2, InstructionType type) {
@@ -153,7 +228,6 @@ class SCCPSolver {
         ValueLatticeElement b = getLattice(operands.get(1));
         ValueLatticeElement lat = getLattice(bin);
         if (a.isConstant() && b.isConstant()) {
-            // 简化示例，仅处理整数相加
             IceConstant ca = a.getConstant().orElseThrow();
             IceConstant cb = b.getConstant().orElseThrow();
             if (ca instanceof IceConstantInt va && cb instanceof IceConstantInt vb) {
@@ -163,6 +237,7 @@ class SCCPSolver {
             } else if (ca instanceof IceConstantFloat va && cb instanceof IceConstantFloat vb) {
                 lat.markConstant(new IceConstantFloat(calculateHelper(va.getValue(), vb.getValue(), bin.getInstructionType())));
             } else {
+                // 其它类型不处理，直接标记为 overdefined
                 lat.markOverdefined();
             }
 
@@ -188,23 +263,48 @@ class SCCPSolver {
     }
 
     private void enqueueUsers(IceValue v) {
-        List<IceUser> users = v instanceof IceInstruction ? ((IceInstruction)v).getUsersList() : Collections.emptyList();
+        List<IceUser> users = v instanceof IceInstruction ? v.getUsersList() : Collections.emptyList();
         for (IceUser user : users) {
             if (user instanceof IceInstruction inst) {
+                if (inst instanceof IceBranchInstruction) {
+                    // 分支指令不需要入队
+                    continue;
+                }
                 instWorkList.add(inst);
             }
+        }
+    }
+
+    private void removeBlock(IceBlock block) {
+        // 枚举所有的 successor
+        for (IceBlock successor : block.getSuccessors()) {
+            // block 会影响 successor 中的 phi 节点
+            for (IceInstruction inst : successor.getInstructions()) {
+                if (inst instanceof IcePHINode phiNode) {
+                    // 在这个 phi 节点中，删除这个分支
+                    phiNode.removeBranch(block);
+                }
+            }
+
+            // 删除 use 关系
+            block.removeSuccessor(successor);
+        }
+
+        // 在所有的 predecessor 中删除这个 block
+        for (IceBlock predecessor : block.getPredecessors()) {
+            predecessor.removeSuccessor(block);
         }
     }
 
     public void solve() {
         markBlockExecutable(function.getEntryBlock());
         while (!blockWorkList.isEmpty() || !edgeWorkList.isEmpty() || !instWorkList.isEmpty()) {
-            if (!blockWorkList.isEmpty()) {
-                processBlock(blockWorkList.poll());
+            if (!instWorkList.isEmpty()) {
+                processInstruction(instWorkList.poll());
             } else if (!edgeWorkList.isEmpty()) {
                 processEdge(edgeWorkList.poll());
             } else {
-                processInstruction(instWorkList.poll());
+                processBlock(blockWorkList.poll());
             }
         }
     }
@@ -219,6 +319,8 @@ class SCCPSolver {
                     // 从 user 里替换这个常量
                     IceConstant constant = lat.getConstant().orElseThrow();
                     List<IceUser> users = instructions.get(i).getUsersList();
+
+                    // 这里不能改 enhanced for-loop!!!
                     for (int j = 0; j < users.size(); ++j) {
                         IceUser user = users.get(j);
                         if (user instanceof IceInstruction inst) {
@@ -227,7 +329,36 @@ class SCCPSolver {
                     }
 
                     instructions.remove(i);
+                    // 删除了一个指令，后面的指令往前移动，调整 i
                     --i;
+                }
+            }
+        }
+
+        // 删除不可达分支
+        for (IceBlock block : function.getBlocks()) {
+            if (!executableBlocks.contains(block)) {
+                // 删除不可达的块
+                removeBlock(block);
+            }
+        }
+
+        // 对于剩下的块中的 phi 节点，如果只有一个分支，则尝试删除
+        for (IceBlock block : function.getBlocks()) {
+            for (IceInstruction inst : block.getInstructions()) {
+                if (inst instanceof IcePHINode phiNode) {
+                    if (phiNode.getBranchCount() == 1) {
+                        // 获取唯一一个分支的值
+                        IceValue value = phiNode.getBranchValueOnIndex(0);
+                        List<IceUser> users = phiNode.getUsersList();
+                        for (int i = 0; i < users.size(); ++i) {
+                            IceUser user = users.get(i);
+                            if (user instanceof IceInstruction inst2) {
+                                inst2.replaceOperand(phiNode, value);
+                            }
+                        }
+                        block.removeInstruction(phiNode);
+                    }
                 }
             }
         }

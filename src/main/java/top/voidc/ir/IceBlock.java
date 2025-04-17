@@ -71,6 +71,10 @@ public class IceBlock extends IceUser {
         this.addOperand(block);
     }
 
+    public void removeSuccessor(IceBlock block) {
+        this.removeOperand(block);
+    }
+
     @Override
     public String getReferenceName() {
         return "label %" + getName();
