@@ -92,8 +92,8 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
                 };
             }
             case F32 -> {
-                double lhsValue = ((IceConstantFloat) lhs).getValue();
-                double rhsValue = ((IceConstantFloat) rhs).getValue();
+                float lhsValue = ((IceConstantFloat) lhs).getValue();
+                float rhsValue = ((IceConstantFloat) rhs).getValue();
 
                 yield switch (op) {
                     case "+" -> IceConstantData.create(lhsValue + rhsValue);
@@ -159,7 +159,7 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
         if (ctx.IntConst() != null) {
             return IceConstantData.create(Long.decode(literal));
         } else if (ctx.FloatConst() != null) {
-            return IceConstantData.create(Double.parseDouble(literal));
+            return IceConstantData.create(Float.parseFloat(literal));
         }
         return null;
     }

@@ -4,21 +4,21 @@ import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
 
 public class IceConstantFloat extends IceConstantData {
-    private final double value;
+    private final float value;
 
-    public IceConstantFloat(double value) {
+    public IceConstantFloat(float value) {
         super(IceType.F32);
         this.value = value;
     }
 
-    public double getValue() {
+    public float getValue() {
         return value;
     }
 
     @Override
     public String getReferenceName(boolean withType) {
         // 一定要先转float再转回double确保没有超出的精度
-        final var bits = Double.doubleToRawLongBits((float) value);
+        final var bits = Double.doubleToRawLongBits(value);
         return (withType ? getType() + " " : "") + "0x" + Long.toHexString(bits).toUpperCase();
     }
 

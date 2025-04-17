@@ -20,7 +20,7 @@ public abstract class IceConstantData extends IceConstant {
         return new IceConstantString(value);
     }
 
-    public static IceConstantData create(double value) {
+    public static IceConstantData create(float value) {
         return new IceConstantFloat(value);
     }
 
