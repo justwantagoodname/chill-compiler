@@ -128,7 +128,7 @@ public class CompilerTest {
                     File[] files = dir.listFiles();
                     if (files == null) return Stream.empty();
 
-                    return Arrays.stream(files)
+                    return Arrays.stream(files).sorted()
                             .map(CompilerTest::createTestcaseFromFilePath)
                             .filter(Optional::isPresent)
                             .map(Optional::get);
@@ -161,32 +161,15 @@ public class CompilerTest {
             throw new IllegalArgumentException("File does not exist: " + llvmFile);
         }
 
-        ProcessBuilder builder = new ProcessBuilder();
-        builder.command("opt", "-passes=default<O2>", llvmFile.getAbsolutePath(), "-o", "-");
-        Process optProcess = builder.start();
-
-        // 将opt输出通过管道传递给clang
         ProcessBuilder clangBuilder = new ProcessBuilder();
-        clangBuilder.command("clang", "-x", "ir", "-o", output.getAbsolutePath(), "-", "-Ltestcases/libsysy", "-lsysy");
+        clangBuilder.command("clang", "-x", "ir", "-Ltestcases/libsysy", "-lsysy",
+                "-o", output.getAbsolutePath(), llvmFile.getAbsolutePath());
         Process clangProcess = clangBuilder.start();
 
-        // 将opt的输出连接到clang的输入
-        try (InputStream optOutput = optProcess.getInputStream();
-             OutputStream clangInput = clangProcess.getOutputStream()) {
-            optOutput.transferTo(clangInput);
-        }
-
-        int optExitCode = optProcess.waitFor();
         int clangExitCode = clangProcess.waitFor();
 
         if (clangExitCode != 0) {
-            clangProcess.getErrorStream().transferTo(System.err);
-        }
-
-
-        if (optExitCode != 0 || clangExitCode != 0) {
-            throw new RuntimeException("Compilation failed: opt exit code = " + optExitCode + 
-                                    ", clang exit code = " + clangExitCode);
+            throw new RuntimeException("Compilation failed: clang exit code = " + clangExitCode);
         }
     }
 
@@ -285,24 +268,17 @@ public class CompilerTest {
     // 主测试方法：编译 + 检查输出文件存在
     @ParameterizedTest(name = "Compile: {0}")
     @MethodSource("provideTestcases")
-    public void testCompile(Testcase testcase) {
+    public void testCompile(Testcase testcase) throws InvocationTargetException, IllegalAccessException, IOException, InterruptedException {
         TestResult result = new TestResult(testcase);
-        try (PrintStream logStream = new PrintStream(result.getCompilerOutput())) {
-            Log.setOutputStream(logStream); // 可选，记录日志
-            compileSysySource(testcase, result.getAsm());
-            assertTrue(result.getAsm().exists(), "Assembly file not generated");
-            // 验证IR格式
-            assertTrue(verifyIR(result.getIrOutput()), "LLVM IR Format Error");
-            
-            // 生成并运行可执行文件
-            compileToExecutable(result.getIrOutput(), result.getExecutableOutput());
-            runExecutableAndCompare(result);
-            
-//            result.cleanup();
-        } catch (Exception e) {
-            result.setStatus(ResultStatus.CE);
-            fail("Compiling (" + testcase.src.getAbsolutePath()
-                    + ") failed on:\n " + e);
-        }
+        compileSysySource(testcase, result.getAsm());
+        assertTrue(result.getAsm().exists(), "Assembly file not generated");
+        // 验证IR格式
+        assertTrue(verifyIR(result.getIrOutput()), "LLVM IR Format Error");
+
+        // 生成并运行可执行文件
+        compileToExecutable(result.getIrOutput(), result.getExecutableOutput());
+        runExecutableAndCompare(result);
+
+        result.cleanup();
     }
 }
