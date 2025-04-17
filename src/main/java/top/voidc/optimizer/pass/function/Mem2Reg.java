@@ -149,17 +149,21 @@ public class Mem2Reg implements Pass<IceFunction> {
         String newName = value.getName() + "." + renameCounter++;
         // 这里需要注意的是，value.getType() 返回的是指针类型
         // 因此需要将其转换为指向的类型
-//        IceType type = ((IcePtrType<?>) value.getType()).getPointTo();
+        IceType type = ((IcePtrType<?>) value.getType()).getPointTo();
         // TODO: 还需要修正 store 删除之后才能启用上面的修正
-        IceType type = value.getType();
+//        IceType type = value.getType();
         return new IceValue(newName, type);
     }
 
-    private static void rename(IceBlock block, Hashtable<IceValue, Stack<IceValue>> valueStack, DominatorTree domTree, Hashtable<VersionPair, IceValue> versionTable) {
+    private static void rename(IceBlock block, Hashtable<IceValue, Stack<IceValue>> valueStack, DominatorTree domTree, Hashtable<IceValue, IceValue> aliasTable) {
         // 本层递归中，每种变量的 store 数量计数器
         Hashtable<IceValue, Integer> defCounter = new Hashtable<>();
 
-        for (IceInstruction instr : block.getInstructions()) {
+
+
+        List<IceInstruction> blockInstructions = block.getInstructions();
+        for (int index = 0; index < blockInstructions.size(); ++index) {
+            IceInstruction instr = blockInstructions.get(index);
             if (instr instanceof IceStoreInstruction store) {
                 // 获取当前 store 的目标指针
                 IceValue value = store.getTargetPtr();
@@ -167,7 +171,15 @@ public class Mem2Reg implements Pass<IceFunction> {
                     // 创建新版本并更新 store 的目标指针
                     IceValue nextValue = createNewName(value);
                     valueStack.get(value).push(nextValue);
-                    store.setTargetPtr(nextValue);
+
+                    // 记录变量别名：store 相当于将 目标地址的变量 设置别名为 源变量
+                    aliasTable.put(nextValue, store.getValue());
+                    // 删除 store 指令
+                    block.removeInstruction(instr);
+
+                    // 修正 index
+                    // 因为删除了 store 指令，后面的指令会向前移动
+                    --index;
 
                     // 更新 defCounter
                     defCounter.put(value, defCounter.getOrDefault(value, 0) + 1);
@@ -177,7 +189,17 @@ public class Mem2Reg implements Pass<IceFunction> {
                 if (valueStack.containsKey(value)) {
                     // 如果当前 load 的源指针在 valueStack 中，则获取栈顶元素并更新 load 的源指针
                     IceValue nextValue = valueStack.get(value).peek();
-                    load.setSource(nextValue);
+
+                    // 记录变量别名：load 相当于给 源变量 设置别名
+                    aliasTable.put(load, nextValue);
+
+                    // 删除 load 指令
+                    // 注意：在此处只是删除了 load 指令，实际对象应当仍然是存在的，以供后续改名
+                    block.removeInstruction(instr);
+
+                    // 修正 index
+                    // 因为删除了 load 指令，后面的指令会向前移动
+                    --index;
                 }
             } else if (instr instanceof IcePHINode phiNode) {
                 // 如果当前指令是 phi 指令，则获取其 valueToBeMerged
@@ -189,6 +211,28 @@ public class Mem2Reg implements Pass<IceFunction> {
                     // 但是需要修改 phi 指令的名字
                     phiNode.setName(nextValue.getName());
                     valueStack.get(value).push(nextValue);
+                }
+            } else  {
+                // 如果是其它类型的指令，应当对其所有变量改名
+                // 检查其中是否有 存在别名 的变量，如果有，加入修改列表
+                Queue<Integer> queue = new ArrayDeque<>();
+                List<IceValue> operands = instr.getOperandsList();
+                for (int i = 0; i < operands.size(); i++) {
+                    IceValue operand = operands.get(i);
+                    if (aliasTable.containsKey(operand)) {
+                        queue.add(i);
+                    }
+                }
+
+                // 遍历操作数列表，将存在别名的操作数替换为其别名
+                while (!queue.isEmpty()) {
+                    int index_ = queue.poll();
+                    IceValue operand = operands.get(index_);
+                    if (aliasTable.containsKey(operand)) {
+                        // 如果当前操作数在 aliasTable 中，则获取其别名
+                        IceValue alias = aliasTable.get(operand);
+                        instr.setOperand(index_, alias);
+                    }
                 }
             }
         }
@@ -207,6 +251,12 @@ public class Mem2Reg implements Pass<IceFunction> {
                 // 如果当前 phi 指令的 valueToBeMerged 在 valueStack 中，则获取栈顶元素并添加到 phi 指令的参数中
                 if (valueStack.containsKey(phiNode.getValueToBeMerged())) {
                     IceValue nextValue = valueStack.get(phiNode.getValueToBeMerged()).peek();
+
+                    // 如果变量有别名，应当将别名添加到 phi 指令的参数中
+                    if (aliasTable.containsKey(nextValue)) {
+                        nextValue = aliasTable.get(nextValue);
+                    }
+
                     phiNode.addBranch(block, nextValue);
                 }
             }
@@ -214,7 +264,7 @@ public class Mem2Reg implements Pass<IceFunction> {
 
         // 按照 Dominator Tree 顺序 dfs
         for (IceBlock successor : domTree.getDominatees(block)) {
-            rename(successor, valueStack, domTree, versionTable);
+            rename(successor, valueStack, domTree, aliasTable);
         }
 
         // 处理完所有的 successor block 后，pop 出当前 block 中所有的 store 的新版本
@@ -241,7 +291,19 @@ public class Mem2Reg implements Pass<IceFunction> {
             valueStack.put(value, new Stack<>());
         }
 
-        Hashtable<VersionPair, IceValue> versionTable = new Hashtable<>();
-        rename(target.getEntryBlock(), valueStack, domTree, versionTable);
+        // rename 中，每个 store, load 相当于为变量产生了一个别名
+        // 这个表用来记录别名
+        Hashtable<IceValue, IceValue> aliasTable = new Hashtable<>();
+        rename(target.getEntryBlock(), valueStack, domTree, aliasTable);
+
+        // 删除所有的 alloca
+        for (IceValue value : promotableValues) {
+            if (value instanceof IceAllocaInstruction instr) {
+                // 删除 alloca 指令
+                instr.getParent().removeInstruction(instr);
+            } else {
+                throw new RuntimeException("Unexpected value type when removing alloca in mem2reg: " + value.getClass());
+            }
+        }
     }
 }
