@@ -275,15 +275,36 @@ class SCCPSolver {
         }
     }
 
+    private void removeBlock(IceBlock block) {
+        // 枚举所有的 successor
+        for (IceBlock successor : block.getSuccessors()) {
+            // block 会影响 successor 中的 phi 节点
+            for (IceInstruction inst : successor.getInstructions()) {
+                if (inst instanceof IcePHINode phiNode) {
+                    // 在这个 phi 节点中，删除这个分支
+                    phiNode.removeBranch(block);
+                }
+            }
+
+            // 删除 use 关系
+            block.removeSuccessor(successor);
+        }
+
+        // 在所有的 predecessor 中删除这个 block
+        for (IceBlock predecessor : block.getPredecessors()) {
+            predecessor.removeSuccessor(block);
+        }
+    }
+
     public void solve() {
         markBlockExecutable(function.getEntryBlock());
         while (!blockWorkList.isEmpty() || !edgeWorkList.isEmpty() || !instWorkList.isEmpty()) {
-            if (!blockWorkList.isEmpty()) {
-                processBlock(blockWorkList.poll());
+            if (!instWorkList.isEmpty()) {
+                processInstruction(instWorkList.poll());
             } else if (!edgeWorkList.isEmpty()) {
                 processEdge(edgeWorkList.poll());
             } else {
-                processInstruction(instWorkList.poll());
+                processBlock(blockWorkList.poll());
             }
         }
     }
@@ -310,6 +331,34 @@ class SCCPSolver {
                     instructions.remove(i);
                     // 删除了一个指令，后面的指令往前移动，调整 i
                     --i;
+                }
+            }
+        }
+
+        // 删除不可达分支
+        for (IceBlock block : function.getBlocks()) {
+            if (!executableBlocks.contains(block)) {
+                // 删除不可达的块
+                removeBlock(block);
+            }
+        }
+
+        // 对于剩下的块中的 phi 节点，如果只有一个分支，则尝试删除
+        for (IceBlock block : function.getBlocks()) {
+            for (IceInstruction inst : block.getInstructions()) {
+                if (inst instanceof IcePHINode phiNode) {
+                    if (phiNode.getBranchCount() == 1) {
+                        // 获取唯一一个分支的值
+                        IceValue value = phiNode.getBranchValueOnIndex(0);
+                        List<IceUser> users = phiNode.getUsersList();
+                        for (int i = 0; i < users.size(); ++i) {
+                            IceUser user = users.get(i);
+                            if (user instanceof IceInstruction inst2) {
+                                inst2.replaceOperand(phiNode, value);
+                            }
+                        }
+                        block.removeInstruction(phiNode);
+                    }
                 }
             }
         }
