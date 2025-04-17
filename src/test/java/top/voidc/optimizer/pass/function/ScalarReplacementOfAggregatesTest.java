@@ -6,7 +6,6 @@ import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.*;
-import top.voidc.optimizer.pass.Pass;
 
 import top.voidc.misc.Log;
 
@@ -29,7 +28,7 @@ public class ScalarReplacementOfAggregatesTest {
     @Test
     public void testBasicSROA() {
         IceFunction function = createSimpleFunctionWithOneArray();
-        Pass<IceFunction> pass = new ScalarReplacementOfAggregates();
+        ScalarReplacementOfAggregates pass = new ScalarReplacementOfAggregates();
 
 //        StringBuilder before = new StringBuilder();
 //        function.getTextIR(before);
@@ -41,34 +40,11 @@ public class ScalarReplacementOfAggregatesTest {
 
 //        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
 
-        String expected = """
-            define void @testFunction() {
-            entry:
-            	%b.i9 = alloca i32
-            	%b.i8 = alloca i32
-            	%b.i7 = alloca i32
-            	%b.i6 = alloca i32
-            	%b.i5 = alloca i32
-            	%b.i4 = alloca i32
-            	%b.i3 = alloca i32
-            	%b.i2 = alloca i32
-            	%b.i1 = alloca i32
-            	%b.i0 = alloca i32
-            	%b.i9 = alloca i32
-            	%b.i8 = alloca i32
-            	%b.i7 = alloca i32
-            	%b.i6 = alloca i32
-            	%b.i5 = alloca i32
-            	%b.i4 = alloca i32
-            	%b.i3 = alloca i32
-            	%b.i2 = alloca i32
-            	%b.i1 = alloca i32
-            	%b.i0 = alloca i32
-            	%a = alloca i32
-            	%c = alloca float
-            exit:
-            
-            }""";
+        String expected = "define void @testFunction() {\n" + "entry:\n" + "\t%b.i9 = alloca i32\n"
+            + "\t%b.i8 = alloca i32\n" + "\t%b.i7 = alloca i32\n" + "\t%b.i6 = alloca i32\n"
+            + "\t%b.i5 = alloca i32\n" + "\t%b.i4 = alloca i32\n" + "\t%b.i3 = alloca i32\n"
+            + "\t%b.i2 = alloca i32\n" + "\t%b.i1 = alloca i32\n" + "\t%b.i0 = alloca i32\n"
+            + "\t%a = alloca i32\n" + "\t%c = alloca float\n" + "exit:\n" + "\n" + "}";
 
         assertEquals(expected, actual.toString());
     }
@@ -98,9 +74,9 @@ public class ScalarReplacementOfAggregatesTest {
     }
 
     @Test
-    public void testSROAWithConstantIndicies() {
+    public void testSROAWithConstantIndices() {
         IceFunction function = createFunctionWithOnlyConstantIndicies();
-        Pass<IceFunction> pass = new ScalarReplacementOfAggregates();
+        ScalarReplacementOfAggregates pass = new ScalarReplacementOfAggregates();
 
         StringBuilder before = new StringBuilder();
         function.getTextIR(before);
@@ -112,23 +88,12 @@ public class ScalarReplacementOfAggregatesTest {
 
         Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
 
-        String expected = """
-            define void @testFunction() {
-            entry:
-            	%arr.i9 = alloca i32
-            	%arr.i8 = alloca i32
-            	%arr.i7 = alloca i32
-            	%arr.i6 = alloca i32
-            	%arr.i5 = alloca i32
-            	%arr.i4 = alloca i32
-            	%arr.i3 = alloca i32
-            	%arr.i2 = alloca i32
-            	%arr.i1 = alloca i32
-            	%arr.i0 = alloca i32
-            	store i32 42, i32* %arr.i3
-            exit:
-            
-            }""";
+        String expected = "define i32 @testFunction() {\n" + "entry:\n" + "\t%arr.i9 = alloca i32\n"
+            + "\t%arr.i8 = alloca i32\n" + "\t%arr.i7 = alloca i32\n" + "\t%arr.i6 = alloca i32\n"
+            + "\t%arr.i5 = alloca i32\n" + "\t%arr.i4 = alloca i32\n" + "\t%arr.i3 = alloca i32\n"
+            + "\t%arr.i2 = alloca i32\n" + "\t%arr.i1 = alloca i32\n" + "\t%arr.i0 = alloca i32\n"
+            + "\tstore i32 42, i32* %arr.i3\n" + "exit:\n" + "\t%x = load i32, i32* %arr.i3\n"
+            + "\tret i32 %x\n" + "\n" + "}";
 
         assertEquals(expected, actual.toString());
     }
