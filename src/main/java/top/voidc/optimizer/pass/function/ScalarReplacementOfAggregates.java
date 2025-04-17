@@ -140,7 +140,7 @@ public class ScalarReplacementOfAggregates implements Pass<IceFunction> {
         ArrayList<IceAllocaInstruction> promotableList = createPromotableList(target);
         Hashtable<IceAllocaInstruction, ArrayList<IceValue>> newAllocaLists = new Hashtable<>();
         for (IceAllocaInstruction alloca : promotableList) {
-            ArrayList<IceValue> newAllocaList = aggregatesExpansion(alloca, target);
+            ArrayList<IceValue> newAllocaList = aggregatesExpansion(alloca);
             newAllocaLists.put(alloca, newAllocaList);
         }
 
