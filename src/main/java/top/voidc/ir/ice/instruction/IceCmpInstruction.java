@@ -74,4 +74,8 @@ public class IceCmpInstruction extends IceInstruction {
         this.addOperand(lhs);
         this.addOperand(rhs);
     }
+
+    public CmpType getCmpType() {
+        return cmpType;
+    }
 }

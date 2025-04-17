@@ -126,7 +126,39 @@ class SCCPSolver {
 
         if (inst instanceof IceBinaryInstruction bin) {
             visitBin(bin);
+        } else if (inst instanceof IceIcmpInstruction cmp) {
+            // 先处理是 icmp 的情况
+            visitIcmp(cmp);
         }
+    }
+
+    private void visitIcmp(IceIcmpInstruction inst) {
+        var operands = inst.getOperandsList();
+        ValueLatticeElement a = getLattice(operands.get(0));
+        ValueLatticeElement b = getLattice(operands.get(1));
+        ValueLatticeElement lat = getLattice(inst);
+        if (a.isConstant() && b.isConstant()) {
+            // icmp 指令的操作数是整数类型，因此这里可以直接强制转换为整数
+            IceConstantInt ca = (IceConstantInt) a.getConstant().orElseThrow();
+            IceConstantInt cb = (IceConstantInt) b.getConstant().orElseThrow();
+            long va = ca.getValue();
+            long vb = cb.getValue();
+
+            boolean result = switch (inst.getCmpType()) {
+                case EQ -> va == vb;
+                case NE -> va != vb;
+                case SLT -> va < vb;
+                case SLE -> va <= vb;
+                case SGT -> va > vb;
+                case SGE -> va >= vb;
+                default -> throw new IllegalArgumentException("Unsupported comparison type: " + inst.getCmpType());
+            };
+
+            lat.markConstant(new IceConstantBoolean(result));
+        } else if (a.isOverdefined() || b.isOverdefined()) {
+            lat.markOverdefined();
+        }
+        enqueueUsers(inst);
     }
 
     private <T extends Number> T calculateHelper(T opr1, T opr2, InstructionType type) {
@@ -153,7 +185,6 @@ class SCCPSolver {
         ValueLatticeElement b = getLattice(operands.get(1));
         ValueLatticeElement lat = getLattice(bin);
         if (a.isConstant() && b.isConstant()) {
-            // 简化示例，仅处理整数相加
             IceConstant ca = a.getConstant().orElseThrow();
             IceConstant cb = b.getConstant().orElseThrow();
             if (ca instanceof IceConstantInt va && cb instanceof IceConstantInt vb) {
@@ -163,6 +194,7 @@ class SCCPSolver {
             } else if (ca instanceof IceConstantFloat va && cb instanceof IceConstantFloat vb) {
                 lat.markConstant(new IceConstantFloat(calculateHelper(va.getValue(), vb.getValue(), bin.getInstructionType())));
             } else {
+                // 其它类型不处理，直接标记为 overdefined
                 lat.markOverdefined();
             }
 
@@ -227,6 +259,7 @@ class SCCPSolver {
                     }
 
                     instructions.remove(i);
+                    // 删除了一个指令，后面的指令往前移动，调整 i
                     --i;
                 }
             }
