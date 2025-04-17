@@ -210,7 +210,9 @@ public class Mem2Reg implements Pass<IceFunction> {
                     // 由于 phi 指令的 valueToBeMerged 追踪的是原本的指针，因此不修改
                     // 但是需要修改 phi 指令的名字
                     phiNode.setName(nextValue.getName());
-                    valueStack.get(value).push(nextValue);
+
+                    // 修改 phi 指令的名字后，相当于新产生的变量就是这个 phi 指令
+                    valueStack.get(value).push(phiNode);
                 }
             } else  {
                 // 如果是其它类型的指令，应当对其所有变量改名
