@@ -2,8 +2,10 @@ package top.voidc.ir.ice.instruction;
 
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceUser;
+import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
 
+import java.util.List;
 import java.util.Objects;
 
 public class IceInstruction extends IceUser {
@@ -111,6 +113,30 @@ public class IceInstruction extends IceUser {
 
     protected void setInstructionType(InstructionType type) {
         this.type = type;
+    }
+
+    public void replaceOperand(IceValue oldOperand, IceValue newOperand) {
+        if (oldOperand == null || newOperand == null) {
+            throw new IllegalArgumentException("Operands cannot be null");
+        }
+        if (oldOperand == newOperand) {
+            return;
+        }
+        if (oldOperand.getType() != newOperand.getType()) {
+            throw new IllegalArgumentException("Operands must have the same type");
+        }
+
+        List<IceValue> operands = getOperandsList();
+        for (int i = 0; i < operands.size(); ++i) {
+            if (operands.get(i) == oldOperand) {
+                operands.set(i, newOperand);
+                oldOperand.removeUse(this);
+                newOperand.addUse(this);
+                return;
+            }
+        }
+
+        throw new IllegalArgumentException("Old operand not found in instruction");
     }
 
     @Override
