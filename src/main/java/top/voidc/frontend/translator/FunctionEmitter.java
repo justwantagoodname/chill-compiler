@@ -3,6 +3,7 @@ package top.voidc.frontend.translator;
 import org.antlr.v4.runtime.tree.ParseTree;
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
+import top.voidc.frontend.translator.exception.CompilationException;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
@@ -114,7 +115,11 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
         var type = IceType.fromSysyLiteral(typeLiteral);
         type = !arraySize.isEmpty() ? IceArrayType.buildNestedArrayType(arraySize, type) : type;
         type = ctx.array != null ? new IcePtrType<>(type) : type;
-        Log.should(!type.isVoid(), "Function parameter cannot be void");
+
+        if (type.isVoid()) {
+            throw new CompilationException("Function parameter cannot be void", ctx, context);
+        }
+
         final var parameter = new IceValue(name, type); // 实际的参数
 
         context.getCurrentFunction().addParameter(parameter);

@@ -24,6 +24,7 @@ public class IRGenerator extends SysyBaseVisitor<Void> {
             this.visit(context.getAst());
         } catch (CompilationException e) {
             handleCompilationException(e);
+            throw e;
         }
     }
 
@@ -33,7 +34,6 @@ public class IRGenerator extends SysyBaseVisitor<Void> {
                 " 的 " + e.getContext().getStart().getLine() +
                 " 行 " + e.getContext().getStart().getCharPositionInLine() + " 列");
         Log.e("Code: " + e.getContext().getText());
-        System.exit(1);
     }
 
     @Override
