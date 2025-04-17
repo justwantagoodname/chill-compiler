@@ -184,15 +184,15 @@ public class Mem2RegTest {
             + "\t%cmp = icmp sgt i32 %x, i32 0\n" + "\tbr i1 %cmp, label %then, label %else\n"
             + "then:\n" + "\t%add = add i32 i32 %x, i32 %y\n" + "\tbr label %ifend\n" + "else:\n"
             + "\t%sub = sub i32 i32 %x, i32 %y\n" + "\tbr label %ifend\n" + "ifend:\n"
-            + "\t%z_ptr.1 = phi i32 [ i32 %sub, label %else ], [ i32 %add, label %then ]\n"
+            + "\t%z_ptr.0 = phi i32 [ i32 %sub, label %else ], [ i32 %add, label %then ]\n"
             + "\tbr label %loop\n" + "loop:\n"
-            + "\t%i_ptr.3 = phi i32 [ i32 0, label %ifend ], [ i32 %i_next, label %loop_body ]\n"
-            + "\t%z_ptr.4 = phi i32 [ i32 %z_ptr.1, label %ifend ], [ i32 %z_new, label %loop_body ]\n"
-            + "\t%cond = icmp slt i32 %i_ptr.3, i32 5\n"
+            + "\t%i_ptr.1 = phi i32 [ i32 0, label %ifend ], [ i32 %i_next, label %loop_body ]\n"
+            + "\t%z_ptr.2 = phi i32 [ i32 %z_ptr.0, label %ifend ], [ i32 %z_new, label %loop_body ]\n"
+            + "\t%cond = icmp slt i32 %i_ptr.1, i32 5\n"
             + "\tbr i1 %cond, label %loop_body, label %after_loop\n" + "loop_body:\n"
-            + "\t%z_new = add i32 i32 %z_ptr.4, i32 %i_ptr.3\n"
-            + "\t%i_next = add i32 i32 %i_ptr.3, i32 1\n" + "\tbr label %loop\n" + "after_loop:\n"
-            + "exit:\n" + "\tret i32 %z_ptr.4\n" + "\n" + "}";
+            + "\t%z_new = add i32 i32 %z_ptr.2, i32 %i_ptr.1\n"
+            + "\t%i_next = add i32 i32 %i_ptr.1, i32 1\n" + "\tbr label %loop\n" + "after_loop:\n"
+            + "exit:\n" + "\tret i32 %z_ptr.2\n" + "\n" + "}";
         assertEquals(expected, actual.toString());
     }
 }
