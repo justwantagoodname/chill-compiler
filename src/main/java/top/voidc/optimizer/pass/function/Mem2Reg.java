@@ -150,8 +150,6 @@ public class Mem2Reg implements Pass<IceFunction> {
         // 这里需要注意的是，value.getType() 返回的是指针类型
         // 因此需要将其转换为指向的类型
         IceType type = ((IcePtrType<?>) value.getType()).getPointTo();
-        // TODO: 还需要修正 store 删除之后才能启用上面的修正
-//        IceType type = value.getType();
         return new IceValue(newName, type);
     }
 
