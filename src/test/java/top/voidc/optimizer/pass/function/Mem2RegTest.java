@@ -170,16 +170,15 @@ public class Mem2RegTest {
         IceFunction function = createComplexPhiFunction();
         Mem2Reg pass = new Mem2Reg();
 
-        StringBuilder sb = new StringBuilder();
-//        sb.append("Before:\n");
-//        function.getTextIR(sb);
+//        StringBuilder before = new StringBuilder();
+//        function.getTextIR(before);
 
         pass.run(function);
 
-//        sb.append("\nAfter:\n");
-        function.getTextIR(sb);
+        StringBuilder actual = new StringBuilder();
+        function.getTextIR(actual);
 
-//        Log.d(sb.toString());
+//        Log.d("Before:\n" + before.toString() + "After:\n" + actual.toString());
 
         String expected = "define i32 @example(i32 %x, i32 %y) {\n" + "entry:\n"
             + "\t%cmp = icmp sgt i32 %x, i32 0\n" + "\tbr i1 %cmp, label %then, label %else\n"
@@ -194,6 +193,6 @@ public class Mem2RegTest {
             + "\t%z_new = add i32 i32 %z_ptr.4, i32 %i_ptr.3\n"
             + "\t%i_next = add i32 i32 %i_ptr.3, i32 1\n" + "\tbr label %loop\n" + "after_loop:\n"
             + "exit:\n" + "\tret i32 %z_ptr.4\n" + "\n" + "}";
-        assertEquals(expected, sb.toString());
+        assertEquals(expected, actual.toString());
     }
 }
