@@ -167,7 +167,7 @@ public class CompilerTest {
 
         // 将opt输出通过管道传递给clang
         ProcessBuilder clangBuilder = new ProcessBuilder();
-        clangBuilder.command("clang", "-x", "ir", "-o", output.getAbsolutePath(), "-");
+        clangBuilder.command("clang", "-x", "ir", "-o", output.getAbsolutePath(), "-", "-Ltestcases/libsysy", "-lsysy");
         Process clangProcess = clangBuilder.start();
 
         // 将opt的输出连接到clang的输入
@@ -178,6 +178,11 @@ public class CompilerTest {
 
         int optExitCode = optProcess.waitFor();
         int clangExitCode = clangProcess.waitFor();
+
+        if (clangExitCode != 0) {
+            clangProcess.getErrorStream().transferTo(System.err);
+        }
+
 
         if (optExitCode != 0 || clangExitCode != 0) {
             throw new RuntimeException("Compilation failed: opt exit code = " + optExitCode + 
