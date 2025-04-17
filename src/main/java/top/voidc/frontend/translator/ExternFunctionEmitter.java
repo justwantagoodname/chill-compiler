@@ -1,6 +1,7 @@
 package top.voidc.frontend.translator;
 
 import top.voidc.frontend.parser.SysyParser;
+import top.voidc.frontend.translator.exception.CompilationException;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantInt;
@@ -65,7 +66,12 @@ public class ExternFunctionEmitter extends FunctionEmitter {
 
         var type = IceType.fromSysyLiteral(typeLiteral);
         type = !arraySize.isEmpty() ? IceArrayType.buildNestedArrayType(arraySize, type) : type;
-        Log.should(!type.equals(IceType.VOID), "Function parameter cannot be void");
+        type = ctx.array != null ? new IcePtrType<>(type) : type;
+
+        if (type.isVoid()) {
+            throw new CompilationException("Function parameter cannot be void", ctx, context);
+        }
+
         return new IceValue(name == null ? externFunction.generateLocalValueName() : name, type);
     }
 }
