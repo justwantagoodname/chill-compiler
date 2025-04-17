@@ -67,10 +67,9 @@ public class ScalarReplacementOfAggregates implements Pass<IceFunction> {
      * 在 function 开头展开 alloca 指令，并返回新的指令列表
      *
      * @param aggregate 聚合类型的 alloca 指令
-     * @param function 函数
      * @return 新的指令列表
      */
-    private ArrayList<IceValue> aggregatesExpansion(IceAllocaInstruction aggregate, IceFunction function) {
+    private ArrayList<IceValue> aggregatesExpansion(IceAllocaInstruction aggregate) {
         // type 的类型转换
         IceArrayType arrayType = (IceArrayType) (((IcePtrType<?>) aggregate.getType()).getPointTo());
         IceType elementType = arrayType.getElementType();

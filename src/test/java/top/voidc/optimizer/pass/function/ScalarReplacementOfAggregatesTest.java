@@ -1,7 +1,6 @@
 package top.voidc.optimizer.pass.function;
 
 import top.voidc.ir.IceBlock;
-import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.constant.IceFunction;
