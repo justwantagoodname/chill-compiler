@@ -17,8 +17,9 @@ public class IceConstantFloat extends IceConstantData {
 
     @Override
     public String getReferenceName(boolean withType) {
-        final var bits = Double.doubleToRawLongBits(value);
-        return (withType ? getType() + " " : "") + " 0x" + Long.toHexString(bits).toUpperCase();
+        // 一定要先转float再转回double确保没有超出的精度
+        final var bits = Double.doubleToRawLongBits((float) value);
+        return (withType ? getType() + " " : "") + "0x" + Long.toHexString(bits).toUpperCase();
     }
 
     @Override
