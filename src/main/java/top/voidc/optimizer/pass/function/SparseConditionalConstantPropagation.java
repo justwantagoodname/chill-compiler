@@ -76,6 +76,7 @@ class SCCPSolver {
     private final Queue<IceBlock> blockWorkList = new ArrayDeque<>();
     private final Queue<Edge> edgeWorkList = new ArrayDeque<>();
     private final Queue<IceInstruction> instWorkList = new ArrayDeque<>();
+    private final Set<IceBlock> totalBlocks = new HashSet<>();
 
     SCCPSolver(IceFunction function) {
         this.function = function;
@@ -96,9 +97,7 @@ class SCCPSolver {
     }
 
     private void processBlock(IceBlock block) {
-        for (IceInstruction inst : block.getInstructions()) {
-            instWorkList.add(inst);
-        }
+        instWorkList.addAll(block.getInstructions());
 
         // 不知道在这里处理边是不是对的
         // 先删了
@@ -150,15 +149,23 @@ class SCCPSolver {
 
             // 删除不能走的分支
             if (cond.getValue() == 1) {
+                IceBlock parent = inst.getParent();
+                // 用 moveTo 删除原 branch 指令
+                inst.moveTo(null);
+
                 // 删除 false 分支
-                IceBranchInstruction trueBranch = new IceBranchInstruction(inst.getParent(), inst.getTrueBlock());
-                inst.getParent().addInstruction(trueBranch);
-                inst.getParent().removeInstruction(inst);
+                IceBranchInstruction trueBranch = new IceBranchInstruction(parent, inst.getTrueBlock());
+
+                parent.addInstruction(trueBranch);
             } else {
+                IceBlock parent = inst.getParent();
+                // 用 moveTo 删除原 branch 指令
+                inst.moveTo(null);
+
                 // 删除 true 分支
-                IceBranchInstruction falseBranch = new IceBranchInstruction(inst.getParent(), inst.getFalseBlock());
-                inst.getParent().addInstruction(falseBranch);
-                inst.getParent().removeInstruction(inst);
+                IceBranchInstruction falseBranch = new IceBranchInstruction(parent, inst.getFalseBlock());
+
+                parent.addInstruction(falseBranch);
             }
         } else {
             markEdgeExecutable(inst.getParent(), inst.getTrueBlock());
@@ -267,6 +274,8 @@ class SCCPSolver {
     }
 
     public void solve() {
+        totalBlocks.addAll(function.getBlocks());
+
         markBlockExecutable(function.getEntryBlock());
         while (!blockWorkList.isEmpty() || !edgeWorkList.isEmpty() || !instWorkList.isEmpty()) {
             if (!instWorkList.isEmpty()) {
@@ -306,7 +315,7 @@ class SCCPSolver {
         }
 
         // 删除不可达分支
-        for (IceBlock block : function.getBlocks()) {
+        for (IceBlock block : totalBlocks) {
             if (!executableBlocks.contains(block)) {
                 // 删除不可达的块
                 Helper.removeBlock(block);
