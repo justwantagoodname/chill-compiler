@@ -28,6 +28,16 @@ public class IceInstruction extends IceUser {
         }
     }
 
+    public void destroy() {
+        if (parent != null) {
+            parent.removeInstruction(this);
+            parent = null;
+        }
+        for (IceValue operand : getOperandsList()) {
+            operand.removeUse(this);
+        }
+    }
+
     public enum InstructionType {
         UNREACHABLE,
         INTRINSIC,

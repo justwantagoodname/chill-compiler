@@ -81,13 +81,13 @@ public class SparseConditionalConstantPropagationTest {
         entry.addInstruction(icmp1);
         entry.addInstruction(outEntry);
 
-        IceInstruction sub = new IceBinaryInstruction(block2, InstructionType.SUB, "sub", IceType.I32,
+        IceInstruction sub = new IceBinaryInstruction(block1, InstructionType.SUB, "sub", IceType.I32,
                 a, b);
         IceInstruction outBlock1 = new IceBranchInstruction(block1, exit);
         block1.addInstruction(sub);
         block1.addInstruction(outBlock1);
 
-        IceInstruction add = new IceBinaryInstruction(block1, InstructionType.ADD, "add", IceType.I32,
+        IceInstruction add = new IceBinaryInstruction(block2, InstructionType.ADD, "add", IceType.I32,
                 new IceConstantInt(1), new IceConstantInt(2));
         IceInstruction outBlock2 = new IceBranchInstruction(block2, exit);
         block2.addInstruction(add);
