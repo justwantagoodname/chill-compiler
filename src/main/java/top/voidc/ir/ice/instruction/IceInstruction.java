@@ -13,6 +13,21 @@ public class IceInstruction extends IceUser {
         return parent;
     }
 
+    /**
+     * 将当前指令移动到新的父节点
+     *
+     * @param parent 新的父节点
+     */
+    public void moveTo(IceBlock parent) {
+        if (this.parent != null) {
+            this.parent.removeInstruction(this);
+        }
+        this.parent = parent;
+        if (parent != null) {
+            parent.addInstruction(this);
+        }
+    }
+
     public enum InstructionType {
         UNREACHABLE,
         INTRINSIC,
@@ -94,7 +109,7 @@ public class IceInstruction extends IceUser {
         }
     }
 
-    private final IceBlock parent;
+    private IceBlock parent;
     InstructionType type;
 
     public IceInstruction(IceBlock parent, String name, IceType type) {

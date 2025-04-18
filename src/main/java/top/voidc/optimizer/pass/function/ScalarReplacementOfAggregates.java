@@ -151,6 +151,6 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
 
     @Override
     public String getName() {
-        return "ScalarReplacementOfAggregates";
+        return "Scalar Replacement Of Aggregates";
     }
 }

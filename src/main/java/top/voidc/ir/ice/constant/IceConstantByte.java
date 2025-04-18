@@ -35,4 +35,11 @@ public class IceConstantByte extends IceConstantData {
     public IceConstantData clone() {
         return new IceConstantByte(value);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof IceConstantByte other)) return false;
+        return value == other.value;
+    }
 }

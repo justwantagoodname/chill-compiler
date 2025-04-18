@@ -39,4 +39,7 @@ public abstract class IceConstantData extends IceConstant {
     public static IceConstantData create(byte value) {
         return new IceConstantByte(value);
     }
+
+    @Override
+    abstract public boolean equals(Object o);
 }

@@ -272,4 +272,9 @@ public class IceConstantArray extends IceConstantData {
         }
         return type;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        throw new UnsupportedOperationException("Not implemented yet: IceConstantArray.equals");
+    }
 }
