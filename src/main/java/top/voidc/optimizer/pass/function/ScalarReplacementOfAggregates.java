@@ -23,6 +23,7 @@ import java.util.List;
  * 标量替换聚合
  * 将 聚合类型 的变量（数组）替换为多个标量变量
  */
+@Pass
 public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
     private static ArrayList<IceAllocaInstruction> createPromotableList(IceFunction function) {
         ArrayList<IceAllocaInstruction> result = new ArrayList<>();
