@@ -14,6 +14,29 @@ public class IceBranchInstruction extends IceInstruction {
     private final boolean isConditional;
 
     @Override
+    public void moveTo(IceBlock parent) {
+        if (parent != null) {
+            if (isConditional) {
+                parent.removeSuccessor(getTrueBlock());
+                parent.removeSuccessor(getFalseBlock());
+            } else {
+                parent.removeSuccessor(getTargetBlock());
+            }
+        }
+
+        super.moveTo(parent);
+
+        if (parent != null) {
+            if (isConditional) {
+                parent.addSuccessor(getTrueBlock());
+                parent.addSuccessor(getFalseBlock());
+            } else {
+                parent.addSuccessor(getTargetBlock());
+            }
+        }
+    }
+
+    @Override
     public void getTextIR(StringBuilder builder) {
         builder.append("br ");
         if (isConditional) {

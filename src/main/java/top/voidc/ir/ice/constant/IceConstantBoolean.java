@@ -39,4 +39,11 @@ public class IceConstantBoolean extends IceConstantData {
     public void getTextIR(StringBuilder builder) {
         builder.append(getReferenceName());
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof IceConstantBoolean that)) return false;
+        return value == that.value;
+    }
 }
