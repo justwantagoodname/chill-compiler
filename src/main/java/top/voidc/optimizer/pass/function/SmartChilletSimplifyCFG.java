@@ -11,6 +11,8 @@ import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.instruction.IcePHINode;
 
+import top.voidc.misc.annotation.Pass;
+
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.optimizer.pass.Helper;
 
@@ -20,6 +22,7 @@ import java.util.*;
  * 聪明疾旋鼬 CFG 简化器
  * 会尝试删除无用的 block 和指令、合并无用的分支、合并无用的 phi 节点
  */
+@Pass
 public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
     private static void removeDeadBlocks(IceFunction function) {
