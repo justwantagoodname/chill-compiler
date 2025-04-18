@@ -59,18 +59,8 @@ public class SmartChilletSimplifyCFGTest {
 
         Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
 
-        String expected = "define i32 @testFunction() {\n" +
-                "entry:\n" +
-                "\tbr label %blockA\n" +
-                "blockA:\n" +
-                "\tbr i1 true, label %blockB, label %blockC\n" +
-                "blockB:\n" +
-                "\tbr label %exit\n" +
-                "blockC:\n" +
-                "\tbr label %exit\n" +
-                "exit:\n" +
-                "\tret i32 0\n" +
-                "}";
+        String expected = "define i32 @testFunction() {\n" + "entry:\n" + "\tret i32 0\n" + "\n"
+            + "}";
 
         assertEquals(expected, actual.toString());
     }

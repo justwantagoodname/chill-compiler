@@ -22,6 +22,8 @@ import java.util.*;
  */
 public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
+    private static ArrayList<IceBlock> allBlocks;
+
     private static void removeDeadBlocks(IceFunction function) {
         Set<IceBlock> executableBlocks = new HashSet<>();
         Queue<IceBlock> queue = new ArrayDeque<>();
@@ -50,7 +52,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
             }
         }
 
-        for (IceBlock block : function.getBlocks()) {
+        for (IceBlock block : allBlocks) {
             if (!executableBlocks.contains(block)) {
                 Helper.removeBlock(block);
             }
@@ -135,9 +137,8 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
                 if (cond instanceof IceConstantBoolean condition) {
                     IceBlock target = condition.getValue() == 1 ? br.getTrueBlock() : br.getFalseBlock();
 
-                    // 将原来的 br 指令 move 到 null parent
-                    // 这样会自动删除 这条指令 和 block 的 successor
-                    br.moveTo(null);
+                    // 删除原来的分支指令
+                    br.destroy();
 
                     // 创建新的分支指令，会自动添加 successor
                     IceBranchInstruction newBr = new IceBranchInstruction(block, target);
@@ -146,7 +147,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
                     instructions.add(i, newBr);
                 } else if (br.getTrueBlock() == br.getFalseBlock()) {
 
-                    br.moveTo(null);
+                    br.destroy();
 
                     // 如果两个目标相同，则直接跳转到目标 block
                     IceBranchInstruction newBr = new IceBranchInstruction(block, br.getTrueBlock());
@@ -246,6 +247,9 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
     @Override
     public void run(IceFunction target) {
+        allBlocks = new ArrayList<>(target.getBlocks());
+        allBlocks.addAll(target.getBlocks());
+
         simplifyBranch(target);
         removeDeadBlocks(target);
         simplifyPHINode(target);
