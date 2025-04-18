@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 用于翻译*单个*表达式为 IceIR，注意生成的表达式会被插入到当前的基本块的最后
@@ -264,23 +265,25 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         }
 
         // 检查参数类型
-        StreamTools.zip(arguments.stream(), function.getParameters().stream(), (arg, param) -> {
+        final var convertedArgs = StreamTools.zip(arguments.stream(), function.getParameters().stream(), (arg, param) -> {
             if (!arg.getType().equals(param.getType())) {
 
-                if (!arg.getType().isConvertibleTo(param.getType())) {
+                if (param.getType().isPointer() && (arg.getType().isPointer() || arg.getType().isString() || arg.getType().isArray())) {
+                    // 指针不管了
+                    return arg;
+                } else if (!arg.getType().isConvertibleTo(param.getType())) {
                     throw new CompilationException(
                             "函数 " + ctx.Ident().getText() + " 参数类型不匹配", ctx, context);
                 }
-
                 final var instr = new IceConvertInstruction(block, param.getType(), arg);
                 block.addInstruction(instr);
                 return instr;
             } else {
                 return arg;
             }
-        });
+        }).toList();
 
-        final var instr = new IceCallInstruction(block, function, arguments);
+        final var instr = new IceCallInstruction(block, function, convertedArgs);
         block.addInstruction(instr);
         return instr;
     }
