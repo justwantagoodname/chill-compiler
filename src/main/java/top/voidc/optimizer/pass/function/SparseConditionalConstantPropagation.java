@@ -9,6 +9,7 @@ import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
 
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.misc.annotation.Pass;
+import top.voidc.optimizer.pass.Helper;
 
 import java.util.*;
 
@@ -265,27 +266,6 @@ class SCCPSolver {
         }
     }
 
-    private void removeBlock(IceBlock block) {
-        // 枚举所有的 successor
-        for (IceBlock successor : block.getSuccessors()) {
-            // block 会影响 successor 中的 phi 节点
-            for (IceInstruction inst : successor.getInstructions()) {
-                if (inst instanceof IcePHINode phiNode) {
-                    // 在这个 phi 节点中，删除这个分支
-                    phiNode.removeBranch(block);
-                }
-            }
-
-            // 删除 use 关系
-            block.removeSuccessor(successor);
-        }
-
-        // 在所有的 predecessor 中删除这个 block
-        for (IceBlock predecessor : block.getPredecessors()) {
-            predecessor.removeSuccessor(block);
-        }
-    }
-
     public void solve() {
         markBlockExecutable(function.getEntryBlock());
         while (!blockWorkList.isEmpty() || !edgeWorkList.isEmpty() || !instWorkList.isEmpty()) {
@@ -329,7 +309,7 @@ class SCCPSolver {
         for (IceBlock block : function.getBlocks()) {
             if (!executableBlocks.contains(block)) {
                 // 删除不可达的块
-                removeBlock(block);
+                Helper.removeBlock(block);
             }
         }
 
