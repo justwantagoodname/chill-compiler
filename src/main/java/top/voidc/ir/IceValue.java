@@ -53,6 +53,10 @@ public class IceValue {
         return uses;
     }
 
+    public List<IceUser> getUsersList() {
+        return uses;
+    }
+
     @Override
     public String toString() {
         return getReferenceName();

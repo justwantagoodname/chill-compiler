@@ -11,7 +11,9 @@ import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
-import top.voidc.optimizer.pass.Pass;
+
+import top.voidc.optimizer.pass.CompilePass;
+import top.voidc.misc.annotation.Pass;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -21,7 +23,7 @@ import java.util.List;
  * 标量替换聚合
  * 将 聚合类型 的变量（数组）替换为多个标量变量
  */
-public class ScalarReplacementOfAggregates implements Pass<IceFunction> {
+public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
     private static ArrayList<IceAllocaInstruction> createPromotableList(IceFunction function) {
         ArrayList<IceAllocaInstruction> result = new ArrayList<>();
         for (IceBlock block : function.getBlocks()) {
@@ -145,5 +147,10 @@ public class ScalarReplacementOfAggregates implements Pass<IceFunction> {
         }
 
         replaceGEPInstructions(target, newAllocaLists);
+    }
+
+    @Override
+    public String getName() {
+        return "Scalar Replacement Of Aggregates";
     }
 }
