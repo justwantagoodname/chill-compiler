@@ -172,7 +172,7 @@ public class SparseConditionalConstantPropagationTest {
     }
 
     @Test
-    public void testWillNotDeletePhiNodeIncorrectly() {
+    public void testSCCPWillNotDeletePhiNodeIncorrectly() {
         SparseConditionalConstantPropagation pass = new SparseConditionalConstantPropagation();
         IceFunction function = createReallyComplexBranch();
 

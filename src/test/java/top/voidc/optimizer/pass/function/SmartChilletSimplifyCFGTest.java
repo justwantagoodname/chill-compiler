@@ -1,11 +1,12 @@
 package top.voidc.optimizer.pass.function;
 
 import top.voidc.ir.IceBlock;
+import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantBoolean;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
-import top.voidc.ir.ice.instruction.IceBranchInstruction;
-import top.voidc.ir.ice.instruction.IceRetInstruction;
+import top.voidc.ir.ice.instruction.*;
+import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
 import top.voidc.ir.ice.type.IceType;
 
 import org.junit.jupiter.api.Test;
@@ -70,6 +71,47 @@ public class SmartChilletSimplifyCFGTest {
                 "exit:\n" +
                 "\tret i32 0\n" +
                 "}";
+
+        assertEquals(expected, actual.toString());
+    }
+
+    private static IceFunction createUnusedParameter() {
+        IceFunction function = new IceFunction("testFunction");
+        function.setReturnType(IceType.VOID);
+        IceValue a = new IceValue("a", IceType.I32);
+        function.addParameter(a);
+
+        IceBlock entry = function.getEntryBlock();
+        IceInstruction add = new IceBinaryInstruction(entry, InstructionType.ADD, "add", IceType.I32, a, new IceConstantInt(2));
+        IceInstruction sub = new IceBinaryInstruction(entry, InstructionType.SUB, "sub", IceType.I32, add, new IceConstantInt(1));
+        IceInstruction mul = new IceBinaryInstruction(entry, InstructionType.MUL, "mul", IceType.I32, add, new IceConstantInt(3));
+        entry.addInstruction(add);
+        entry.addInstruction(sub);
+        entry.addInstruction(mul);
+
+        IceInstruction ret = new IceRetInstruction(entry);
+        entry.addInstruction(ret);
+
+        return function;
+    }
+
+    @Test
+    public void testSCCPWithUnusedParameter() {
+        SmartChilletSimplifyCFG pass = new SmartChilletSimplifyCFG();
+        IceFunction function = createUnusedParameter();
+
+        StringBuilder before = new StringBuilder();
+        function.getTextIR(before);
+
+        pass.run(function);
+
+        StringBuilder actual = new StringBuilder();
+        function.getTextIR(actual);
+
+        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
+
+        String expected =
+            "define void @testFunction(i32 %a) {\n" + "entry:\n" + "\tret void\n" + "\n" + "}";
 
         assertEquals(expected, actual.toString());
     }

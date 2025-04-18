@@ -6,6 +6,7 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstant;
 import top.voidc.ir.ice.constant.IceConstantBoolean;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.instruction.IceBinaryInstruction;
 import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.instruction.IcePHINode;
@@ -15,6 +16,10 @@ import top.voidc.optimizer.pass.Helper;
 
 import java.util.*;
 
+/**
+ * 聪明疾旋鼬 CFG 简化器
+ * 会尝试删除无用的 block 和指令、合并无用的分支、合并无用的 phi 节点
+ */
 public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
     private static void removeDeadBlocks(IceFunction function) {
@@ -206,12 +211,46 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
         }
     }
 
+    /**
+     * 移除没有使用的二元指令
+     * 如果 IceBinaryInstruction 没有 user, 那么它就是可以被移除的
+     *
+     * @param function 要处理的函数
+     */
+    private static void removeUnusedBinaryInstructions(IceFunction function) {
+        Queue<IceBinaryInstruction> workList = new ArrayDeque<>();
+        for (IceBlock block : function.getBlocks()) {
+            for (IceInstruction instruction : block.getInstructions()) {
+                if (instruction instanceof IceBinaryInstruction binary) {
+                    if (binary.getUsersList().isEmpty()) {
+                        workList.add(binary);
+                    }
+                }
+            }
+        }
+
+        while (!workList.isEmpty()) {
+            IceBinaryInstruction binary = workList.poll();
+            IceBlock parent = binary.getParent();
+
+            for (IceValue operand : binary.getOperands()) {
+                operand.removeUse(binary);
+                if (operand instanceof IceBinaryInstruction && operand.getUsersList().isEmpty()) {
+                    workList.add((IceBinaryInstruction) operand);
+                }
+            }
+
+            parent.removeInstruction(binary);
+        }
+    }
+
     @Override
     public void run(IceFunction target) {
         simplifyBranch(target);
         removeDeadBlocks(target);
         simplifyPHINode(target);
         mergeTrivialBlocks(target.getEntryBlock());
+        removeUnusedBinaryInstructions(target);
     }
 
     @Override
