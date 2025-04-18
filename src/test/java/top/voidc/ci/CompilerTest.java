@@ -164,11 +164,22 @@ public class CompilerTest {
         ProcessBuilder clangBuilder = new ProcessBuilder();
         clangBuilder.command("clang", "-x", "ir", "-Ltestcases/libsysy", "-lsysy",
                 "-o", output.getAbsolutePath(), llvmFile.getAbsolutePath());
+
         Process clangProcess = clangBuilder.start();
 
         int clangExitCode = clangProcess.waitFor();
 
         if (clangExitCode != 0) {
+            // 获取错误输出
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(clangProcess.getErrorStream()));
+            StringBuilder errors = new StringBuilder();
+            String line;
+            while ((line = errorReader.readLine()) != null) {
+                errors.append(line).append("\n");
+            }
+
+            Log.e("IR verification failed:\n===LLVM OUTPUT===\n" + errors + "===LLVM END===\n");
+
             throw new RuntimeException("Compilation failed: clang exit code = " + clangExitCode);
         }
     }
@@ -272,12 +283,13 @@ public class CompilerTest {
         TestResult result = new TestResult(testcase);
         compileSysySource(testcase, result.getAsm());
         assertTrue(result.getAsm().exists(), "Assembly file not generated");
-        // 验证IR格式
-        assertTrue(verifyIR(result.getIrOutput()), "LLVM IR Format Error");
-
         // 生成并运行可执行文件
+        Log.i("Clang Compiling");
         compileToExecutable(result.getIrOutput(), result.getExecutableOutput());
+        Log.i("Compiled: " + result.getExecutableOutput().getAbsolutePath());
+        Log.i("Running " + result.getExecutableOutput().getAbsolutePath());
         runExecutableAndCompare(result);
+        Log.i("Run End");
 
         result.cleanup();
     }
