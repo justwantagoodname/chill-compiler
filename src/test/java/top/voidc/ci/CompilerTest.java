@@ -1,5 +1,6 @@
 package top.voidc.ci;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import top.voidc.misc.Log;
@@ -243,36 +244,45 @@ public class CompilerTest {
         result.setStatus(ResultStatus.AC);
     }
 
-    public static boolean verifyIR(File llvmFile) {
-        if (llvmFile == null || !llvmFile.exists()) {
-            throw new IllegalArgumentException("File does not exist: " + llvmFile);
+    @BeforeAll
+    public static void compileLibsysy() {
+        Log.i("Compiling Libsysy");
+        final var libsysyDir = new File("testcases/libsysy");
+        final var libsysySrc = new File(libsysyDir, "sylib.c");
+        final var libsysyOutput = new File(libsysyDir, "sylib.o");
+        final var libsysy = new File(libsysyDir, "libsysy.a");
+
+        if (libsysy.exists()) {
+            return;
         }
 
-        ProcessBuilder builder = new ProcessBuilder();
-        builder.command("opt", "-passes=verify", llvmFile.getAbsolutePath(), "-o", "-");
+        if (!libsysyDir.exists()) {
+            throw new IllegalStateException("Libsysy directory does not exist: " + libsysyDir);
+        }
+
+        if (!libsysySrc.exists()) {
+            throw new IllegalStateException("Libsysy source file does not exist: " + libsysySrc);
+        }
+        final var clangBuilder = new ProcessBuilder();
+        clangBuilder.command("clang", "-c", libsysySrc.getAbsolutePath(), "-o", libsysyOutput.getAbsolutePath());
+        final var arBuilder = new ProcessBuilder();
+        arBuilder.command("ar", "-r", libsysy.getAbsolutePath(), libsysyOutput.getAbsolutePath());
 
         try {
-            Process process = builder.start();
-
-            // 获取错误输出
-            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            StringBuilder errors = new StringBuilder();
-            String line;
-            while ((line = errorReader.readLine()) != null) {
-                errors.append(line).append("\n");
-            }
-
+            final var process = clangBuilder.start();
             int exitCode = process.waitFor();
-            if (exitCode == 0) {
-                return true;  // 验证成功
-            } else {
-                System.err.println("IR verification failed:\n===LLVM OUTPUT===\n" + errors + "===LLVM END===\n");
-                return false;
+            if (exitCode != 0) {
+                throw new RuntimeException("Libsysy compilation failed: clang exit code = " + exitCode);
             }
-
+            Log.i("Libsysy compiled successfully: " + libsysyOutput.getAbsolutePath());
+            // 运行 ar 命令
+            final var arProc = arBuilder.start();
+            int arExitCode = arProc.waitFor();
+            if (arExitCode != 0) {
+                throw new RuntimeException("Libsysy archive creation failed: ar exit code = " + arExitCode);
+            }
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            return false;
+            throw new RuntimeException("Error during libsysy compilation", e);
         }
     }
 
