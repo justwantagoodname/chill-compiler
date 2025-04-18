@@ -241,7 +241,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
                 }
             }
 
-            parent.removeInstruction(binary);
+            binary.destroy();
         }
     }
 
