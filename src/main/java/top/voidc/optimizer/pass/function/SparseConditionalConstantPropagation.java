@@ -150,8 +150,8 @@ class SCCPSolver {
             // 删除不能走的分支
             if (cond.getValue() == 1) {
                 IceBlock parent = inst.getParent();
-                // 用 moveTo 删除原 branch 指令
-                inst.moveTo(null);
+
+                inst.destroy();
 
                 // 删除 false 分支
                 IceBranchInstruction trueBranch = new IceBranchInstruction(parent, inst.getTrueBlock());
@@ -159,8 +159,8 @@ class SCCPSolver {
                 parent.addInstruction(trueBranch);
             } else {
                 IceBlock parent = inst.getParent();
-                // 用 moveTo 删除原 branch 指令
-                inst.moveTo(null);
+
+                inst.destroy();
 
                 // 删除 true 分支
                 IceBranchInstruction falseBranch = new IceBranchInstruction(parent, inst.getFalseBlock());
@@ -307,7 +307,8 @@ class SCCPSolver {
                         }
                     }
 
-                    instructions.remove(i);
+                    instructions.get(i).destroy();
+//                    instructions.remove(i);
                     // 删除了一个指令，后面的指令往前移动，调整 i
                     --i;
                 }
@@ -336,7 +337,8 @@ class SCCPSolver {
                                 inst2.replaceOperand(phiNode, value);
                             }
                         }
-                        block.removeInstruction(phiNode);
+
+                        phiNode.destroy();
                     }
                 }
             }
