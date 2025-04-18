@@ -14,24 +14,24 @@ public class IceBranchInstruction extends IceInstruction {
     private final boolean isConditional;
 
     @Override
-    public void moveTo(IceBlock parent) {
-        if (parent != null) {
+    public void moveTo(IceBlock newParent) {
+        if (this.getParent() != null) {
             if (isConditional) {
-                parent.removeSuccessor(getTrueBlock());
-                parent.removeSuccessor(getFalseBlock());
+                this.getParent().removeSuccessor(getTrueBlock());
+                this.getParent().removeSuccessor(getFalseBlock());
             } else {
-                parent.removeSuccessor(getTargetBlock());
+                this.getParent().removeSuccessor(getTargetBlock());
             }
         }
 
-        super.moveTo(parent);
+        super.moveTo(newParent);
 
-        if (parent != null) {
+        if (this.getParent() != null) {
             if (isConditional) {
-                parent.addSuccessor(getTrueBlock());
-                parent.addSuccessor(getFalseBlock());
+                this.getParent().addSuccessor(getTrueBlock());
+                this.getParent().addSuccessor(getFalseBlock());
             } else {
-                parent.addSuccessor(getTargetBlock());
+                this.getParent().addSuccessor(getTargetBlock());
             }
         }
     }
