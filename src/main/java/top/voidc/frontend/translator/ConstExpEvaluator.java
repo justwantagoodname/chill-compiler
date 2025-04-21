@@ -62,10 +62,10 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
 
         if (lhsType != rhsType) {
             // cast
-            if (lhsType == IceType.I32()) {
-                lhs = lhs.castTo(IceType.F32());
+            if (lhsType.isInteger()) {
+                lhs = lhs.castTo(IceType.F32);
             } else {
-                rhs = rhs.castTo(IceType.F32());
+                rhs = rhs.castTo(IceType.F32);
             }
         }
 

@@ -61,14 +61,6 @@ public class IceType implements Comparable<IceType> {
         };
     }
 
-    public static IceType I32() {
-        return I32;
-    }
-
-    public static IceType F32() {
-        return F32;
-    }
-
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof IceType) {
