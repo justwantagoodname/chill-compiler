@@ -203,6 +203,16 @@ public class CompilerTest {
         Process process = builder.start();
         int exitCode = process.waitFor();
 
+        // Libsysy 的计时信息是通过 stderr打印的
+        BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+        StringBuilder errors = new StringBuilder();
+        String line;
+        while ((line = errorReader.readLine()) != null) {
+            errors.append(line).append("\n");
+        }
+
+        if (!errors.isEmpty()) Log.i("libsysy 输出:\n===SysY OUTPUT===\n" + errors + "===SysY END===\n");
+
         // 将返回值追加到输出文件
         appendCode(exitCode, result.getActualOutput());
 
