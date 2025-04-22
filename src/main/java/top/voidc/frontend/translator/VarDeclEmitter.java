@@ -124,7 +124,6 @@ public class VarDeclEmitter extends ConstDeclEmitter {
         final var arrayShapeType = (IceArrayType) ((IcePtrType<?>) arrayPtr.getType()).getPointTo();
         final var initArray = new IceConstantArray(arrayShapeType, new ArrayList<>());
         // compute dimension size
-        arraySize.add(1);
 
         visited.clear();
         fillArray(initArray, ctx, arraySize, 0);

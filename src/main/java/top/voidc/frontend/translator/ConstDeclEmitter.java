@@ -3,6 +3,7 @@ package top.voidc.frontend.translator;
 import org.antlr.v4.runtime.tree.ParseTree;
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
+import top.voidc.frontend.translator.exception.CompilationException;
 import top.voidc.ir.*;
 import top.voidc.ir.ice.constant.*;
 import top.voidc.ir.ice.type.IceArrayType;
@@ -46,66 +47,101 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
         return constValue;
     }
 
+    /**
+     * 首先跑到最内侧的一维数组，判断遇到的是不是{}或者{0},如果是那就填完当前行跑路填下一行
+     * 如果不是按顺序填充满当前行然后继续填充下一行
+     * @param arrayDecl 当前的维度的数组
+     * @param initVal 当前所在的语法节点
+     * @param arraySize 声明的数组大小
+     * @param depth 当前所在的数组的维度
+     */
     protected void fillArray(IceConstantArray arrayDecl, SysyParser.InitValContext initVal, List<Integer> arraySize, int depth) {
         Log.should(depth < arraySize.size(), "Array size should be consistent with dimension");
 
-        var currentArraySize = arraySize.get(depth); // 当前类型(维度)下剩余填充需要的元素数量
-
-        for (final var initValItem : initVal.initVal()) {
-            if (visited.contains(initValItem)) continue;
-            if (currentArraySize == 0) return; // 当前维度已经填充完毕，直接返回填充下一个维度
-
-            if (initValItem.initVal().isEmpty() && initValItem.exp() != null) {
-                if (arraySize.get(depth + 1) == 1) {
-                    // 内部是一个表达式，这个表达式应该是一个常量表达式
-                    var initValue = visitArrayInitValExp(initValItem.exp(), arrayDecl.getInsideType());
-
-                    // 最后一维度，直接添加到数组中
-                    arrayDecl.addElement(initValue);
-                    currentArraySize--;
-                } else {
-                    // 还有下一维度，递归填充
-                    currentArraySize = fillSubArray(arrayDecl, arraySize, depth, currentArraySize, initVal);
-                }
-            } else {
-                // 内部是一个数组，递归填充
-                currentArraySize = fillSubArray(arrayDecl, arraySize, depth, currentArraySize, initValItem);
-            }
-            visited.add(initValItem);
+        if (visited.contains(initVal)) return;
+//        visited.add(initVal);
+        if (initVal.initVal().isEmpty() && initVal.exp() == null) {
+            // 是 {}，填 0 跑路
+            arrayDecl.setZeroInit(true);
+            visited.add(initVal);
+            return;
         }
-        if (currentArraySize > 0) {
-            if (currentArraySize.equals(arraySize.get(depth))) {
-                // 一个没动 全零
-                arrayDecl.setZeroInit(true);
-            } else {
-                final var subArrayType = ((IceArrayType) arrayDecl.getType()).getElementType();
-                if (subArrayType instanceof IceArrayType) {
-                    // 内部是一个数组，递归填充
-                    final var nestedArray = new IceConstantArray((IceArrayType) subArrayType);
-                    arrayDecl.addElement(nestedArray);
-                } else {
-                    // 以0填充
-                    switch (arrayDecl.getInsideType().getTypeEnum()) {
-                        case I32 -> arrayDecl.addElement(IceConstantData.create(0), currentArraySize);
-                        case F32 -> arrayDecl.addElement(IceConstantData.create(0F), currentArraySize);
-                        default -> throw new IllegalStateException("Unexpected value: " + arrayDecl.getType());
+
+        final var isInLastDimension = depth == arraySize.size() - 1; // 当前维度是否是最后一维
+
+        if (!isInLastDimension) {
+            for (final var initValItem : initVal.initVal()) {
+                if (visited.contains(initValItem)) continue; // 访问过了直接跳过
+
+                if (arrayDecl.getType().getElementType().isArray()) {
+                    // 内部还是数组
+                    if (initValItem.initVal().isEmpty() && initValItem.exp() != null) {
+                        // 内部是一个Exp
+                        // 注意 initVal 这里是用于切换当前
+                        final var filledSubArray = fillSubArray(arrayDecl, arraySize, depth, initVal); // 已经填充过的当前维度的一个子数组
+                        arrayDecl.addElement(filledSubArray);
+                    } else {
+                        final var filledSubArray = fillSubArray(arrayDecl, arraySize, depth, initValItem); // 已经填充过的当前维度的一个子数组
+                        arrayDecl.addElement(filledSubArray);
                     }
+                } else {
+                    throw new CompilationException("多余的{}", initVal, context);
+                }
+                visited.add(initValItem);
+            }
+            final var nestedArray =
+                    new IceConstantArray((IceArrayType) arrayDecl.getType().getElementType(), List.of());
+            nestedArray.setZeroInit(true);
+            arrayDecl.fillLastWith(nestedArray);
+        } else {
+            for (final var initValItem : initVal.initVal()) { // 遍历当前初始化列表中的每一个元素
+                if (visited.contains(initValItem)) continue; // 访问过了直接跳过
+
+                if (arrayDecl.isFull()) {
+                    // 填满一行了返回填下一行
+                    return;
+                }
+
+                visited.add(initValItem);
+                if (initValItem.initVal().isEmpty() && initValItem.exp() == null) {
+                    // 是 {}，填 0 跑路
+                    arrayDecl.setZeroInit(true);
+                    return;
+                } else if (initValItem.initVal().isEmpty() && initValItem.exp() != null) {
+                    // 直接获取内部的表达式
+                    var initValue = visitArrayInitValExp(initValItem.exp(), arrayDecl.getInsideType());
+                    arrayDecl.addElement(initValue);
+                } else {
+                    throw new CompilationException("错误的初始化表达式", initVal, context);
                 }
             }
+            //  剩余的部分初始化为 0
+            arrayDecl.fillLastWithZero();
         }
     }
 
-    private Integer fillSubArray(IceConstantArray arrayDecl,
+    /**
+     * 比如int a[3][3] => 给当前的arrayDecl填满一个int[3]
+     * 填充子数组，保证填满
+     * 要保证下面有维度才行不能是空的
+     * @param arrayDecl 传入的*整体*，如int[3][3]
+     * @param arraySize 所有总的大小
+     * @param depth 当前的维度相对于arrayDecl的深度 比如 int[3] 在 int[3][3]
+     * @param initValItem 要初始化维度的元素，例子中的int[3]
+     */
+    private IceConstantArray fillSubArray(IceConstantArray arrayDecl,
                                  List<Integer> arraySize,
                                  int depth,
-                                 Integer currentArraySize,
                                  SysyParser.InitValContext initValItem) {
-        final var subArrayType = ((IceArrayType) arrayDecl.getType()).getElementType();
-        final var nestedArray = new IceConstantArray((IceArrayType) subArrayType, new ArrayList<>());
+        final var subArrayType = arrayDecl.getType().getElementType();
+
+        assert subArrayType.isArray(); // 保证是数组
+
+        final var nestedArray = new IceConstantArray((IceArrayType) subArrayType, List.of());
+
         fillArray(nestedArray, initValItem, arraySize, depth + 1);
-        arrayDecl.addElement(nestedArray);
-        currentArraySize--;
-        return currentArraySize;
+
+        return nestedArray;
     }
 
     protected IceType getConstType(SysyParser.ConstDefContext ctx) {
@@ -132,7 +168,6 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
         final var arrayDecl = new IceConstantArray(arrayType, new ArrayList<>());
 
         // compute dimension size
-        arraySize.add(1);
 
         visited.clear();
         fillArray(arrayDecl, ctx.initVal(), arraySize, 0);
@@ -203,7 +238,6 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
             final var initVal = ctx.initVal();
             final var initArray = new IceConstantArray(arrayType, new ArrayList<>());
             // compute dimension size
-            arraySize.add(1);
 
             visited.clear();
             fillArray(initArray, initVal, arraySize, 0);
