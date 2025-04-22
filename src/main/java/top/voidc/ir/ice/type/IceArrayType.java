@@ -34,6 +34,10 @@ public class IceArrayType extends IceType {
         return elementType;
     }
 
+    /**
+     * 获取当前维度数组长度
+     * @return 数组长度
+     */
     public int getNumElements() {
         return numElements;
     }
@@ -42,6 +46,10 @@ public class IceArrayType extends IceType {
         return getElementType().isArray();
     }
 
+    /**
+     * 获取总维度数
+     * @return 获取总维度数
+     */
     public int getDimSize() {
         int depth = 0;
         IceType type = this;

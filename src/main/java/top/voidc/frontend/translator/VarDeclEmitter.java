@@ -73,6 +73,7 @@ public class VarDeclEmitter extends ConstDeclEmitter {
                 initValue = new IceConvertInstruction(
                         currentFunction.getEntryBlock(),
                         varType, initValue);
+                currentBlock.addInstruction((IceInstruction) initValue);
             }
             final var store = new IceStoreInstruction(currentBlock, varStackPtr, initValue);
             currentBlock.addInstruction(store);
@@ -124,7 +125,6 @@ public class VarDeclEmitter extends ConstDeclEmitter {
         final var arrayShapeType = (IceArrayType) ((IcePtrType<?>) arrayPtr.getType()).getPointTo();
         final var initArray = new IceConstantArray(arrayShapeType, new ArrayList<>());
         // compute dimension size
-        arraySize.add(1);
 
         visited.clear();
         fillArray(initArray, ctx, arraySize, 0);
