@@ -73,6 +73,7 @@ public class VarDeclEmitter extends ConstDeclEmitter {
                 initValue = new IceConvertInstruction(
                         currentFunction.getEntryBlock(),
                         varType, initValue);
+                currentBlock.addInstruction((IceInstruction) initValue);
             }
             final var store = new IceStoreInstruction(currentBlock, varStackPtr, initValue);
             currentBlock.addInstruction(store);
