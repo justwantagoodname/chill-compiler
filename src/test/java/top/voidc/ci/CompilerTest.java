@@ -163,7 +163,7 @@ public class CompilerTest {
         }
 
         ProcessBuilder clangBuilder = new ProcessBuilder();
-        clangBuilder.command("clang", "-x", "ir", "-Ltestcases/libsysy", "-lsysy",
+        clangBuilder.command("clang", "-x", "ir", "-Ltestcases/libsysy", "-lsysy", "-lc++",
                 "-o", output.getAbsolutePath(), llvmFile.getAbsolutePath());
 
         Process clangProcess = clangBuilder.start();
@@ -249,7 +249,9 @@ public class CompilerTest {
         Log.i("Compiling Libsysy");
         final var libsysyDir = new File("testcases/libsysy");
         final var libsysySrc = new File(libsysyDir, "sylib.c");
+        final var libsysyTimerSrc = new File(libsysyDir, "sytimer.cc");
         final var libsysyOutput = new File(libsysyDir, "sylib.o");
+        final var libsysyTimerOutput = new File(libsysyDir, "sytimer.o");
         final var libsysy = new File(libsysyDir, "libsysy.a");
 
         if (libsysy.exists()) {
@@ -260,13 +262,16 @@ public class CompilerTest {
             throw new IllegalStateException("Libsysy directory does not exist: " + libsysyDir);
         }
 
-        if (!libsysySrc.exists()) {
+        if (!libsysySrc.exists() || !libsysyTimerSrc.exists()) {
             throw new IllegalStateException("Libsysy source file does not exist: " + libsysySrc);
         }
+
         final var clangBuilder = new ProcessBuilder();
         clangBuilder.command("clang", "-c", libsysySrc.getAbsolutePath(), "-o", libsysyOutput.getAbsolutePath());
+        final var clangppBuilder = new ProcessBuilder();
+        clangppBuilder.command("clang++", "-c", libsysyTimerSrc.getAbsolutePath(), "-o", libsysyTimerOutput.getAbsolutePath());
         final var arBuilder = new ProcessBuilder();
-        arBuilder.command("ar", "-r", libsysy.getAbsolutePath(), libsysyOutput.getAbsolutePath());
+        arBuilder.command("ar", "-r", libsysy.getAbsolutePath(), libsysyOutput.getAbsolutePath(), libsysyTimerOutput.getAbsolutePath());
 
         try {
             final var process = clangBuilder.start();
