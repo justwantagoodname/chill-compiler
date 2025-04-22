@@ -3,6 +3,7 @@ package top.voidc.ir.ice.constant;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.misc.Tool;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -341,6 +342,19 @@ public class IceConstantArray extends IceConstantData {
 
     @Override
     public boolean equals(Object o) {
-        throw new UnsupportedOperationException("Not implemented yet: IceConstantArray.equals");
+        if (o == null) return false;
+
+        if (this == o) return true;
+        if (!(o instanceof IceConstantArray that)) return false;
+        if (!this.getType().equals(that.getType())) return false;
+
+        if (this.isZeroInit() && that.isZeroInit()) return true;
+        if (this.isZeroInit() != that.isZeroInit()) return false;
+
+        for (int i = 0; i < elements.size(); i++) {
+            if (!elements.get(i).equals(that.elements.get(i))) return false;
+        }
+
+        return true;
     }
 }
