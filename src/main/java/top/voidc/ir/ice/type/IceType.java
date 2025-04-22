@@ -116,6 +116,7 @@ public class IceType implements Comparable<IceType> {
     public boolean isNumeric() {
         return this.getTypeEnum() == TypeEnum.I32
                 || this.getTypeEnum() == TypeEnum.F32
+                || this.getTypeEnum() == TypeEnum.I8
                 || this.getTypeEnum() == TypeEnum.I1;
     }
 
