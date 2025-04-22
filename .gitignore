@@ -43,3 +43,7 @@ testcases/**/*.actual.out
 testcases/**/*.s
 testcases/**/*.ll
 testcases/**/*.exe
+*.o
+*.a
+*.o
+*.o

@@ -275,7 +275,8 @@ public class CompilerTest {
 
         try {
             final var process = clangBuilder.start();
-            int exitCode = process.waitFor();
+            final var timeProc = clangppBuilder.start();
+            int exitCode = process.waitFor() + timeProc.waitFor();
             if (exitCode != 0) {
                 throw new RuntimeException("Libsysy compilation failed: clang exit code = " + exitCode);
             }
