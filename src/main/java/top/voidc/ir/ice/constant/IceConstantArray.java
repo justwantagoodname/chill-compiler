@@ -3,6 +3,7 @@ package top.voidc.ir.ice.constant;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.misc.Tool;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -40,21 +41,34 @@ public class IceConstantArray extends IceConstantData {
             }
             return element.toString();
         }
+
+        public int getRepeat() {
+            return repeat;
+        }
+
+        public IceValue getElement() {
+            return element;
+        }
     }
 
-    private final List<DataArrayElement> elements;
+    private List<DataArrayElement> elements;
 
     private boolean zeroInit = false;
 
     public IceConstantArray(IceArrayType arrayType, List<DataArrayElement> elements) {
         super(arrayType);
-        this.elements = elements;
+        this.elements = new ArrayList<>(elements);
     }
 
     public IceConstantArray(IceArrayType arrayType) {
         super(arrayType);
         this.elements = null;
         this.zeroInit = true;
+    }
+
+    @Override
+    public IceArrayType getType() {
+        return (IceArrayType) super.getType();
     }
 
     @Override
@@ -156,9 +170,13 @@ public class IceConstantArray extends IceConstantData {
         return null;
     }
 
+    /**
+     * 添加单个元素
+     * @param element 要添加的元素
+     */
     public void addElement(IceValue element) {
         if (zeroInit) {
-            throw new IllegalStateException("Cannot add element to zero initialized array");
+            elements = new ArrayList<>();
         }
         assert elements != null;
         elements.add(new DataArrayElement(element));
@@ -166,7 +184,7 @@ public class IceConstantArray extends IceConstantData {
 
     public void addElement(IceValue element, int repeat) {
         if (zeroInit) {
-            throw new IllegalStateException("Cannot add element to zero initialized array");
+            elements = new ArrayList<>();
         }
         assert elements != null;
         elements.add(new DataArrayElement(element, repeat));
@@ -241,17 +259,31 @@ public class IceConstantArray extends IceConstantData {
         return true;
     }
 
-    public boolean isZeroInit() {
+    /**
+     * 这个返回的不对，只是getter方法
+     * @see IceConstantArray#isFullZero()
+     */
+    protected boolean isZeroInit() {
         return zeroInit;
     }
 
     public void setZeroInit(boolean zeroInit) {
         this.zeroInit = zeroInit;
+        if (this.zeroInit) {
+            this.elements = null;
+        }
+    }
+
+    public boolean isFullZero() {
+        if (isZeroInit()) return true;
+        else {
+            return getNonZeroElements().isEmpty();
+        }
     }
 
     @Override
     public String getReferenceName(boolean withType) {
-        if (isZeroInit()) {
+        if (isFullZero()) {
             return (withType ? getType() : "") + " zeroinitializer";
         } else {
             assert elements != null;
@@ -275,8 +307,54 @@ public class IceConstantArray extends IceConstantData {
         return type;
     }
 
+    // 将当前element最后的未填充的部分填0
+    public void fillLastWithZero() {
+        if (isZeroInit()) return;
+        assert elements != null;
+        assert getType().getElementType().isNumeric();
+        final int currentElementSize = elements.stream().map(DataArrayElement::getRepeat).reduce(0, Integer::sum);
+        if (currentElementSize < getType().getNumElements()) {
+            final var elementType = getInsideType();
+            final var zeroElement = switch (elementType.getTypeEnum()) {
+                case I1 -> new IceConstantBoolean(false);
+                case I8, I32 -> new IceConstantInt(0);
+                case F32 -> new IceConstantFloat(0F);
+                default -> throw new IllegalStateException("Unexpected value: " + elementType.getTypeEnum());
+            };
+            final var repeat = getType().getNumElements() - currentElementSize;
+            addElement(zeroElement, repeat);
+        }
+    }
+
+    public void fillLastWith(IceValue value) {
+        if (isZeroInit()) return;
+        assert elements != null;
+        final int currentElementSize = elements.stream().map(DataArrayElement::getRepeat).reduce(0, Integer::sum);
+        if (currentElementSize < getType().getNumElements()) {
+            final var repeat = getType().getNumElements() - currentElementSize;
+            addElement(value, repeat);
+        }
+    }
+
+    public boolean isFull() {
+        return elements.stream().map(DataArrayElement::getRepeat).reduce(0, Integer::sum) == getType().getNumElements();
+    }
+
     @Override
     public boolean equals(Object o) {
-        throw new UnsupportedOperationException("Not implemented yet: IceConstantArray.equals");
+        if (o == null) return false;
+
+        if (this == o) return true;
+        if (!(o instanceof IceConstantArray that)) return false;
+        if (!this.getType().equals(that.getType())) return false;
+
+        if (this.isZeroInit() && that.isZeroInit()) return true;
+        if (this.isZeroInit() != that.isZeroInit()) return false;
+
+        for (int i = 0; i < elements.size(); i++) {
+            if (!elements.get(i).equals(that.elements.get(i))) return false;
+        }
+
+        return true;
     }
 }
