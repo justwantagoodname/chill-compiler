@@ -82,7 +82,7 @@ public class CompilerTest {
     }
 
     @BeforeAll
-    public static void setup() {
+    public static void setup() throws IOException, InterruptedException {
         // 编译 Libsysy
         Log.i("使用 " + runner.getName() + " 汇编器 " + runner.getAssemblerName());
         assertTrue(runner.beforeAll(), runner.getName() + " 的 beforeAll() 失败");

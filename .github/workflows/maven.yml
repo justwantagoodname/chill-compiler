@@ -17,7 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           java-version: '24'
@@ -27,7 +27,10 @@ jobs:
       - name: Install LLVM toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y llvm clang build-essential
+          sudo apt-get install -y llvm clang clang++ build-essential make binutils
+
+      - name: Install Maven Dependencies
+        run: mvn clean install -DskipTests --file pom.xml
 
       - name: Test with Maven
         run: mvn clean test --file pom.xml
