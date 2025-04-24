@@ -27,7 +27,7 @@ jobs:
       - name: Install LLVM toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y llvm clang clang++ build-essential make binutils
+          sudo apt-get install -y clang clang++ build-essential make binutils
 
       - name: Install Maven Dependencies
         run: mvn clean install -DskipTests --file pom.xml
