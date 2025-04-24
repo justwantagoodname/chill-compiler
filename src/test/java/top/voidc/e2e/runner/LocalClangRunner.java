@@ -1,5 +1,6 @@
 package top.voidc.e2e.runner;
 
+import top.voidc.e2e.environment.ProcessHelper;
 import top.voidc.e2e.environment.Testcase;
 import top.voidc.e2e.environment.TestcaseRunner;
 import top.voidc.misc.Log;
@@ -65,50 +66,28 @@ public class LocalClangRunner implements TestcaseRunner {
         return "clang";
     }
 
-    public void compileLibsysy() {
+    public void compileLibsysy() throws IOException, InterruptedException {
         Log.i("Compiling Libsysy");
+
         final var libsysyDir = new File("testcases/libsysy");
-        final var libsysySrc = new File(libsysyDir, "sylib.c");
-        final var libsysyTimerSrc = new File(libsysyDir, "sytimer.cc");
-        final var libsysyOutput = new File(libsysyDir, "sylib.o");
-        final var libsysyTimerOutput = new File(libsysyDir, "sytimer.o");
         final var libsysy = new File(libsysyDir, "libsysy.a");
 
         if (libsysy.exists()) {
             return;
         }
 
-        if (!libsysyDir.exists()) {
-            throw new IllegalStateException("Libsysy directory does not exist: " + libsysyDir);
+        final var buildResult = ProcessHelper.execute(libsysyDir, "make", "-f", "Makefile", "build");
+
+        if (!buildResult.isSuccess()) {
+            Log.e("Make Output:\n===\n" + buildResult.stdout() + "===\n===\n"+ buildResult.stderr());
+            throw new RuntimeException("Libsysy compilation failed: make exit code = " + buildResult.exitCode());
         }
 
-        if (!libsysySrc.exists() || !libsysyTimerSrc.exists()) {
-            throw new IllegalStateException("Libsysy source file does not exist: " + libsysySrc);
+        if (!libsysy.exists()) {
+            throw new AssertionError("Libsysy doesn't exist");
         }
 
-        final var clangBuilder = new ProcessBuilder();
-        clangBuilder.command("clang", "-c", libsysySrc.getAbsolutePath(), "-o", libsysyOutput.getAbsolutePath());
-        final var clangppBuilder = new ProcessBuilder();
-        clangppBuilder.command("clang++", "-c", libsysyTimerSrc.getAbsolutePath(), "-o", libsysyTimerOutput.getAbsolutePath());
-        final var arBuilder = new ProcessBuilder();
-        arBuilder.command("ar", "-r", libsysy.getAbsolutePath(), libsysyOutput.getAbsolutePath(), libsysyTimerOutput.getAbsolutePath());
-
-        try {
-            final var process = clangBuilder.start();
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                throw new RuntimeException("Libsysy compilation failed: clang exit code = " + exitCode);
-            }
-            Log.i("Libsysy compiled successfully: " + libsysyOutput.getAbsolutePath());
-            // 运行 ar 命令
-            final var arProc = arBuilder.start();
-            int arExitCode = arProc.waitFor();
-            if (arExitCode != 0) {
-                throw new RuntimeException("Libsysy archive creation failed: ar exit code = " + arExitCode);
-            }
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Error during libsysy compilation", e);
-        }
+        Log.i("Libsysy compiled successfully: " + libsysy.getAbsolutePath());
     }
 
     public static void compileToExecutable(File llvmFile, File output) throws IOException, InterruptedException {
@@ -222,7 +201,7 @@ public class LocalClangRunner implements TestcaseRunner {
     }
 
     @Override
-    public boolean beforeAll() {
+    public boolean beforeAll() throws IOException, InterruptedException {
         compileLibsysy();
         return true;
     }

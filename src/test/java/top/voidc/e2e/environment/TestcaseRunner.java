@@ -30,7 +30,7 @@ public interface TestcaseRunner {
     /**
      * 在运行所有测试样例前的准备工作，可以用来编译标准库
      */
-    default boolean beforeAll() {
+    default boolean beforeAll() throws IOException, InterruptedException {
         return true;
     };
 
