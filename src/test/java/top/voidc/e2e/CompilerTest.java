@@ -1,5 +1,6 @@
 package top.voidc.e2e;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -7,6 +8,7 @@ import top.voidc.e2e.environment.CompilerHelper;
 import top.voidc.e2e.environment.Testcase;
 import top.voidc.e2e.environment.TestcaseRunner;
 import top.voidc.e2e.runner.LocalClangRunner;
+import top.voidc.e2e.runner.SSHGNURunner;
 import top.voidc.misc.Log;
 
 import java.io.*;
@@ -18,7 +20,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class CompilerTest {
 
-    private static final TestcaseRunner runner = new LocalClangRunner();
+//    private static final TestcaseRunner runner = new LocalClangRunner();
+    private static final TestcaseRunner runner = new SSHGNURunner("/home/null/chill-e2e-remote",
+        new SSHGNURunner.SSHConfig("ubuntu-server", 22, "null", null));
 
     // 发现所有测试用例
     private static Stream<Testcase> provideTestcases() {
@@ -75,17 +79,15 @@ public class CompilerTest {
         return Optional.of(new Testcase(name, in, out, pathname, asm));
     }
 
-    private static void compileSysySource(Testcase testcase, File output) throws InvocationTargetException, IllegalAccessException {
-        final var args = List.of("-S", "-o", output.getAbsolutePath(), testcase.src().getAbsolutePath(),
-                "-fenable-ptr-type");
-        CompilerHelper.runMain(args);
-    }
-
     @BeforeAll
     public static void setup() throws IOException, InterruptedException {
-        // 编译 Libsysy
         Log.i("使用 " + runner.getName() + " 汇编器 " + runner.getAssemblerName());
         assertTrue(runner.beforeAll(), runner.getName() + " 的 beforeAll() 失败");
+    }
+
+    @AfterAll
+    public static void teardown() throws IOException, InterruptedException {
+        assertTrue(runner.afterAll(), runner.getName() + " 的 afterAll() 失败");
     }
 
 
