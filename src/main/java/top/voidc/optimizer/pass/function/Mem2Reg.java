@@ -263,7 +263,7 @@ public class Mem2Reg implements CompilePass<IceFunction> {
     }
 
     @Override
-    public void run(IceFunction target) {
+    public boolean run(IceFunction target) {
         renameCounter = 0;
         ArrayList<IceValue> promotableValues = createPromotableList(target);
         DominatorTree domTree = new DominatorTree(target);
@@ -291,6 +291,8 @@ public class Mem2Reg implements CompilePass<IceFunction> {
                 throw new RuntimeException("Unexpected value type when removing alloca in mem2reg: " + value.getClass());
             }
         }
+
+        return true;
     }
 
     @Override

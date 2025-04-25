@@ -288,7 +288,8 @@ class SCCPSolver {
         }
     }
 
-    public void rewriteProgram() {
+    public boolean rewriteProgram() {
+        boolean flag = false;
         // 常量折叠
         for (IceBlock block : function.getBlocks()) {
             List<IceInstruction> instructions = block.getInstructions();
@@ -311,6 +312,7 @@ class SCCPSolver {
 //                    instructions.remove(i);
                     // 删除了一个指令，后面的指令往前移动，调整 i
                     --i;
+                    flag = true;
                 }
             }
         }
@@ -320,39 +322,43 @@ class SCCPSolver {
             if (!executableBlocks.contains(block)) {
                 // 删除不可达的块
                 Helper.removeBlock(block);
+                flag = true;
             }
         }
 
         // 对于剩下的块中的 phi 节点，如果只有一个分支，则尝试删除
         for (IceBlock block : function.getBlocks()) {
-            for (IceInstruction inst : block.getInstructions()) {
+            for (int i = 0; i < block.getInstructions().size(); ++i) {
+                IceInstruction inst = block.getInstructions().get(i);
                 if (inst instanceof IcePHINode phiNode) {
                     if (phiNode.getBranchCount() == 1) {
                         // 获取唯一一个分支的值
                         IceValue value = phiNode.getBranchValueOnIndex(0);
                         List<IceUser> users = phiNode.getUsersList();
-                        for (int i = 0; i < users.size(); ++i) {
-                            IceUser user = users.get(i);
+                        for (int j = 0; j < users.size(); ++j) {
+                            IceUser user = users.get(j);
                             if (user instanceof IceInstruction inst2) {
                                 inst2.replaceOperand(phiNode, value);
                             }
                         }
 
                         phiNode.destroy();
+                        flag = true;
                     }
                 }
             }
         }
+        return flag;
     }
 }
 
 @Pass
 public class SparseConditionalConstantPropagation implements CompilePass<IceFunction> {
     @Override
-    public void run(IceFunction target) {
+    public boolean run(IceFunction target) {
         SCCPSolver solver = new SCCPSolver(target);
         solver.solve();
-        solver.rewriteProgram();
+        return solver.rewriteProgram();
     }
 
     @Override
