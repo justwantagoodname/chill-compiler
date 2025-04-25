@@ -35,6 +35,14 @@ public interface TestcaseRunner {
     };
 
     /**
+     * 在运行完所有样例后后一定执行的
+     */
+
+    default boolean afterAll() throws IOException, InterruptedException {
+        return true;
+    }
+
+    /**
      * 运行每个测试样例前的准备工作
      * @param test 测试样例
      * @return 是否准备成功，失败时会终止该测试
