@@ -1,6 +1,5 @@
 #include<stdio.h>
 #include<stdarg.h>
-#include<sys/time.h>
 #include"sylib.h"
 /* Input & output functions */
 int getint(){int t; scanf("%d",&t); return t; }

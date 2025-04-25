@@ -3,7 +3,6 @@
 
 #include<stdio.h>
 #include<stdarg.h>
-#include<sys/time.h>
 /* Input & output functions */
 int getint(),getch(),getarray(int a[]);
 float getfloat();
