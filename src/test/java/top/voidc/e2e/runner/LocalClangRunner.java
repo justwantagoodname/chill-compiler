@@ -71,8 +71,9 @@ public class LocalClangRunner implements TestcaseRunner {
 
         final var libsysyDir = new File("testcases/libsysy");
         final var libsysy = new File(libsysyDir, "libsysy.a");
+        final var winLibsysy = new File(libsysyDir, "sysy.lib");
 
-        if (libsysy.exists()) {
+        if (libsysy.exists() || winLibsysy.exists()) {
             return;
         }
 
@@ -96,8 +97,8 @@ public class LocalClangRunner implements TestcaseRunner {
         }
 
         ProcessBuilder clangBuilder = new ProcessBuilder();
-        clangBuilder.command("clang", "-x", "ir", "-Ltestcases/libsysy", "-lsysy", "-lc++",
-                "-o", output.getAbsolutePath(), llvmFile.getAbsolutePath());
+        clangBuilder.command("clang", "-x", "ir", "-v",
+                "-o", output.getAbsolutePath(), llvmFile.getAbsolutePath(), "-Ltestcases/libsysy", "-lsysy");
 
         Process clangProcess = clangBuilder.start();
 
@@ -134,7 +135,7 @@ public class LocalClangRunner implements TestcaseRunner {
         }
 
         Process process = builder.start();
-        int exitCode = process.waitFor();
+        int exitCode = process.waitFor() & 0xFF;
 
         // Libsysy 的计时信息是通过 stderr打印的
         BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
