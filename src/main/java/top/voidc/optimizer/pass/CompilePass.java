@@ -13,6 +13,7 @@ public interface CompilePass <T> {
      * 静态运行 pass
      *
      * @param target 目标优化对象
+     * @return true 如果 pass 修改了目标，否则 false
      */
-    void run(T target);
+    boolean run(T target);
 }

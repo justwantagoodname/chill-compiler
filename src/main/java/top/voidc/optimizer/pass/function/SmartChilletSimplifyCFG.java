@@ -27,7 +27,9 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
     private static ArrayList<IceBlock> allBlocks;
 
-    private static void removeDeadBlocks(IceFunction function) {
+    private static boolean removeDeadBlocks(IceFunction function) {
+        boolean flag = false;
+
         Set<IceBlock> executableBlocks = new HashSet<>();
         Queue<IceBlock> queue = new ArrayDeque<>();
         executableBlocks.add(function.getEntryBlock());
@@ -58,8 +60,11 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
         for (IceBlock block : allBlocks) {
             if (!executableBlocks.contains(block)) {
                 Helper.removeBlock(block);
+                flag = true;
             }
         }
+
+        return flag;
     }
 
     /**
@@ -74,7 +79,8 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
      *
      * @param block 当前正在处理的 block
      */
-    private static void mergeTrivialBlocks(IceBlock block) {
+    private static boolean mergeTrivialBlocks(IceBlock block) {
+        boolean flag = false;
         if (block.getSuccessors().size() == 1) {
             IceBlock nextBlock = block.getSuccessors().get(0);
             if (nextBlock.getPredecessors().size() == 1) {
@@ -110,14 +116,17 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
                     // 如果当前 block 合并成功了，说明可以继续合并
                     // 递归处理当前 block 的下一个 block
                     mergeTrivialBlocks(block);
+                    flag = true;
                 }
             }
         } else {
             // 递归处理所有的后继 block
             for (IceBlock successor : block.getSuccessors()) {
-                mergeTrivialBlocks(successor);
+                flag |= mergeTrivialBlocks(successor);
             }
         }
+
+        return flag;
     }
 
     /**
@@ -127,7 +136,8 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
      *
      * @param function 要处理的函数
      */
-    private static void simplifyBranch(IceFunction function) {
+    private static boolean simplifyBranch(IceFunction function) {
+        boolean flag = false;
         for (IceBlock block : function.getBlocks()) {
             List<IceInstruction> instructions = block.getInstructions();
             for (int i = 0; i < instructions.size(); ++i) {
@@ -148,6 +158,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
                     // 替换这条指令
                     instructions.add(i, newBr);
+                    flag = true;
                 } else if (br.getTrueBlock() == br.getFalseBlock()) {
 
                     br.destroy();
@@ -157,9 +168,11 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
                     // 替换这条指令
                     instructions.add(i, newBr);
+                    flag = true;
                 }
             }
         }
+        return flag;
     }
 
     private static void simplifyPHINode(IceFunction function) {
@@ -249,7 +262,8 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
     }
 
     @Override
-    public void run(IceFunction target) {
+    public boolean run(IceFunction target) {
+        boolean flag = false;
         allBlocks = new ArrayList<>(target.getBlocks());
         allBlocks.addAll(target.getBlocks());
 
@@ -258,6 +272,8 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
         simplifyPHINode(target);
         mergeTrivialBlocks(target.getEntryBlock());
         removeUnusedBinaryInstructions(target);
+
+        return flag;
     }
 
     @Override
