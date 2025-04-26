@@ -19,8 +19,9 @@ public class RenameVariable implements CompilePass<IceUnit> {
     }
 
     @Override
-    public void run(IceUnit target) {
+    public boolean run(IceUnit target) {
         target.getFunctions().forEach(this::renameVariable);
+        return false;
     }
 
     /**
