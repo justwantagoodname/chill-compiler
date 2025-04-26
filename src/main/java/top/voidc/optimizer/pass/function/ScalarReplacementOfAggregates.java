@@ -139,8 +139,12 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
     }
 
     @Override
-    public void run(IceFunction target) {
+    public boolean run(IceFunction target) {
         ArrayList<IceAllocaInstruction> promotableList = createPromotableList(target);
+        if (promotableList.isEmpty()) {
+            return false;
+        }
+
         Hashtable<IceAllocaInstruction, ArrayList<IceValue>> newAllocaLists = new Hashtable<>();
         for (IceAllocaInstruction alloca : promotableList) {
             ArrayList<IceValue> newAllocaList = aggregatesExpansion(alloca);
@@ -148,6 +152,7 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
         }
 
         replaceGEPInstructions(target, newAllocaLists);
+        return true;
     }
 
     @Override
