@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CompilerTest {
 
 //    private static final TestcaseRunner runner = new LocalClangRunner();
-    private static final TestcaseRunner runner = new SSHGNURunner("/home/null/chill-e2e-remote",
-        new SSHGNURunner.SSHConfig("ubuntu-server", 22, "null", null));
+    private static final TestcaseRunner runner = new SSHGNURunner("/home/bromine/chill-e2e-test",
+        new SSHGNURunner.SSHConfig("::1", 22, "bromine", "31415926"));
 
     // 发现所有测试用例
     private static Stream<Testcase> provideTestcases() {

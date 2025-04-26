@@ -91,6 +91,9 @@ public class LocalClangRunner implements TestcaseRunner {
         Log.i("Libsysy compiled successfully: " + libsysy.getAbsolutePath());
     }
 
+    /**
+     * 已弃用
+     */
     public static void compileToExecutable(File llvmFile, File output) throws IOException, InterruptedException {
         if (llvmFile == null || !llvmFile.exists()) {
             throw new IllegalArgumentException("File does not exist: " + llvmFile);
@@ -100,10 +103,9 @@ public class LocalClangRunner implements TestcaseRunner {
         clangBuilder.command("clang", "-x", "ir", "-v",
                 "-o", output.getAbsolutePath(), llvmFile.getAbsolutePath(), "-Ltestcases/libsysy", "-lsysy");
 
-        if (!clangResult.isSuccess()) {
-            Log.e("IR verification failed:\n===LLVM OUTPUT===\n" + clangResult.stderr() + "===LLVM END===\n");
-            throw new RuntimeException("Compilation failed: clang exit code = " + clangResult.exitCode());
-        }
+//        if (!clangResult.isSuccess()) {            Log.e("IR verification failed:\n===LLVM OUTPUT===\n" + clangResult.stderr() + "===LLVM END===\n");
+//            throw new RuntimeException("Compilation failed: clang exit code = " + clangResult.exitCode());
+//        }
     }
 
     public static void runExecutableAndCompare(TestResult result) throws IOException, InterruptedException {
