@@ -36,4 +36,11 @@ public class IceConstantFloat extends IceConstantData {
     public IceConstantData clone() {
         return new IceConstantFloat(value);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof IceConstantFloat that)) return false;
+        return Double.compare(that.value, value) == 0;
+    }
 }

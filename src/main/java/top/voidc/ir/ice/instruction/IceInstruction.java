@@ -2,13 +2,40 @@ package top.voidc.ir.ice.instruction;
 
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceUser;
+import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
 
+import java.util.List;
 import java.util.Objects;
 
 public class IceInstruction extends IceUser {
     public IceBlock getParent() {
         return parent;
+    }
+
+    /**
+     * 将当前指令移动到新的父节点
+     *
+     * @param parent 新的父节点
+     */
+    public void moveTo(IceBlock parent) {
+        if (this.parent != null) {
+            this.parent.removeInstruction(this);
+        }
+        this.parent = parent;
+        if (parent != null) {
+            parent.addInstruction(this);
+        }
+    }
+
+    public void destroy() {
+        if (parent != null) {
+            parent.removeInstruction(this);
+            parent = null;
+        }
+        for (IceValue operand : getOperandsList()) {
+            operand.removeUse(this);
+        }
     }
 
     public enum InstructionType {
@@ -92,7 +119,7 @@ public class IceInstruction extends IceUser {
         }
     }
 
-    private final IceBlock parent;
+    private IceBlock parent;
     InstructionType type;
 
     public IceInstruction(IceBlock parent, String name, IceType type) {
@@ -111,6 +138,30 @@ public class IceInstruction extends IceUser {
 
     protected void setInstructionType(InstructionType type) {
         this.type = type;
+    }
+
+    public void replaceOperand(IceValue oldOperand, IceValue newOperand) {
+        if (oldOperand == null || newOperand == null) {
+            throw new IllegalArgumentException("Operands cannot be null");
+        }
+        if (oldOperand == newOperand) {
+            return;
+        }
+        if (oldOperand.getType() != newOperand.getType()) {
+            throw new IllegalArgumentException("Operands must have the same type");
+        }
+
+        List<IceValue> operands = getOperandsList();
+        for (int i = 0; i < operands.size(); ++i) {
+            if (operands.get(i) == oldOperand) {
+                operands.set(i, newOperand);
+                oldOperand.removeUse(this);
+                newOperand.addUse(this);
+                return;
+            }
+        }
+
+        throw new IllegalArgumentException("Old operand not found in instruction");
     }
 
     @Override
