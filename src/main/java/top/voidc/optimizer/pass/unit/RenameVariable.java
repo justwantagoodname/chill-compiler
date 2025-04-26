@@ -1,23 +1,17 @@
-package top.voidc.optimizer.pass;
+package top.voidc.optimizer.pass.unit;
 
 import top.voidc.ir.IceContext;
 import top.voidc.ir.IceUnit;
 import top.voidc.ir.ice.constant.IceFunction;
-import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
+import top.voidc.optimizer.pass.CompilePass;
 
 /**
  * 按顺序重命名函数内的匿名寄存器，确保递增
  */
 @Pass
-public class RenameVariable implements CompilePass {
-
-    private final IceUnit unit;
-    private int variableCount = 0;
-
-    public RenameVariable(IceContext context) {
-        this.unit = context.getCurrentIR();
-    }
+public class RenameVariable implements CompilePass<IceUnit> {
+    private static int variableCount = 0;
 
     @Override
     public String getName() {
@@ -25,8 +19,9 @@ public class RenameVariable implements CompilePass {
     }
 
     @Override
-    public void run() {
-        unit.getFunctions().forEach(this::renameVariable);
+    public boolean run(IceUnit target) {
+        target.getFunctions().forEach(this::renameVariable);
+        return false;
     }
 
     /**
