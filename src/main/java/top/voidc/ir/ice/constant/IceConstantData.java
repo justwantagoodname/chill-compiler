@@ -1,5 +1,6 @@
 package top.voidc.ir.ice.constant;
 
+import top.voidc.frontend.ir.ConstantVisitor;
 import top.voidc.ir.ice.type.IceType;
 
 /**
@@ -38,6 +39,10 @@ public abstract class IceConstantData extends IceConstant {
 
     public static IceConstantData create(byte value) {
         return new IceConstantByte(value);
+    }
+
+    public static IceConstant fromTextIR(String textIR) {
+        return buildIRParser(textIR).constant().accept(new ConstantVisitor());
     }
 
     @Override
