@@ -18,7 +18,7 @@ import java.util.Map;
  */
 public class LocalClangRunner implements TestcaseRunner {
 
-    public static class TestResult {
+    private static class TestResult {
         private final Testcase testcase;
         private final File actualOutput;
         private final File irOutput;
@@ -100,22 +100,9 @@ public class LocalClangRunner implements TestcaseRunner {
         clangBuilder.command("clang", "-x", "ir", "-v",
                 "-o", output.getAbsolutePath(), llvmFile.getAbsolutePath(), "-Ltestcases/libsysy", "-lsysy");
 
-        Process clangProcess = clangBuilder.start();
-
-        int clangExitCode = clangProcess.waitFor();
-
-        if (clangExitCode != 0) {
-            // 获取错误输出
-            BufferedReader errorReader = new BufferedReader(new InputStreamReader(clangProcess.getErrorStream()));
-            StringBuilder errors = new StringBuilder();
-            String line;
-            while ((line = errorReader.readLine()) != null) {
-                errors.append(line).append("\n");
-            }
-
-            Log.e("IR verification failed:\n===LLVM OUTPUT===\n" + errors + "===LLVM END===\n");
-
-            throw new RuntimeException("Compilation failed: clang exit code = " + clangExitCode);
+        if (!clangResult.isSuccess()) {
+            Log.e("IR verification failed:\n===LLVM OUTPUT===\n" + clangResult.stderr() + "===LLVM END===\n");
+            throw new RuntimeException("Compilation failed: clang exit code = " + clangResult.exitCode());
         }
     }
 
