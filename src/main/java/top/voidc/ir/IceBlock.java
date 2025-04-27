@@ -1,13 +1,15 @@
 package top.voidc.ir;
 
-import top.voidc.frontend.ir.IceBlockBuilder;
+import top.voidc.frontend.ir.IceBlockVisitor;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.StreamTools;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.StreamSupport;
 
 public class IceBlock extends IceUser {
@@ -92,7 +94,11 @@ public class IceBlock extends IceUser {
                 });
     }
 
-    public static IceBlock fromTextIR(String textIR) {
-        return buildIRParser(textIR).basicBlock().accept(new IceBlockBuilder());
+    public static IceBlock fromTextIR(String textIR, IceFunction parentFunction, Map<String, IceValue> environment) {
+        return buildIRParser(textIR).basicBlock().accept(new IceBlockVisitor(parentFunction, environment));
+    }
+
+    public static IceBlock fromTextIR(String textIR, IceFunction parentFunction) {
+        return buildIRParser(textIR).basicBlock().accept(new IceBlockVisitor(parentFunction, new HashMap<>()));
     }
 }
