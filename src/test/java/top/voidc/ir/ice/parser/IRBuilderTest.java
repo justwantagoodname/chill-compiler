@@ -51,6 +51,56 @@ public class IRBuilderTest {
     }
 
     @Test
+    public void testBlockBuilder() {
+        var func = createTestFunction();
+        
+        // 测试带单条指令的块
+        var blockWithInstr = IceBlock.fromTextIR("""
+            %block1:
+                %1 = alloca i32
+                ret void
+            """, func);
+        assertEquals("block1", blockWithInstr.getName());
+        assertEquals(2, blockWithInstr.getInstructions().size());
+        assertTrue(blockWithInstr.getInstructions().get(0) instanceof IceAllocaInstruction);
+        assertTrue(blockWithInstr.getInstructions().get(1) instanceof IceRetInstruction);
+        
+        // 测试带多条指令和跳转的块
+        var nextBlock = new IceBlock(func, "next");
+        var blockWithBranch = IceBlock.fromTextIR("""
+            %block2:
+                %ptr = alloca i32
+                store i32 42, i32* %ptr
+                %val = load i32, i32* %ptr
+                br label %next
+            """, func, env("next", nextBlock));
+        
+        assertEquals("block2", blockWithBranch.getName());
+        assertEquals(4, blockWithBranch.getInstructions().size());
+        assertTrue(blockWithBranch.getSuccessors().size() == 1);
+        assertEquals(nextBlock, blockWithBranch.getSuccessors().get(0));
+        
+        // 测试条件分支块
+        var thenBlock = new IceBlock(func, "then");
+        var elseBlock = new IceBlock(func, "else"); 
+        var blockWithCond = IceBlock.fromTextIR("""
+            %block3:
+                %cond = icmp slt i32 %a, %b
+                br i1 %cond, label %then, label %else
+            """, func, env(
+                "a", IceConstantData.create(10),
+                "b", IceConstantData.create(20),
+                "then", thenBlock,
+                "else", elseBlock
+            ));
+        
+        assertEquals("block3", blockWithCond.getName());
+        assertEquals(2, blockWithCond.getInstructions().size());
+        assertTrue(blockWithCond.getSuccessors().contains(thenBlock));
+        assertTrue(blockWithCond.getSuccessors().contains(elseBlock));
+    }
+
+    @Test
     public void testIceConstantParser() {
         final var intValue = new Random().nextInt();
         assertEquals(IceConstantData.create(intValue), IceConstantData.fromTextIR(String.valueOf(intValue)));

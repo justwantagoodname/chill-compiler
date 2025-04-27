@@ -35,15 +35,12 @@ instruction
     : allocaInstr
     | loadInstr  
     | storeInstr
-    | branchInstr
-    | returnInstr
     | arithmeticInstr
     | callInstr
     | getElementPtrInstr
     | phiInstr
     | compareInstr
     | convertInstr
-    | unreachableInstr
     ;
 
 terminatorInstr
@@ -206,7 +203,7 @@ pointer
     ;
 
 NAME: [a-zA-Z_][a-zA-Z_0-9]*;
-IDENTIFIER : '%' NAME;
+IDENTIFIER : '%' (NAME|NUMBER);
 GLOBAL_IDENTIFIER : '@' NAME;
 NUMBER : ('+'|'-')?[0-9]+;
 FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+;
