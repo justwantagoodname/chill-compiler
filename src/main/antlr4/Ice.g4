@@ -79,8 +79,8 @@ arithmeticInstr
     ;
 
 callInstr
-    : IDENTIFIER '=' 'call' type '@' IDENTIFIER '(' argList? ')'
-    | 'call' 'void' '@' IDENTIFIER '(' argList? ')'
+    : IDENTIFIER '=' 'call' type GLOBAL_IDENTIFIER '(' argList? ')'
+    | 'call' 'void' GLOBAL_IDENTIFIER '(' argList? ')'
     ;
 
 getElementPtrInstr
@@ -208,7 +208,7 @@ pointer
 NAME: [a-zA-Z_][a-zA-Z_0-9]*;
 IDENTIFIER : '%' NAME;
 GLOBAL_IDENTIFIER : '@' NAME;
-NUMBER : [0-9]+;
+NUMBER : ('+'|'-')?[0-9]+;
 FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+;
 WS : [ \t\r\n]+ -> skip;
 LINE_COMMENT : ';' .*? '\r'? '\n' -> skip;
