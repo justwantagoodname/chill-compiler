@@ -1,5 +1,6 @@
 package top.voidc.ir;
 
+import top.voidc.frontend.ir.IceBlockBuilder;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IceType;
@@ -89,5 +90,9 @@ public class IceBlock extends IceUser {
                     instr.getTextIR(builder);
                     builder.append("\n");
                 });
+    }
+
+    public static IceBlock fromTextIR(String textIR) {
+        return buildIRParser(textIR).basicBlock().accept(new IceBlockBuilder());
     }
 }
