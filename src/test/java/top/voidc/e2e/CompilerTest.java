@@ -20,9 +20,51 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class CompilerTest {
 
-//    private static final TestcaseRunner runner = new LocalClangRunner();
-    private static final TestcaseRunner runner = new SSHGNURunner("/home/bromine/chill-e2e-test",
-        new SSHGNURunner.SSHConfig("::1", 22, "bromine", "31415926"));
+    private static final TestcaseRunner runner;
+
+    static {
+        String enableSSH = System.getenv("ENABLE_SSH");
+        if (enableSSH != null && !enableSSH.isBlank() && Boolean.parseBoolean(enableSSH)) {
+            String sshHost = System.getenv("SSH_HOST");
+            if (sshHost == null || sshHost.isBlank()) {
+                sshHost = "ubuntu-server";
+                Log.i("环境变量 SSH_HOST 未设置,使用默认值: " + sshHost);
+            }
+
+            int sshPort;
+            String sshPortStr = System.getenv("SSH_PORT");
+            if (sshPortStr == null || sshPortStr.isBlank()) {
+                sshPort = 22;
+                Log.i("环境变量 SSH_PORT 未设置,使用默认值: " + sshPort);
+            } else {
+                sshPort = Integer.parseInt(sshPortStr);
+            }
+
+            String sshUsername = System.getenv("SSH_USERNAME");
+            if (sshUsername == null || sshUsername.isBlank()) {
+                sshUsername = "null";
+                Log.i("环境变量 SSH_USERNAME 未设置,使用默认值: " + sshUsername);
+            }
+
+            String sshPassword = System.getenv("SSH_PASSWORD");
+            // password可以为null,不需要默认值
+
+            String sshBaseDir = System.getenv("SSH_BASE_DIR");
+            if (sshBaseDir == null || sshBaseDir.isBlank()) {
+                sshBaseDir = "/home/null/chill-e2e-remote";
+                Log.i("环境变量 SSH_BASE_DIR 未设置,使用默认值: " + sshBaseDir);
+            }
+
+            Log.i("使用 SSH 模式运行测试");
+            runner = new SSHGNURunner(
+                sshBaseDir,
+                new SSHGNURunner.SSHConfig(sshHost, sshPort, sshUsername, sshPassword)
+            );
+        } else {
+            Log.i("使用本地模式运行测试");
+            runner = new LocalClangRunner();
+        }
+    }
 
     // 发现所有测试用例
     private static Stream<Testcase> provideTestcases() {

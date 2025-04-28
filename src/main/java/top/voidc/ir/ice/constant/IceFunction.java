@@ -1,5 +1,10 @@
 package top.voidc.ir.ice.constant;
 
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import top.voidc.frontend.ir.FunctionVisitor;
+import top.voidc.frontend.parser.IceLexer;
+import top.voidc.frontend.parser.IceParser;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
@@ -14,7 +19,7 @@ public class IceFunction extends IceConstant {
 
     private final List<IceValue> parameters;
 
-    private final IceBlock entryBlock;
+    private IceBlock entryBlock;
 
     private final IceBlock exitBlock;
 
@@ -104,6 +109,10 @@ public class IceFunction extends IceConstant {
         return entryBlock;
     }
 
+    public void setEntryBlock(IceBlock block) {
+        this.entryBlock = block;
+    }
+
     public IceBlock getExitBlock() {
         return exitBlock;
     }
@@ -137,5 +146,50 @@ public class IceFunction extends IceConstant {
                 .append(") {\n");
         blocks().forEach(block -> block.getTextIR(builder));
         builder.append("\n}");
+    }
+
+    /**
+     * 从LLVM IR格式的文本创建函数
+     * 
+     * <p>示例：</p>
+     * <pre>
+     * define i32 @add(i32 %a, i32 %b) {
+     *     %entry:
+     *         %sum = add i32 %a, %b
+     *         ret i32 %sum
+     * }
+     * </pre>
+     *
+     * @param textIR LLVM IR格式的函数声明文本
+     * @return 创建的函数实例
+     * @throws IllegalArgumentException 如果IR文本格式不正确
+     */
+    public static IceFunction fromTextIR(String textIR) {
+        var irStream = CharStreams.fromString(textIR);
+        var tokenStream = new CommonTokenStream(new IceLexer(irStream));
+        var parser = new IceParser(tokenStream);
+        return parser.functionDecl().accept(new FunctionVisitor());
+    }
+
+    /**
+     * 从LLVM IR格式的文本创建函数，并将相关标识符添加到提供的环境中
+     * 
+     * <p>本方法会将以下内容添加到环境中：</p>
+     * <ul>
+     *   <li>函数本身 - 使用函数名作为键</li>
+     *   <li>函数参数 - 使用参数名作为键</li>
+     *   <li>基本块 - 使用基本块标签作为键</li>
+     * </ul>
+     *
+     * @param textIR LLVM IR格式的函数声明文本
+     * @param environment 用于存储标识符的环境映射
+     * @return 创建的函数实例
+     * @throws IllegalArgumentException 如果IR文本格式不正确
+     */
+    public static IceFunction fromTextIR(String textIR, Map<String, IceValue> environment) {
+        var irStream = CharStreams.fromString(textIR);
+        var tokenStream = new CommonTokenStream(new IceLexer(irStream));
+        var parser = new IceParser(tokenStream);
+        return parser.functionDecl().accept(new FunctionVisitor(environment));
     }
 }
