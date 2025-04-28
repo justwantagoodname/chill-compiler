@@ -24,19 +24,17 @@
     <div class="main">
         <!-- 左侧图标栏 -->
         <div class="sidebar">
-            <button onclick="toggleMenu('menu-add')">➕</button>
-            <button onclick="toggleMenu('menu-file')">📄</button>
-            <button onclick="toggleMenu('menu-tools')">🛠️</button>
+            <button th:onclick="toggleMenu()">➕</button>
+            <button th:onclick="">🔄</button>
+            <button th:onclick="">🗑</button>
         </div>
 
         <!-- 子菜单栏，初始是折叠的 -->
-        <div class="submenu collapsed" id="submenu">
-            <div onclick="collapseMenu()" class="submenu-header">
-                <p>收起《</p>
-            </div>
-            <div class="submenu-content" id="submenu-content">
-                <!-- 动态生成子菜单项 -->
-            </div>
+        <div class="add-submenu collapsed" id="add-submenu">
+            <button th:each="script : ${componentsList}"
+                    th:text="${script.getValue()}"
+                    th:onclick="addWindows(${script.getKey()})">
+            </button>
         </div>
 
         <div id="layout-container"></div>
@@ -48,7 +46,7 @@
 
     <script th:src="@{/js/mainbox.js}"></script>
     <th:block th:each="script : ${componentsList}">
-        <script th:src="@{'/js/components/'+${script}}"></script>
+        <script th:src="@{'/js/components/'+${script.getKey()}+'.js'}"></script>
     </th:block>
     <script th:src="@{/js/submenu.js}"></script>
 
