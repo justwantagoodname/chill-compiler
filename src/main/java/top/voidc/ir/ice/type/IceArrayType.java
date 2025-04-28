@@ -21,6 +21,12 @@ public class IceArrayType extends IceType {
         this.numElements = numElements;
     }
 
+    /**
+     * 创建一个复合数组类型，arraySize的下标从小到大是从外到内每一维的大小
+     * @param arraySize 复合数组的下标，从左到右是从外到内每一维的大小
+     * @param elementType 最内层元素类型
+     * @return 创建到复合数组类型
+     */
     public static IceArrayType buildNestedArrayType(List<Integer> arraySize, IceType elementType) {
         IceType type = elementType;
         for (int i = arraySize.size() - 1; i >= 0; i--) {
