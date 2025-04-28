@@ -1,10 +1,8 @@
-package top.voidc.ir.ice.parser;
+package top.voidc.frontend.ir;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.junit.jupiter.api.Test;
-import top.voidc.frontend.ir.TypeVisitor;
-import top.voidc.frontend.ir.InstructionVisitor;
 import top.voidc.frontend.parser.IceLexer;
 import top.voidc.frontend.parser.IceParser;
 import top.voidc.ir.IceBlock;
@@ -62,6 +60,7 @@ public class IRBuilderTest {
         assertEquals("empty", emptyFunc.getName());
         assertEquals(IceType.VOID, emptyFunc.getReturnType());
         assertTrue(emptyFunc.getParameterTypes().isEmpty());
+
         assertEquals(1, emptyFunc.getBlocks().size());
 
         // 测试带参数的函数
