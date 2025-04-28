@@ -11,7 +11,6 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceFunction;
-import top.voidc.ir.ice.constant.IceUndef;
 import top.voidc.ir.ice.instruction.*;
 import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
 import top.voidc.ir.ice.instruction.IceCmpInstruction.CmpType;
@@ -51,6 +50,75 @@ public class IRBuilderTest {
     }
 
     @Test
+    public void testFunctionVisitor() {
+        // 测试空函数
+        var emptyFunc = IceFunction.fromTextIR("""
+            define void @empty() {
+                %entry:
+                    ret void
+            }
+            """);
+
+        assertEquals("empty", emptyFunc.getName());
+        assertEquals(IceType.VOID, emptyFunc.getReturnType());
+        assertTrue(emptyFunc.getParameterTypes().isEmpty());
+        assertEquals(1, emptyFunc.getBlocks().size());
+
+        // 测试带参数的函数
+        var addFunc = IceFunction.fromTextIR("""
+            define i32 @add(i32 %a, i32 %b) {
+                %entry:
+                    %sum = add i32 %a, %b
+                    ret i32 %sum
+            }
+            """);
+
+        assertEquals("add", addFunc.getName());
+        assertEquals(IceType.I32, addFunc.getReturnType());
+        assertEquals(List.of(IceType.I32, IceType.I32), addFunc.getParameterTypes());
+        assertEquals(1, addFunc.getBlocks().size());
+
+        var params = addFunc.getParameters();
+        assertEquals(2, params.size());
+        assertEquals("a", params.get(0).getName());
+        assertEquals("b", params.get(1).getName());
+        assertEquals(IceType.I32, params.get(0).getType());
+        assertEquals(IceType.I32, params.get(1).getType());
+        
+        // 测试多基本块函数
+        var maxFunc = IceFunction.fromTextIR("""
+            define i32 @max(i32 %a, i32 %b) {
+                %entry:
+                    %cond = icmp sgt i32 %a, %b
+                    br i1 %cond, label %then, label %else
+                %then:
+                    ret i32 %a
+                %else:
+                    ret i32 %b
+            }
+            """);
+        
+        assertEquals("max", maxFunc.getName());
+        assertEquals(IceType.I32, maxFunc.getReturnType());
+        assertEquals(List.of(IceType.I32, IceType.I32), maxFunc.getParameterTypes());
+        assertEquals(3, maxFunc.getBlocks().size());
+        
+        // 测试环境变量传递
+        var env = new HashMap<String, IceValue>();
+        var funcWithEnv = IceFunction.fromTextIR("""
+            define i32 @test(i32 %x) {
+                %entry:
+                    ret i32 %x
+            }
+            """, env);
+        
+        assertTrue(env.containsKey("test"));
+        assertTrue(env.containsKey("x"));
+        assertEquals(funcWithEnv, env.get("test"));
+        assertEquals(IceType.I32, env.get("x").getType());
+    }
+
+    @Test
     public void testBlockBuilder() {
         var func = createTestFunction();
         
@@ -62,8 +130,8 @@ public class IRBuilderTest {
             """, func);
         assertEquals("block1", blockWithInstr.getName());
         assertEquals(2, blockWithInstr.getInstructions().size());
-        assertTrue(blockWithInstr.getInstructions().get(0) instanceof IceAllocaInstruction);
-        assertTrue(blockWithInstr.getInstructions().get(1) instanceof IceRetInstruction);
+        assertInstanceOf(IceAllocaInstruction.class, blockWithInstr.getInstructions().get(0));
+        assertInstanceOf(IceRetInstruction.class, blockWithInstr.getInstructions().get(1));
         
         // 测试带多条指令和跳转的块
         var nextBlock = new IceBlock(func, "next");
@@ -77,8 +145,8 @@ public class IRBuilderTest {
         
         assertEquals("block2", blockWithBranch.getName());
         assertEquals(4, blockWithBranch.getInstructions().size());
-        assertTrue(blockWithBranch.getSuccessors().size() == 1);
-        assertEquals(nextBlock, blockWithBranch.getSuccessors().get(0));
+        assertEquals(1, blockWithBranch.getSuccessors().size());
+        assertEquals(nextBlock, blockWithBranch.getSuccessors().getFirst());
         
         // 测试条件分支块
         var thenBlock = new IceBlock(func, "then");
