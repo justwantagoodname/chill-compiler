@@ -7,6 +7,9 @@ function toggleMenu() {
     }
 }
 
-function addWindows(type){
-
+function addWindows(element){
+    $layout.root.contentItems[0].addChild({
+        type: 'component',
+        componentName: element.dataset.type
+    });
 }
