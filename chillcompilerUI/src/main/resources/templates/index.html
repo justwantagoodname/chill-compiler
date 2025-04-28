@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>离线IDE</title>
+
+    <!-- 本地Golden Layout样式 -->
+    <link rel="stylesheet" th:href="@{/js/golden-layout/css/goldenlayout-base.css}">
+    <link rel="stylesheet" th:href="@{/js/golden-layout/css/goldenlayout-dark-theme.css}">
+
+    <!-- 本地Font Awesome -->
+    <link rel="stylesheet" th:href="@{/css/font-awesome/all.min.css}">
+
+    <link rel="stylesheet" th:href="@{/css/index.css}">
+
+</head>
+
+<body>
+    <div class="topbar">
+        Sysy可视化调试器
+    </div>
+
+    <div class="main">
+        <!-- 左侧图标栏 -->
+        <div class="sidebar">
+            <button onclick="toggleMenu('menu-add')">➕</button>
+            <button onclick="toggleMenu('menu-file')">📄</button>
+            <button onclick="toggleMenu('menu-tools')">🛠️</button>
+        </div>
+
+        <!-- 子菜单栏，初始是折叠的 -->
+        <div class="submenu collapsed" id="submenu">
+            <div onclick="collapseMenu()" class="submenu-header">
+                <p>收起《</p>
+            </div>
+            <div class="submenu-content" id="submenu-content">
+                <!-- 动态生成子菜单项 -->
+            </div>
+        </div>
+
+        <div id="layout-container"></div>
+    </div>
+
+    <script th:src="@{/js/jquery-3.7.1.js}"></script>
+    <script th:src="@{/js/golden-layout/goldenlayout.min.js}"></script>
+    <script th:src="@{/js/monaco-editor/min/vs/loader.js}"></script>
+
+    <script th:src="@{/js/mainbox.js}"></script>
+    <th:block th:each="script : ${componentsList}">
+        <script th:src="@{'/js/components/'+${script}}"></script>
+    </th:block>
+    <script th:src="@{/js/submenu.js}"></script>
+
+</body>
+
+</html>
