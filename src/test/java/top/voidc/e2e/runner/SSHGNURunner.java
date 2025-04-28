@@ -14,6 +14,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * 通过SSH在远程开发板上进行测试
+ * 需要GNU GCC和GNU Make工具
+ * 现阶段进行LLVM IR测试需要Clang 17以上版本
+ */
 public class SSHGNURunner implements TestcaseRunner {
 
     private static String workingDirectory = "";
