@@ -1,0 +1,111 @@
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: sans-serif;
+    background-color: #1e1e1e;
+    color: white;
+}
+
+/* 顶栏 */
+.topbar {
+    height: 40px;
+    background-color: #333;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+}
+
+/* 侧边栏和主区域 */
+.main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 60px;
+    background-color: #252526;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+.sidebar button {
+    border: none;
+    color: white;
+    padding: 20px;
+    cursor: pointer;
+    font-size: 20px;
+    background-color: #252526;
+}
+
+
+.sidebar button:hover {
+    background-color: #363636;
+    transform: 1s;
+}
+
+/* 主内容区 */
+#layout-container {
+    flex: 1;
+    background-color: #1e1e1e;
+    overflow: hidden;
+}
+
+/* Golden Layout窗口内 */
+.editor-container {
+    height: 100%;
+    width: 100%;
+}
+
+/* 子菜单栏 */
+.submenu {
+    width: 200px;
+    background-color: #333;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease;
+    overflow: hidden;
+}
+
+.submenu.collapsed {
+    width: 0;
+}
+
+.submenu-header {
+    height: 40px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    background-color: #444;
+    padding: 0 5px;
+}
+
+.submenu-header button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.submenu-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.submenu-content ul {
+    list-style: none;
+    padding: 0;
+}
+
+.submenu-content li {
+    padding: 8px 0;
+    border-bottom: 1px solid #555;
+    cursor: pointer;
+}
