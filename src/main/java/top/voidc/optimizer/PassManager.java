@@ -2,10 +2,16 @@ package top.voidc.optimizer;
 
 import org.reflections.Reflections;
 import top.voidc.ir.IceContext;
+import top.voidc.ir.IceUnit;
+import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
-import top.voidc.optimizer.pass.CompilePass;
 
+import top.voidc.optimizer.pass.CompilePass;
+import top.voidc.optimizer.pass.function.*;
+import top.voidc.optimizer.pass.unit.*;
+
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,14 +33,37 @@ public class PassManager {
         buildExecutionOrder(passClasses);
     }
 
-    public void runAll() {
-        for (Class<? extends CompilePass> passClass : executionOrder) {
-            CompilePass pass = createPassInstance(passClass);
-            Log.i(">>> Running " + pass.getName());
-            // TODO: 想想怎么改
-//            pass.run();
-            Log.i(">>> End " + pass.getName());
+    public void runFunctionPass(IceFunction target) {
+        Mem2Reg mem2Reg = new Mem2Reg();
+        ScalarReplacementOfAggregates sroa = new ScalarReplacementOfAggregates();
+        SmartChilletSimplifyCFG scscfg = new SmartChilletSimplifyCFG();
+        SparseConditionalConstantPropagation sccp = new SparseConditionalConstantPropagation();
+
+        mem2Reg.run(target);
+        sroa.run(target);
+        scscfg.run(target);
+
+        boolean flag = false;
+        do {
+            flag |= sccp.run(target);
+            flag |= scscfg.run(target);
+        } while (flag);
+    }
+
+    public void runUnitPass(IceUnit target) {
+        RenameVariable renameVariable = new RenameVariable();
+
+        renameVariable.run(target);
+    }
+
+    public void runAll(IceUnit target) {
+        List<IceFunction> functions = target.getFunctions();
+
+        for (IceFunction function : functions) {
+            runFunctionPass(function);
         }
+
+        runUnitPass(target);
     }
 
     private void buildExecutionOrder(Set<Class<? extends CompilePass>> passClasses) {
