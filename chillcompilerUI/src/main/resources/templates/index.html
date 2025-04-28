@@ -33,7 +33,8 @@
         <div class="add-submenu collapsed" id="add-submenu">
             <button th:each="script : ${componentsList}"
                     th:text="${script.getValue()}"
-                    th:onclick="addWindows(${script.getKey()})">
+                    th:data-type="${script.getKey()}"
+                    onclick="addWindows(this)">
             </button>
         </div>
 

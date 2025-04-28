@@ -1,3 +1,4 @@
+var $layout;
 $(document).ready(function () {
     // 配置布局
     const config = {
@@ -18,13 +19,13 @@ $(document).ready(function () {
     };
 
     // 创建布局实例
-    const layout = new GoldenLayout(config, '#layout-container');
+    $layout = new GoldenLayout(config, '#layout-container');
 
     // 从component中注册组件
-    registerComponents(layout)
+    registerComponents($layout)
 
     // 初始化布局
-    layout.init();
+    $layout.init();
 });
 
 var components_register = []

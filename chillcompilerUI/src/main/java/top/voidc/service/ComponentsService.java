@@ -29,7 +29,6 @@ public class ComponentsService {
         // 加载 static/files 下的资源
         Resource[] resources = ResourcePatternUtils.getResourcePatternResolver(resourceLoader)
                 .getResources("classpath:static/" + dir + "/*");
-        System.out.println(Components);
         for (Resource resource : resources) {
             String filename = resource.getFilename();
             // 剥离文件后缀（处理无后缀的情况）
@@ -41,7 +40,6 @@ public class ComponentsService {
             // 从配置中获取注释，若无则返回空字符串
             String comment = Components.getOrDefault(filename, filename);
 
-            System.out.println(filename + " " + comment);
             files.put(filename, comment);
         }
         return files;

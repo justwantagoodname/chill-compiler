@@ -83,4 +83,9 @@ body {
     color: white;
     cursor: pointer;
     font-size: 18px;
+    transition: 0.5s;
+}
+
+.add-submenu button:hover {
+    background: rgba(1,1,1,0.3)
 }
