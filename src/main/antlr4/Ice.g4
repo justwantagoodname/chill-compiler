@@ -18,7 +18,7 @@ globalDecl
     ;
 
 functionDecl
-    : 'define' type GLOBAL_IDENTIFIER '(' (type IDENTIFIER)* ')' functionBody
+    : 'define' type GLOBAL_IDENTIFIER '(' (type IDENTIFIER (',' type IDENTIFIER)*)? ')' functionBody
     ;
 
 functionBody

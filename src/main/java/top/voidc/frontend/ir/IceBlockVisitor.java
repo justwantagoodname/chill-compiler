@@ -13,10 +13,18 @@ public class IceBlockVisitor extends IceBaseVisitor<IceBlock> {
 
     private final IceFunction function;
     private final Map<String, IceValue> environment;
+    private IceBlock currentBlock;
 
     public IceBlockVisitor(IceFunction parentFunction, Map<String, IceValue> environment) {
         this.function = parentFunction;
         this.environment = environment;
+        this.currentBlock = null;
+    }
+
+    public IceBlockVisitor(IceFunction parentFunction, Map<String, IceValue> environment, IceBlock block) {
+        this.function = parentFunction;
+        this.environment = environment;
+        this.currentBlock = block;
     }
     @Override
     public IceBlock visitBasicBlock(IceParser.BasicBlockContext ctx) {
@@ -24,26 +32,26 @@ public class IceBlockVisitor extends IceBaseVisitor<IceBlock> {
             throw new IllegalArgumentException("基本块必须以终止指令结尾");
         }
         
-        // 1. 获取基本块名称(去掉%前缀)
-        String blockName = ctx.IDENTIFIER().getText().substring(1);
-        
-        // 2. 创建基本块
-        IceBlock block = new IceBlock(function, blockName);
-        environment.put(blockName, block);
-        
-        // 3. 创建指令访问器
-        InstructionVisitor instrVisitor = new InstructionVisitor(block, environment);
-        
-        // 4. 访问所有普通指令
-        for (IceParser.InstructionContext instrCtx : ctx.instruction()) {
-            IceInstruction instr = instrVisitor.visit(instrCtx);
-            block.addInstruction(instr);
+        // 如果没有预创建的block，则创建新的
+        if (currentBlock == null) {
+            var blockName = ctx.IDENTIFIER().getText().substring(1);
+            currentBlock = new IceBlock(function, blockName);
+            environment.put(blockName, currentBlock);
         }
         
-        // 5. 访问终止指令
-        IceInstruction termInstr = instrVisitor.visit(ctx.terminatorInstr());
-        block.addInstruction(termInstr);
+        // 创建指令访问器
+        var instrVisitor = new InstructionVisitor(currentBlock, environment);
         
-        return block;
+        // 访问所有普通指令
+        for (var instrCtx : ctx.instruction()) {
+            var instr = instrVisitor.visit(instrCtx);
+            currentBlock.addInstruction(instr);
+        }
+        
+        // 访问终止指令
+        var termInstr = instrVisitor.visit(ctx.terminatorInstr());
+        currentBlock.addInstruction(termInstr);
+        
+        return currentBlock;
     }
 }
