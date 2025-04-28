@@ -17,40 +17,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '24'
           distribution: 'temurin'
           cache: maven
           
       - name: Install LLVM toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y llvm clang
+          sudo apt-get install -y clang clang++ build-essential make binutils
+
+      - name: Install Maven Dependencies
+        run: mvn clean install -DskipTests --file pom.xml
 
       - name: Test with Maven
         run: mvn clean test --file pom.xml
 
-      - name: Upload testcase results
-        uses: actions/upload-artifact@v4
-        with:
-          name: functional-testcases
-          path: |
-            testcases/functional
-            testcases/h_functional
+#      - name: Upload testcase results
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: functional-testcases
+#          path: |
+#            testcases/functional
+#            testcases/h_functional
 
       - name: Upload JUnit test reports
         uses: actions/upload-artifact@v4
         with:
           name: junit-reports
           path: target/surefire-reports/
-
-      - name: Generate HTML test report
-        run: mvn site
-  
-      - name: Upload HTML test report
-        uses: actions/upload-artifact@v4
-        with:
-          name: html-test-report
-          path: target/site/
