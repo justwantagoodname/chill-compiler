@@ -13,8 +13,9 @@ import java.util.Map;
 
 /**
  * 本地的 Clang IR 测试样例运行器
- * 需要保证本地安装了 Clang 和 LLVM
+ * 需要保证本地安装了 Clang 17 以上和 GNU Make 工具
  * 主要用于测试编译器前端的编译和运行
+ * **出于对运行速度和环境一致性的考虑，本地运行器仅支持 Linux 本地测试，非 Linux 使用 SSHGNURunner 代替**
  */
 public class LocalClangRunner implements TestcaseRunner {
 

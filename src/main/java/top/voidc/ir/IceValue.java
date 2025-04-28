@@ -1,6 +1,9 @@
 package top.voidc.ir;
 
-import top.voidc.ir.ice.type.IcePtrType;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import top.voidc.frontend.parser.IceLexer;
+import top.voidc.frontend.parser.IceParser;
 import top.voidc.ir.ice.type.IceType;
 
 import java.util.*;
@@ -76,6 +79,12 @@ public class IceValue {
 
     public void getTextIR(StringBuilder builder) {
         builder.append(getReferenceName());
+    }
+
+    protected static IceParser buildIRParser(String textIR) {
+        var irStream = CharStreams.fromString(textIR);
+        var tokenStream = new CommonTokenStream(new IceLexer(irStream));
+        return new IceParser(tokenStream);
     }
 
     public void setAlign(int align) {
