@@ -40,12 +40,12 @@ body {
     cursor: pointer;
     font-size: 20px;
     background-color: #252526;
+    transition: 0.3s;
 }
 
 
 .sidebar button:hover {
     background-color: #363636;
-    transform: 1s;
 }
 
 /* 主内容区 */
@@ -62,7 +62,7 @@ body {
 }
 
 /* 子菜单栏 */
-.submenu {
+.add-submenu {
     width: 200px;
     background-color: #333;
     color: white;
@@ -72,40 +72,15 @@ body {
     overflow: hidden;
 }
 
-.submenu.collapsed {
+.add-submenu.collapsed {
     width: 0;
 }
 
-.submenu-header {
-    height: 40px;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    background-color: #444;
-    padding: 0 5px;
-}
-
-.submenu-header button {
+.add-submenu button {
     background: none;
+    padding: 8px 0;
     border: none;
     color: white;
     cursor: pointer;
     font-size: 18px;
-}
-
-.submenu-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px;
-}
-
-.submenu-content ul {
-    list-style: none;
-    padding: 0;
-}
-
-.submenu-content li {
-    padding: 8px 0;
-    border-bottom: 1px solid #555;
-    cursor: pointer;
 }
