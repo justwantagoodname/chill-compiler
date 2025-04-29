@@ -16,10 +16,13 @@ import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * TODO: 合并了两种 Pass 的架构，这个类非常非常非常有可能需要改
+ */
 public class PassManager {
     private final IceContext context;
-    private final Map<Class<? extends CompilePass>, CompilePass> passInstances = new HashMap<>();
-    private final List<Class<? extends CompilePass>> executionOrder = new ArrayList<>();
+    private final Map<Class<? extends CompilePass<?>>, CompilePass<?>> passInstances = new HashMap<>();
+    private final List<Class<? extends CompilePass<?>>> executionOrder = new ArrayList<>();
 
     public PassManager(IceContext context) {
         this.context = context;
@@ -86,7 +89,7 @@ public class PassManager {
             }
         }
 
-        executionOrder.add(clazz);
+        executionOrder.add((Class<? extends CompilePass<?>>) clazz);
         visited.add(clazz);
         path.remove(clazz);
     }
@@ -98,7 +101,7 @@ public class PassManager {
         try {
             Constructor<? extends CompilePass> ctor = clazz.getConstructor(IceContext.class);
             CompilePass pass = ctor.newInstance(context);
-            passInstances.put(clazz, pass);
+            passInstances.put((Class<? extends CompilePass<?>>) clazz, pass);
             return pass;
         } catch (Exception e) {
             throw new RuntimeException("Failed to instantiate Pass: " + clazz.getName(), e);
