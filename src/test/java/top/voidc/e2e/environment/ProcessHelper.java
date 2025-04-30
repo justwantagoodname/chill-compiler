@@ -1,5 +1,7 @@
 package top.voidc.e2e.environment;
 
+import top.voidc.misc.Log;
+
 import java.io.*;
 
 public class ProcessHelper {
@@ -20,6 +22,7 @@ public class ProcessHelper {
     }
 
     public static ExecuteResult execute(String... command) throws IOException, InterruptedException {
+        Log.d("执行: " + String.join(" ", command));
         final var builder = new ProcessBuilder(command);
         final var process = builder.start();
 

@@ -16,6 +16,7 @@
           
           # 开发工具
           git
+          git-lfs
           
           # ANTLR4工具(如果需要在命令行使用)
           antlr4
@@ -26,14 +27,14 @@
           gcc
           
           # AArch64 (ARMv8)交叉编译工具链和运行时
-          pkgsCross.aarch64-multiplatform.buildPackages.gcc
-          pkgsCross.aarch64-multiplatform.buildPackages.binutils
-          pkgsCross.aarch64-multiplatform.glibc
+          # pkgsCross.aarch64-multiplatform.buildPackages.gcc
+          # pkgsCross.aarch64-multiplatform.buildPackages.binutils
+          # pkgsCross.aarch64-multiplatform.glibc
           
           # RISC-V 64GC交叉编译工具链和运行时
-          pkgsCross.riscv64.buildPackages.gcc
-          pkgsCross.riscv64.buildPackages.binutils
-          pkgsCross.riscv64.glibc
+          # pkgsCross.riscv64.buildPackages.gcc
+          # pkgsCross.riscv64.buildPackages.binutils
+          # pkgsCross.riscv64.glibc
           
           # QEMU
           qemu
@@ -55,12 +56,12 @@
           mkdir -p $TMPDIR/nix-shell-$UID
           
           # 设置AArch64交叉编译环境
-          export PATH=${pkgs.pkgsCross.aarch64-multiplatform.buildPackages.gcc}/bin:$PATH
-          export PATH=${pkgs.pkgsCross.aarch64-multiplatform.buildPackages.binutils}/bin:$PATH
+          # export PATH=${pkgs.pkgsCross.aarch64-multiplatform.buildPackages.gcc}/bin:$PATH
+          # export PATH=${pkgs.pkgsCross.aarch64-multiplatform.buildPackages.binutils}/bin:$PATH
           
           # 设置RISC-V 64GC交叉编译环境
-          export PATH=${pkgs.pkgsCross.riscv64.buildPackages.gcc}/bin:$PATH
-          export PATH=${pkgs.pkgsCross.riscv64.buildPackages.binutils}/bin:$PATH
+          # export PATH=${pkgs.pkgsCross.riscv64.buildPackages.gcc}/bin:$PATH
+          # export PATH=${pkgs.pkgsCross.riscv64.buildPackages.binutils}/bin:$PATH
           
           # 设置QEMU
           export PATH=${pkgs.qemu}/bin:$PATH
