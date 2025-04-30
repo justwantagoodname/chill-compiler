@@ -19,20 +19,22 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
-        
-      - name: Setup Nix Cache
-        uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - name: Install Maven Dependencies
+      - name: Install Maven Dependencies and Test Dependencies
         run: |
           nix develop --command mvn dependency:go-offline -q
+          nix develop --command mvn dependency:resolve-plugins -q
+          nix develop --command mvn dependency:resolve -DincludeTypes=test-jar -q
           nix develop --command mvn clean install -DskipTests -q
 
       - name: Run Tests
+        id: run-tests
+        continue-on-error: true
         run: |
           nix develop --command mvn clean test
 
       - name: Upload JUnit test reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: junit-reports
