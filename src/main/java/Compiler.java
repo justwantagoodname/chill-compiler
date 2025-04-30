@@ -45,7 +45,7 @@ public class Compiler {
         final var passManager = new PassManager(context);
         passManager.scanPackage("top.voidc.optimizer.pass");
 
-        passManager.runAll();
+        passManager.runAll(context.getCurrentIR());
 
         emitLLVM();
 
