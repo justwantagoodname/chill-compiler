@@ -51,7 +51,6 @@
                     <source>24</source>
                     <target>24</target>
                     <compilerArgs>
-                        <arg>--enable-preview</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
