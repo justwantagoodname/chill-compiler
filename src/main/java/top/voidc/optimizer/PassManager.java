@@ -3,6 +3,7 @@ package top.voidc.optimizer;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.IceUnit;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.ir.ice.constant.IceFunction;
 
 import top.voidc.misc.Log;
@@ -120,19 +121,20 @@ public class PassManager {
                 case FUNCTION -> {
                     final var functionStream = parallel ? context.getCurrentIR().getFunctions().parallelStream()
                             : context.getCurrentIR().getFunctions().stream();
-                    yield functionStream.map(function -> {
-                        @SuppressWarnings("unchecked")
-                        final var targetPass = (CompilePass<IceFunction>) instantiatePass(clazz);
-                        return targetPass.run(function);
-                    }).reduce(false, (a, b) -> {
-                        // Note：必须要使用 reduce 来合并结果，anyMatch 和 allMatch 都会短路
-                        if (a && b) return true;
-                        return a || b;
-                    });
+                    yield functionStream
+                            .filter(function -> !(function instanceof IceExternFunction))
+                            .map(function -> {
+                                @SuppressWarnings("unchecked")
+                                final var targetPass = (CompilePass<IceFunction>) instantiatePass(clazz);
+                                return targetPass.run(function);
+                            }).reduce(false, (a, b) -> {
+                                // Note：必须要使用 reduce 来合并结果，anyMatch 和 allMatch 都会短路
+                                return a || b;
+                            });
                 }
             };
         } catch (Exception e) {
-            throw new RuntimeException("Failed to instantiate Pass: " + clazz.getName(), e);
+            throw new RuntimeException("运行 Pass " + clazz.getSimpleName() + " 出现错误",  e);
         }
     }
 }
