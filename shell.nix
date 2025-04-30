@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> { } }:
+{ pkgs ? import (fetchTarball https://github.com/nixos/nixpkgs/archive/nixos-unstable.tar.gz) {} }:
 
 let
   # 允许unfree包
@@ -9,8 +9,7 @@ let
 in pkgs.mkShell {
   buildInputs = with pkgs; [
     # Java开发环境
-    jdk21
-    jdk17
+    temurin-bin-24
     maven
     
     # 开发工具
@@ -24,10 +23,15 @@ in pkgs.mkShell {
     llvm
     gcc
     
-    # ARM交叉编译工具链和运行时
-    pkgsCross.armv7l-hf-multiplatform.buildPackages.gcc
-    pkgsCross.armv7l-hf-multiplatform.buildPackages.binutils
-    pkgsCross.armv7l-hf-multiplatform.glibc
+    # AArch64 (ARMv8)交叉编译工具链和运行时
+    pkgsCross.aarch64-multiplatform.buildPackages.gcc
+    pkgsCross.aarch64-multiplatform.buildPackages.binutils
+    pkgsCross.aarch64-multiplatform.glibc
+    
+    # RISC-V 64GC交叉编译工具链和运行时
+    pkgsCross.riscv64.buildPackages.gcc
+    pkgsCross.riscv64.buildPackages.binutils
+    pkgsCross.riscv64.glibc
     
     # QEMU
     qemu
@@ -39,18 +43,21 @@ in pkgs.mkShell {
 
   # Shell环境变量
   shellHook = ''
-    export JAVA_HOME=${pkgs.jdk17}/lib/openjdk
     export MAVEN_OPTS="-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
     
     # 创建临时目录
     export TMPDIR=/tmp
     mkdir -p $TMPDIR/nix-shell-$UID
     
-    # 设置交叉编译环境
-    export PATH=${pkgs.pkgsCross.armv7l-hf-multiplatform.buildPackages.gcc}/bin:$PATH
-    export PATH=${pkgs.pkgsCross.armv7l-hf-multiplatform.buildPackages.binutils}/bin:$PATH
+    # 设置AArch64交叉编译环境
+    # export PATH=${pkgs.pkgsCross.aarch64-multiplatform.buildPackages.gcc}/bin:$PATH
+    # export PATH=${pkgs.pkgsCross.aarch64-multiplatform.buildPackages.binutils}/bin:$PATH
+    
+    # 设置RISC-V 64GC交叉编译环境
+    # export PATH=${pkgs.pkgsCross.riscv64.buildPackages.gcc}/bin:$PATH
+    # export PATH=${pkgs.pkgsCross.riscv64.buildPackages.binutils}/bin:$PATH
     
     # 设置QEMU
-    export PATH=${pkgs.qemu}/bin:$PATH
+    # export PATH=${pkgs.qemu}/bin:$PATH
   '';
 }

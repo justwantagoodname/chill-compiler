@@ -17,31 +17,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '24'
-          distribution: 'temurin'
-          cache: maven
-          
-      - name: Install LLVM toolchain
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang clang++ build-essential make binutils
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        
+      - name: Setup Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Install Maven Dependencies
-        run: mvn clean install -DskipTests --file pom.xml
+        run: |
+          nix develop --command mvn dependency:go-offline -q
+          nix develop --command mvn clean install -DskipTests -q
 
-      - name: Test with Maven
-        run: mvn clean test --file pom.xml
-
-#      - name: Upload testcase results
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: functional-testcases
-#          path: |
-#            testcases/functional
-#            testcases/h_functional
+      - name: Run Tests
+        run: |
+          nix develop --command mvn clean test
 
       - name: Upload JUnit test reports
         uses: actions/upload-artifact@v4
