@@ -137,4 +137,18 @@ public class PassManager {
             throw new RuntimeException("运行 Pass " + clazz.getSimpleName() + " 出现错误",  e);
         }
     }
+
+    /**
+     * 工具函数，运行给定的 Pass，直到IR不发生变化
+     * @param classes Pass 的 Class 对象可传入多个
+     */
+    @SafeVarargs
+    public final void utilStable(Class<? extends CompilePass<?>>... classes) {
+        boolean flag;
+        do {
+            flag = Arrays.stream(classes)
+                    .map(this::runPass)
+                    .reduce(false, (a, b) -> a || b);
+        } while (flag);
+    }
 }

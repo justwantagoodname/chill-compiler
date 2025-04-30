@@ -69,11 +69,11 @@ public class Compiler {
             pm.runPass(ScalarReplacementOfAggregates.class);
             pm.runPass(SmartChilletSimplifyCFG.class);
 
-            boolean flag = false;
-            do {
-                flag |= pm.runPass(SparseConditionalConstantPropagation.class);
-                flag |= pm.runPass(SmartChilletSimplifyCFG.class);
-            } while (flag);
+            pm.utilStable(
+                    SparseConditionalConstantPropagation.class,
+                    SmartChilletSimplifyCFG.class
+            );
+
             pm.runPass(RenameVariable.class);
         });
         return passManager;
