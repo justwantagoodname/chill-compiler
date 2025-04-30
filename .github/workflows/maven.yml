@@ -25,12 +25,12 @@ jobs:
 
       - name: Install Maven Dependencies
         run: |
-          nix-shell --run "mvn dependency:go-offline -q"
-          nix-shell --run "mvn clean install -DskipTests -q"
+          nix develop --command mvn dependency:go-offline -q
+          nix develop --command mvn clean install -DskipTests -q
 
       - name: Run Tests
         run: |
-          nix-shell --run "mvn clean test"
+          nix develop --command mvn clean test
 
       - name: Upload JUnit test reports
         uses: actions/upload-artifact@v4
