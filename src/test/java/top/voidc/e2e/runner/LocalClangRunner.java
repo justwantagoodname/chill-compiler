@@ -96,7 +96,7 @@ public class LocalClangRunner implements TestcaseRunner {
             throw new IllegalArgumentException("File does not exist: " + llvmFile);
         }
 
-        final var clangResult = ProcessHelper.execute("clang", "-x", "ir", "-Ltestcases/libsysy", "-lsysy", "-lc++",
+        final var clangResult = ProcessHelper.execute("clang", "-x", "ir", "-Ltestcases/libsysy", "-lsysy", "-lstdc++",
                 "-o", output.getAbsolutePath(), llvmFile.getAbsolutePath());
 
         if (!clangResult.isSuccess()) {
