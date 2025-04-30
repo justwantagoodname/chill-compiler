@@ -41,6 +41,7 @@
           # 系统库
           glibc
           glibc.dev
+          stdenv.cc.cc.lib
         ];
 
         shellHook = ''
@@ -63,6 +64,12 @@
           
           # 设置QEMU
           export PATH=${pkgs.qemu}/bin:$PATH
+
+          # 设置C/C++库路径
+          export C_INCLUDE_PATH=${pkgs.glibc.dev}/include:$C_INCLUDE_PATH
+          export CPLUS_INCLUDE_PATH=${pkgs.glibc.dev}/include:$CPLUS_INCLUDE_PATH
+          export LIBRARY_PATH=${pkgs.glibc}/lib:$LIBRARY_PATH
+          export LD_LIBRARY_PATH=${pkgs.glibc}/lib:$LD_LIBRARY_PATH
         '';
       };
     };

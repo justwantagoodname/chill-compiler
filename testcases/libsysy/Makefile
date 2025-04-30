@@ -1,5 +1,5 @@
-CC=clang
-CXX=clang++
+CC=gcc
+CXX=g++
 AR=ar
 
 clean:
@@ -17,3 +17,5 @@ libsysy.a: sylib.o sytimer.o
 build: libsysy.a
 
 .PHONY: build
+
+.DEFAULT_GOAL := build
