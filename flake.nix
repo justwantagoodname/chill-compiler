@@ -44,7 +44,9 @@
         ];
 
         shellHook = ''
-          export JAVA_HOME=${pkgs.temurin-bin-24}/lib/openjdk
+          # Java环境变量
+          export JAVA_HOME=${pkgs.temurin-bin-24}
+          export PATH=$JAVA_HOME/bin:$PATH
           export MAVEN_OPTS="-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
           
           # 创建临时目录
