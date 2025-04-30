@@ -10,7 +10,7 @@ import top.voidc.optimizer.pass.CompilePass;
  */
 @Pass
 public class RenameVariable implements CompilePass<IceFunction> {
-    private static int variableCount = 0;
+    private int variableCount = 0;
 
     @Override
     public String getName() {
