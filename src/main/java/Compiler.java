@@ -9,6 +9,11 @@ import top.voidc.misc.AssemblyBuilder;
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
 import top.voidc.optimizer.PassManager;
+import top.voidc.optimizer.pass.function.Mem2Reg;
+import top.voidc.optimizer.pass.function.ScalarReplacementOfAggregates;
+import top.voidc.optimizer.pass.function.SmartChilletSimplifyCFG;
+import top.voidc.optimizer.pass.function.SparseConditionalConstantPropagation;
+import top.voidc.optimizer.pass.function.RenameVariable;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,16 +47,36 @@ public class Compiler {
         parseSource(context);
         generator.generateIR();
 
-        final var passManager = new PassManager(context);
-        passManager.scanPackage("top.voidc.optimizer.pass");
+        final var passManager = getPassManager();
 
-        passManager.runAll(context.getCurrentIR());
+        passManager.runAll();
 
         emitLLVM();
 
         AssemblyBuilder assemblyBuilder = new AssemblyBuilder(outputPath);
         assemblyBuilder.writeRaw(context.getCurrentIR().toString());
         assemblyBuilder.close();
+    }
+
+    /**
+     * 设置 Pass 的执行顺序
+     * @return PassManager
+     */
+    private PassManager getPassManager() {
+        final var passManager = new PassManager(context);
+        passManager.setExecutionOrder(pm -> {
+            pm.runPass(Mem2Reg.class);
+            pm.runPass(ScalarReplacementOfAggregates.class);
+            pm.runPass(SmartChilletSimplifyCFG.class);
+
+            boolean flag = false;
+            do {
+                flag |= pm.runPass(SparseConditionalConstantPropagation.class);
+                flag |= pm.runPass(SmartChilletSimplifyCFG.class);
+            } while (flag);
+            pm.runPass(RenameVariable.class);
+        });
+        return passManager;
     }
 
     public void parseLibSource(IceContext context) throws IOException {

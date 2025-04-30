@@ -31,7 +31,7 @@ jobs:
         id: run-tests
         continue-on-error: true
         run: |
-          nix develop --command mvn clean test
+          timeout 6m nix develop --command mvn clean test
 
       - name: Upload JUnit test reports
         if: always()
