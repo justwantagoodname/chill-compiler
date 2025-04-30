@@ -58,6 +58,7 @@ public class PassManager {
 
     /**
      * 获取 Pass 的运行目标
+     *
      * @param clazz Pass 的 Class 对象
      * @return Pass 的运行目标
      */
@@ -79,6 +80,7 @@ public class PassManager {
             throw new IllegalArgumentException("Pass " + clazz.getName() + " 的目标类型" + parameterType + "不支持");
         }
     }
+
     private boolean isPassDisabled(Class<? extends CompilePass<?>> clazz) {
         return !clazz.isAnnotationPresent(Pass.class)
                 || !clazz.getAnnotation(Pass.class).enable()
@@ -87,6 +89,7 @@ public class PassManager {
 
     /**
      * 运行给定的 Pass，默认非并行
+     *
      * @param clazz Pass 的 Class 对象
      * @return 运行结果
      */
@@ -97,7 +100,8 @@ public class PassManager {
     /**
      * 运行给定的 Pass
      * 其内部使用反射来实例化 Pass 对象并决定运行目标
-     * @param clazz Pass 的 Class 对象
+     *
+     * @param clazz    Pass 的 Class 对象
      * @param parallel 是否并行运行
      * @return 运行结果同run方法
      */
@@ -114,8 +118,7 @@ public class PassManager {
             return switch (getPassRunTarget(clazz)) {
                 case UNIT -> {
                     Log.should(!parallel, "Pass " + clazz.getName() + " 为 Unit 级别不支持并行");
-                    @SuppressWarnings("unchecked")
-                    final var targetPass = (CompilePass<IceUnit>) instantiatePass(clazz);
+                    @SuppressWarnings("unchecked") final var targetPass = (CompilePass<IceUnit>) instantiatePass(clazz);
                     yield targetPass.run(context.getCurrentIR());
                 }
                 case FUNCTION -> {
@@ -124,8 +127,7 @@ public class PassManager {
                     yield functionStream
                             .filter(function -> !(function instanceof IceExternFunction))
                             .map(function -> {
-                                @SuppressWarnings("unchecked")
-                                final var targetPass = (CompilePass<IceFunction>) instantiatePass(clazz);
+                                @SuppressWarnings("unchecked") final var targetPass = (CompilePass<IceFunction>) instantiatePass(clazz);
                                 return targetPass.run(function);
                             }).reduce(false, (a, b) -> {
                                 // Note：必须要使用 reduce 来合并结果，anyMatch 和 allMatch 都会短路
@@ -134,12 +136,13 @@ public class PassManager {
                 }
             };
         } catch (Exception e) {
-            throw new RuntimeException("运行 Pass " + clazz.getSimpleName() + " 出现错误",  e);
+            throw new RuntimeException("运行 Pass " + clazz.getSimpleName() + " 出现错误", e);
         }
     }
 
     /**
      * 工具函数，运行给定的 Pass，直到IR不发生变化
+     *
      * @param classes Pass 的 Class 对象可传入多个
      */
     @SafeVarargs

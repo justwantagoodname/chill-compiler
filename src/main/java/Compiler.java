@@ -65,15 +65,14 @@ public class Compiler {
     private PassManager getPassManager() {
         final var passManager = new PassManager(context);
         passManager.setExecutionOrder(pm -> {
+            pm.runPass(RenameVariable.class);
             pm.runPass(Mem2Reg.class);
             pm.runPass(ScalarReplacementOfAggregates.class);
             pm.runPass(SmartChilletSimplifyCFG.class);
-
             pm.utilStable(
                     SparseConditionalConstantPropagation.class,
                     SmartChilletSimplifyCFG.class
             );
-
             pm.runPass(RenameVariable.class);
         });
         return passManager;
