@@ -1,0 +1,10 @@
+int main() {
+    putf("Hello, world!\n");
+    putf("Hello, %s!\n", "world");
+    putf("1 + 1 = %d\n", 1 + 1);
+    putf("%d %d %d %d %d %d %d %d %d %d\n", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    putf("%.1f %.2f %.3f\n", 3.14159, 3.14159, 3.14159);
+    putf("跨越长城，走向世界\n");
+    putf("Chillet! ❄️\n");
+    return 0;
+}

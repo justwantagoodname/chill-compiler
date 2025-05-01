@@ -96,8 +96,8 @@ public class LocalClangRunner implements TestcaseRunner {
             throw new IllegalArgumentException("File does not exist: " + llvmFile);
         }
 
-        final var clangResult = ProcessHelper.execute("clang", "-x", "ir", "-Ltestcases/libsysy", "-lsysy", "-lstdc++",
-                "-o", output.getAbsolutePath(), llvmFile.getAbsolutePath());
+        final var clangResult = ProcessHelper.execute("clang", "-x", "ir", "-lstdc++",
+                "-o", output.getAbsolutePath(), llvmFile.getAbsolutePath(), "-Ltestcases/libsysy", "-lsysy");
 
         if (!clangResult.isSuccess()) {
             Log.e("IR verification failed:\n===LLVM OUTPUT===\n" + clangResult.stderr() + "===LLVM END===\n");

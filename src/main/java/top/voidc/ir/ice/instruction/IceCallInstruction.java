@@ -2,9 +2,12 @@ package top.voidc.ir.ice.instruction;
 
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.type.IceType;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class IceCallInstruction extends IceInstruction {
 
@@ -28,8 +31,18 @@ public class IceCallInstruction extends IceInstruction {
         if (!getType().isVoid()) {
             builder.append("%").append(getName()).append(" = ");
         }
-        builder.append("call ").append(getTarget().getReturnType()).append(" @")
-                .append(getTarget().getName()).append("(");
+        builder.append("call ").append(getTarget().getReturnType());
+
+        if (getTarget() instanceof IceExternFunction externFunction && externFunction.isVArgs()) {
+            final var funcTypeSignature = new java.util.ArrayList<>(getTarget().getParameterTypes()
+                    .stream().map(IceType::toString).toList());
+            funcTypeSignature.add("...");
+            builder.append(" (")
+                    .append(String.join(", ", funcTypeSignature))
+                    .append(")");
+        }
+
+        builder.append(" @").append(getTarget().getName()).append("(");
         
         var args = getArguments();
         for (int i = 0; i < args.size(); i++) {

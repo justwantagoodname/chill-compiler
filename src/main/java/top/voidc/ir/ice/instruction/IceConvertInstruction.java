@@ -40,6 +40,8 @@ public class IceConvertInstruction extends IceInstruction {
             return "sitofp"; // i1/i8/i32 -> f32
         } else if (fromType == IceType.F32 && toType.isInteger()) {
             return "fptosi"; // f32 -> i1/i8/i32
+        } else if (fromType == IceType.F32 && toType == IceType.F64) {
+            return "fpext";
         }
         
         throw new IllegalStateException("Unsupported type conversion from " + fromType + " to " + toType);

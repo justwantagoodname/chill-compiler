@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class IceUnit extends IceValue {
+    private int globalVariableCount = 0;
+
     public List<IceFunction> getFunctions() {
         return functions;
     }
@@ -38,6 +40,10 @@ public class IceUnit extends IceValue {
             throw new RuntimeException("Duplicate function declaration: " + function.getName());
         }
         functions.add(function);
+    }
+
+    public int generateGlobalVariableCount() {
+        return globalVariableCount++;
     }
 
     @Override

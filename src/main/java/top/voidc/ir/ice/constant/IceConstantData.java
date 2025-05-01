@@ -18,12 +18,14 @@ public abstract class IceConstantData extends IceConstant {
      * Sysy目前只支持匿名字符串
      */
     public static IceConstantData create(String value) {
-        return new IceConstantString(value);
+        return IceConstantString.buildString(value);
     }
 
     public static IceConstantData create(float value) {
         return new IceConstantFloat(value);
     }
+
+    public static IceConstantData create(double value) {return new IceConstantDouble(value);}
 
     public static IceConstantData create(long value) {
         return new IceConstantInt(value);
