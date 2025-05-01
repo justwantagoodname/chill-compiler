@@ -154,11 +154,13 @@ public class PassManager {
 
         Log.i("执行Pass: " + clazz.getSimpleName());
 
+        final var pass = instantiatePass(clazz);
+
         try {
             return switch (getPassRunTarget(clazz)) {
                 case UNIT -> {
                     Log.should(!parallel, "Pass " + clazz.getName() + " 为 Unit 级别不支持并行");
-                    @SuppressWarnings("unchecked") final var targetPass = (CompilePass<IceUnit>) instantiatePass(clazz);
+                    @SuppressWarnings("unchecked") final var targetPass = (CompilePass<IceUnit>) pass;
                     yield targetPass.run(context.getCurrentIR());
                 }
                 case FUNCTION -> {
@@ -167,7 +169,7 @@ public class PassManager {
                     yield functionStream
                             .filter(function -> !(function instanceof IceExternFunction))
                             .map(function -> {
-                                @SuppressWarnings("unchecked") final var targetPass = (CompilePass<IceFunction>) instantiatePass(clazz);
+                                @SuppressWarnings("unchecked") final var targetPass = (CompilePass<IceFunction>) pass;
                                 return targetPass.run(function);
                             }).reduce(false, (a, b) -> {
                                 // Note：必须要使用 reduce 来合并结果，anyMatch 和 allMatch 都会短路
