@@ -1,119 +1,157 @@
 package top.voidc.optimizer;
 
-import org.reflections.Reflections;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.IceUnit;
+import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.ir.ice.constant.IceFunction;
+
 import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
-
 import top.voidc.optimizer.pass.CompilePass;
-import top.voidc.optimizer.pass.function.*;
-import top.voidc.optimizer.pass.unit.*;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
 /**
  * TODO: 合并了两种 Pass 的架构，这个类非常非常非常有可能需要改
  */
 public class PassManager {
     private final IceContext context;
-    private final Map<Class<? extends CompilePass<?>>, CompilePass<?>> passInstances = new HashMap<>();
-    private final List<Class<? extends CompilePass<?>>> executionOrder = new ArrayList<>();
+
+    private Consumer<PassManager> executionConfig = null;
+
+    private enum PassType {
+        FUNCTION,
+        UNIT
+    }
 
     public PassManager(IceContext context) {
         this.context = context;
     }
 
-    public void scanPackage(String basePackage) {
-        Set<Class<? extends CompilePass>> passClasses = findPassClasses(basePackage);
-        buildExecutionOrder(passClasses);
+    public void setExecutionOrder(Consumer<PassManager> executionConfig) {
+        this.executionConfig = executionConfig;
     }
 
-    public void runFunctionPass(IceFunction target) {
-        Mem2Reg mem2Reg = new Mem2Reg();
-        ScalarReplacementOfAggregates sroa = new ScalarReplacementOfAggregates();
-        SmartChilletSimplifyCFG scscfg = new SmartChilletSimplifyCFG();
-        SparseConditionalConstantPropagation sccp = new SparseConditionalConstantPropagation();
-
-        mem2Reg.run(target);
-        sroa.run(target);
-        scscfg.run(target);
-
-        boolean flag = false;
-        do {
-            flag |= sccp.run(target);
-            flag |= scscfg.run(target);
-        } while (flag);
+    public void runAll() {
+        Log.should(executionConfig != null, "Execution config is not set");
+        executionConfig.accept(this);
     }
 
-    public void runUnitPass(IceUnit target) {
-        RenameVariable renameVariable = new RenameVariable();
-
-        renameVariable.run(target);
-    }
-
-    public void runAll(IceUnit target) {
-        List<IceFunction> functions = target.getFunctions();
-
-        for (IceFunction function : functions) {
-            runFunctionPass(function);
-        }
-
-        runUnitPass(target);
-    }
-
-    private void buildExecutionOrder(Set<Class<? extends CompilePass>> passClasses) {
-        Set<Class<? extends CompilePass>> visited = new HashSet<>();
-
-        for (Class<? extends CompilePass> passClass : passClasses) {
-            visit(passClass, visited, new HashSet<>());
-        }
-    }
-
-    private void visit(Class<? extends CompilePass> clazz,
-                       Set<Class<? extends CompilePass>> visited,
-                       Set<Class<? extends CompilePass>> path) {
-        if (visited.contains(clazz)) return;
-        if (path.contains(clazz)) throw new RuntimeException("Cyclic dependency in Passes!");
-
-        path.add(clazz);
-
-        Pass annotation = clazz.getAnnotation(Pass.class);
-        if (annotation != null) {
-            for (Class<? extends CompilePass> dep : annotation.require()) {
-                visit(dep, visited, path);
-            }
-        }
-
-        executionOrder.add((Class<? extends CompilePass<?>>) clazz);
-        visited.add(clazz);
-        path.remove(clazz);
-    }
-
-    private CompilePass createPassInstance(Class<? extends CompilePass> clazz) {
-        if (passInstances.containsKey(clazz)) {
-            return passInstances.get(clazz);
-        }
+    private CompilePass<?> instantiatePass(Class<? extends CompilePass<?>> clazz) {
         try {
-            Constructor<? extends CompilePass> ctor = clazz.getConstructor(IceContext.class);
-            CompilePass pass = ctor.newInstance(context);
-            passInstances.put((Class<? extends CompilePass<?>>) clazz, pass);
-            return pass;
+            Constructor<? extends CompilePass<?>> passConstructor;
+            if (Arrays.stream(clazz.getConstructors())
+                    .anyMatch(constructor -> constructor.getParameterCount() == 1 && constructor.getParameterTypes()[0] == IceContext.class)) {
+                passConstructor = clazz.getConstructor(IceContext.class);
+                return passConstructor.newInstance(context);
+            } else {
+                passConstructor = clazz.getConstructor();
+                return passConstructor.newInstance();
+            }
         } catch (Exception e) {
             throw new RuntimeException("Failed to instantiate Pass: " + clazz.getName(), e);
         }
     }
 
-    private Set<Class<? extends CompilePass>> findPassClasses(String basePackage) {
-        Reflections reflections = new Reflections(basePackage);
-        return reflections.getTypesAnnotatedWith(Pass.class)
-                .stream()
-                .filter(CompilePass.class::isAssignableFrom)
-                .map(c -> (Class<? extends CompilePass>) c)
-                .collect(Collectors.toSet());
+    /**
+     * 获取 Pass 的运行目标
+     *
+     * @param clazz Pass 的 Class 对象
+     * @return Pass 的运行目标
+     */
+    private PassType getPassRunTarget(Class<? extends CompilePass<?>> clazz) {
+        final var runMethod = Arrays.stream(clazz.getMethods())
+                .filter(method -> method.getName().equals("run") && !method.isSynthetic() && !method.isBridge())
+                .findFirst().orElseThrow();
+
+        final var parameterTypes = runMethod.getParameterTypes();
+        Log.should(parameterTypes.length == 1, "Pass " + clazz.getName() + " run method should have one parameter");
+        Log.should(IceValue.class.isAssignableFrom(parameterTypes[0]),
+                "Pass " + clazz.getName() + " run method parameter should be IceValue");
+        final var parameterType = parameterTypes[0];
+        if (parameterType.equals(IceFunction.class)) {
+            return PassType.FUNCTION;
+        } else if (parameterType.equals(IceUnit.class)) {
+            return PassType.UNIT;
+        } else {
+            throw new IllegalArgumentException("Pass " + clazz.getName() + " 的目标类型" + parameterType + "不支持");
+        }
+    }
+
+    private boolean isPassDisabled(Class<? extends CompilePass<?>> clazz) {
+        return !clazz.isAnnotationPresent(Pass.class)
+                || !clazz.getAnnotation(Pass.class).enable()
+                || clazz.getAnnotation(Pass.class).disable();
+    }
+
+    /**
+     * 运行给定的 Pass，默认非并行
+     *
+     * @param clazz Pass 的 Class 对象
+     * @return 运行结果
+     */
+    public boolean runPass(Class<? extends CompilePass<?>> clazz) {
+        return runPass(clazz, false);
+    }
+
+    /**
+     * 运行给定的 Pass
+     * 其内部使用反射来实例化 Pass 对象并决定运行目标
+     *
+     * @param clazz    Pass 的 Class 对象
+     * @param parallel 是否并行运行
+     * @return 运行结果同run方法
+     */
+    public boolean runPass(Class<? extends CompilePass<?>> clazz, boolean parallel) {
+
+        if (isPassDisabled(clazz)) {
+            Log.i("Pass " + clazz.getSimpleName() + " 已禁用，跳过");
+            return false;
+        }
+
+        Log.i("执行Pass: " + clazz.getSimpleName());
+
+        try {
+            return switch (getPassRunTarget(clazz)) {
+                case UNIT -> {
+                    Log.should(!parallel, "Pass " + clazz.getName() + " 为 Unit 级别不支持并行");
+                    @SuppressWarnings("unchecked") final var targetPass = (CompilePass<IceUnit>) instantiatePass(clazz);
+                    yield targetPass.run(context.getCurrentIR());
+                }
+                case FUNCTION -> {
+                    final var functionStream = parallel ? context.getCurrentIR().getFunctions().parallelStream()
+                            : context.getCurrentIR().getFunctions().stream();
+                    yield functionStream
+                            .filter(function -> !(function instanceof IceExternFunction))
+                            .map(function -> {
+                                @SuppressWarnings("unchecked") final var targetPass = (CompilePass<IceFunction>) instantiatePass(clazz);
+                                return targetPass.run(function);
+                            }).reduce(false, (a, b) -> {
+                                // Note：必须要使用 reduce 来合并结果，anyMatch 和 allMatch 都会短路
+                                return a || b;
+                            });
+                }
+            };
+        } catch (Exception e) {
+            throw new RuntimeException("运行 Pass " + clazz.getSimpleName() + " 出现错误", e);
+        }
+    }
+
+    /**
+     * 工具函数，运行给定的 Pass，直到IR不发生变化
+     *
+     * @param classes Pass 的 Class 对象可传入多个
+     */
+    @SafeVarargs
+    public final void utilStable(Class<? extends CompilePass<?>>... classes) {
+        boolean flag;
+        do {
+            flag = Arrays.stream(classes)
+                    .map(this::runPass)
+                    .reduce(false, (a, b) -> a || b);
+        } while (flag);
     }
 }

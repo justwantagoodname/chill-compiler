@@ -1,6 +1,5 @@
 package top.voidc.optimizer.pass.function;
 
-import javassist.tools.reflect.Compiler;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 

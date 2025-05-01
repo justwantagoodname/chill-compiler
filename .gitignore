@@ -38,6 +38,9 @@ build/
 ### Mac OS ###
 .DS_Store
 
+### Nix & Direnv ###
+.direnv/
+
 testcases/**/*.log
 testcases/**/*.actual.out
 testcases/**/*.s

@@ -37,7 +37,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
         while (!queue.isEmpty()) {
             IceBlock block = queue.poll();
-            IceInstruction exitBlock = block.getInstructions().get(block.getInstructions().size() - 1);
+            IceInstruction exitBlock = block.getInstructions().getLast();
 
             if (exitBlock instanceof IceBranchInstruction br) {
                 if (!br.isConditional()) {
