@@ -23,7 +23,9 @@ import java.util.*;
  * This pass creates SSA IR, and promotes memory accesses to register accesses.
  * This pass will try to delete alloca instructions, and replace them with ice-ir registers.
  */
-@Pass
+@Pass(
+        group = {"needfix"}
+)
 public class Mem2Reg implements CompilePass<IceFunction> {
     /**
      * Create a dominance frontier table for the given function.

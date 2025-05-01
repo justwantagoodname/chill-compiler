@@ -352,7 +352,9 @@ class SCCPSolver {
     }
 }
 
-@Pass
+@Pass(
+        group = {"needfix"}
+)
 public class SparseConditionalConstantPropagation implements CompilePass<IceFunction> {
     @Override
     public boolean run(IceFunction target) {

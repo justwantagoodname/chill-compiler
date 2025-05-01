@@ -228,7 +228,12 @@ public class SSHGNURunner implements TestcaseRunner {
     private void connect() throws JSchException {
 
         if (sshConfig.password() == null) { // 使用默认的 SSH 私钥路径
-            String privateKeyPath = System.getProperty("user.home") + "/.ssh/id_rsa";
+            String privateKeyPath;
+            if (System.getenv("SSH_PRIVATE_KEY") != null) {
+                privateKeyPath = System.getenv("SSH_PRIVATE_KEY");
+            } else {
+                privateKeyPath = System.getProperty("user.home") + "/.ssh/id_rsa";
+            }
             jSch.addIdentity(privateKeyPath);
         }
 
