@@ -7,5 +7,6 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Pass {
-    Class<? extends CompilePass>[] require() default {};
+    boolean enable() default true;
+    boolean disable() default false;
 }
