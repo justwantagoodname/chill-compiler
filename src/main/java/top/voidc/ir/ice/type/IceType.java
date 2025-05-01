@@ -5,6 +5,7 @@ public class IceType implements Comparable<IceType> {
     public static final IceType I8 = new IceType(TypeEnum.I8);
     public static final IceType I32 = new IceType(TypeEnum.I32);
     public static final IceType F32 = new IceType(TypeEnum.F32);
+    public static final IceType F64 = new IceType(TypeEnum.F64);
     public static final IceType VOID = new IceType(TypeEnum.VOID);
     public static final IceType STRING = new IceType(TypeEnum.STRING);
     public static final IceType FUNCTION = new IceType(TypeEnum.FUNCTION);
@@ -23,7 +24,8 @@ public class IceType implements Comparable<IceType> {
         I1,
         I8,
         I32,
-        F32
+        F32,
+        F64
     }
 
     private final TypeEnum typeEnum;
@@ -43,6 +45,7 @@ public class IceType implements Comparable<IceType> {
             case I8 -> "i8";
             case I32 -> "i32";
             case F32 -> "float";
+            case F64 -> "double";
             case VOID -> "void";
             case STRING -> "str";
             case ARRAY -> "array";
@@ -55,6 +58,8 @@ public class IceType implements Comparable<IceType> {
         return switch (literal) {
             case "int" -> I32;
             case "float" -> F32;
+            case "double" -> F64;
+            case "char" -> I8;
             case "void" -> VOID;
             case "string" -> STRING;
             default -> throw new IllegalArgumentException("Unknown type: " + literal);
@@ -128,6 +133,7 @@ public class IceType implements Comparable<IceType> {
         return switch (this.getTypeEnum()) {
             case I1, I8 -> 1;
             case I32, F32 -> 4;
+            case F64 -> 8;
             case VOID -> 0;
             case STRING -> 4; // 指针大小
             case FUNCTION -> 4; // 指针大小

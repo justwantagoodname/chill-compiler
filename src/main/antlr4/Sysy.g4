@@ -10,7 +10,7 @@ decl: constDecl | varDecl ;
 
 constDecl: 'const' primitiveType constDef (',' constDef)* ';' ;
 
-primitiveType: 'int' | 'float' ;
+primitiveType: 'int' | 'float' | 'char' ;
 
 constDef: Ident ('[' constExp ']')* '=' initVal ;
 

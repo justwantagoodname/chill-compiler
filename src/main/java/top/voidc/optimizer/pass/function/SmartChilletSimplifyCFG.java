@@ -22,7 +22,9 @@ import java.util.*;
  * 聪明疾旋鼬 CFG 简化器
  * 会尝试删除无用的 block 和指令、合并无用的分支、合并无用的 phi 节点
  */
-@Pass
+@Pass(
+        group = {"needfix"}
+)
 public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
     private static ArrayList<IceBlock> allBlocks;

@@ -8,6 +8,6 @@ extern void putfloat(float a);
 extern void putch(int);
 extern void putarray(int, int[]);
 extern void putfarray(int n, float a[]);
-extern void putf (int[], int, ...);
+extern void putf (char[], ...);
 extern void _sysy_starttime(int lineno);
 extern void _sysy_stoptime(int lineno);
