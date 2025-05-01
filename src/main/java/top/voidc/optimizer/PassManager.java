@@ -22,6 +22,8 @@ public class PassManager {
 
     private Consumer<PassManager> executionConfig = null;
 
+    private final Set<String> disabledGroup = new HashSet<>();
+
     private enum PassType {
         FUNCTION,
         UNIT
@@ -29,6 +31,18 @@ public class PassManager {
 
     public PassManager(IceContext context) {
         this.context = context;
+    }
+
+    public Set<String> getDisabledGroup() {
+        return disabledGroup;
+    }
+
+    /**
+     * 添加禁用的 Pass 组
+     * @param group 禁用的组名
+     */
+    public void addDisableGroup(String group) {
+        disabledGroup.add(group);
     }
 
     public void setExecutionOrder(Consumer<PassManager> executionConfig) {
@@ -41,19 +55,38 @@ public class PassManager {
     }
 
     private CompilePass<?> instantiatePass(Class<? extends CompilePass<?>> clazz) {
-        try {
-            Constructor<? extends CompilePass<?>> passConstructor;
-            if (Arrays.stream(clazz.getConstructors())
-                    .anyMatch(constructor -> constructor.getParameterCount() == 1 && constructor.getParameterTypes()[0] == IceContext.class)) {
-                passConstructor = clazz.getConstructor(IceContext.class);
-                return passConstructor.newInstance(context);
-            } else {
-                passConstructor = clazz.getConstructor();
-                return passConstructor.newInstance();
+        Constructor<?>[] constructors = clazz.getConstructors(); // 只获取 public 构造器
+
+        for (Constructor<?> constructor : constructors) {
+            var paramTypes = constructor.getParameterTypes();
+            List<Object> args = new ArrayList<>();
+
+            boolean allMatched = true;
+            for (Class<?> paramType : paramTypes) {
+                Optional<Object> matched = context.getPassResults().stream()
+                        .filter(obj -> paramType.isAssignableFrom(obj.getClass()))
+                        .findFirst();
+
+                if (matched.isPresent()) {
+                    Object value = matched.get();
+                    args.add(value);
+                } else if (paramType.isAssignableFrom(IceContext.class)) {
+                    args.add(context);
+                } else {
+                    allMatched = false;
+                    break;
+                }
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to instantiate Pass: " + clazz.getName(), e);
+
+            if (allMatched) {
+                try {
+                    return clazz.cast(constructor.newInstance(args.toArray()));
+                } catch (Exception e) {
+                    throw new RuntimeException("Constructor invocation failed", e);
+                }
+            }
         }
+        throw new IllegalArgumentException("创建Pass " + clazz.getSimpleName() + " 时失败");
     }
 
     /**
@@ -82,9 +115,16 @@ public class PassManager {
     }
 
     private boolean isPassDisabled(Class<? extends CompilePass<?>> clazz) {
-        return !clazz.isAnnotationPresent(Pass.class)
-                || !clazz.getAnnotation(Pass.class).enable()
-                || clazz.getAnnotation(Pass.class).disable();
+        if (!clazz.isAnnotationPresent(Pass.class)) return true;
+        if (!clazz.getAnnotation(Pass.class).enable() || clazz.getAnnotation(Pass.class).disable()) {
+            return true;
+        }
+        for (String group : clazz.getAnnotation(Pass.class).group()) {
+            if (disabledGroup.contains(group)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -146,7 +186,7 @@ public class PassManager {
      * @param classes Pass 的 Class 对象可传入多个
      */
     @SafeVarargs
-    public final void utilStable(Class<? extends CompilePass<?>>... classes) {
+    public final void untilStable(Class<? extends CompilePass<?>>... classes) {
         boolean flag;
         do {
             flag = Arrays.stream(classes)

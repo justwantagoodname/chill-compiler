@@ -48,7 +48,8 @@ public class Compiler {
         generator.generateIR();
 
         final var passManager = getPassManager();
-
+        // TODO: 后续添加O0 O1的组
+        passManager.addDisableGroup("needfix");
         passManager.runAll();
 
         emitLLVM();
