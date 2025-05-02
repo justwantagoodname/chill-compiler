@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * 通过SSH在远程开发板上进行测试
  * 需要GNU GCC和GNU Make工具
@@ -220,9 +222,11 @@ public class SSHGNURunner implements TestcaseRunner {
         List<String> expectedLines = Files.readAllLines(result.getTestcase().out().toPath());
         List<String> actualLines = Files.readAllLines(result.getActualOutput().toPath());
 
-        if (!expectedLines.equals(actualLines)) {
-            throw new AssertionError("Output mismatch for testcase: " + result.getTestcase().name());
-        }
+//        if (!expectedLines.equals(actualLines)) {
+//            throw new AssertionError("Output mismatch for testcase: " + result.getTestcase().name());
+//        }
+        assertEquals(expectedLines, actualLines,
+                "Output mismatch for testcase: " + result.getTestcase().name());
     }
 
     private void connect() throws JSchException {
