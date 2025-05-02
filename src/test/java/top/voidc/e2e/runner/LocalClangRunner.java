@@ -72,9 +72,8 @@ public class LocalClangRunner implements TestcaseRunner {
 
         final var libsysyDir = new File("testcases/libsysy");
         final var libsysy = new File(libsysyDir, "libsysy.a");
-        final var winLibsysy = new File(libsysyDir, "sysy.lib");
 
-        if (libsysy.exists() || winLibsysy.exists()) {
+        if (libsysy.exists()) {
             return;
         }
 
@@ -92,9 +91,6 @@ public class LocalClangRunner implements TestcaseRunner {
         Log.i("Libsysy compiled successfully: " + libsysy.getAbsolutePath());
     }
 
-    /**
-     * 已弃用
-     */
     public static void compileToExecutable(File llvmFile, File output) throws IOException, InterruptedException {
         if (llvmFile == null || !llvmFile.exists()) {
             throw new IllegalArgumentException("File does not exist: " + llvmFile);
@@ -103,9 +99,10 @@ public class LocalClangRunner implements TestcaseRunner {
         final var clangResult = ProcessHelper.execute("clang", "-x", "ir", "-lstdc++",
                 "-o", output.getAbsolutePath(), llvmFile.getAbsolutePath(), "-Ltestcases/libsysy", "-lsysy");
 
-//        if (!clangResult.isSuccess()) {            Log.e("IR verification failed:\n===LLVM OUTPUT===\n" + clangResult.stderr() + "===LLVM END===\n");
-//            throw new RuntimeException("Compilation failed: clang exit code = " + clangResult.exitCode());
-//        }
+        if (!clangResult.isSuccess()) {
+            Log.e("IR verification failed:\n===LLVM OUTPUT===\n" + clangResult.stderr() + "===LLVM END===\n");
+            throw new RuntimeException("Compilation failed: clang exit code = " + clangResult.exitCode());
+        }
     }
 
     public static void runExecutableAndCompare(TestResult result) throws IOException, InterruptedException {
@@ -124,7 +121,7 @@ public class LocalClangRunner implements TestcaseRunner {
         }
 
         Process process = builder.start();
-        int exitCode = process.waitFor() & 0xFF;
+        int exitCode = process.waitFor();
 
         // Libsysy 的计时信息是通过 stderr打印的
         BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
