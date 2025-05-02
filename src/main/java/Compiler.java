@@ -85,25 +85,10 @@ public class Compiler {
         Log.should(headerStream != null, "lib.sy not found");
         final var libSource = CharStreams.fromStream(headerStream);
         initParse(libSource);
-//        final var lexer = new SysyLexer(libSource);
-//        final var tokenStream = new CommonTokenStream(lexer);
-//        final var parser = new SysyParser(tokenStream);
-//        context.setAst(parser.compUnit());
-//        context.setParser(parser);
     }
 
     public void parseSource(IceContext context) throws IOException {
         final var inputSource = CharStreams.fromFileName(context.getSource().getAbsolutePath());
-        initParse(inputSource);
-//        final var lexer = new SysyLexer(inputSource);
-//        final var tokenStream = new CommonTokenStream(lexer);
-//        final var parser = new SysyParser(tokenStream);
-//        context.setAst(parser.compUnit());
-//        context.setParser(parser);
-    }
-
-    public void parseString(String context) throws IOException {
-        final var inputSource = CharStreams.fromString(context);
         initParse(inputSource);
     }
 
