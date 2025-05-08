@@ -1,0 +1,9 @@
+int main() {
+  int s = 0;
+  while (1) {
+    int a = getint();
+    if (a == -1) break;
+    s = s + a;
+  }
+  return s;
+}
