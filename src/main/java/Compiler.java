@@ -9,11 +9,7 @@ import top.voidc.misc.AssemblyBuilder;
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
 import top.voidc.optimizer.PassManager;
-import top.voidc.optimizer.pass.function.Mem2Reg;
-import top.voidc.optimizer.pass.function.ScalarReplacementOfAggregates;
-import top.voidc.optimizer.pass.function.SmartChilletSimplifyCFG;
-import top.voidc.optimizer.pass.function.SparseConditionalConstantPropagation;
-import top.voidc.optimizer.pass.function.RenameVariable;
+import top.voidc.optimizer.pass.function.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,6 +71,7 @@ public class Compiler {
                     SmartChilletSimplifyCFG.class
             );
             pm.runPass(RenameVariable.class);
+            pm.runPass(LivenessAnalysis.class);
         });
         return passManager;
     }
