@@ -2,7 +2,7 @@ package top.voidc.optimizer.pass;
 
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.instruction.IceInstruction;
-import top.voidc.ir.ice.instruction.IcePHINode;
+import top.voidc.ir.ice.instruction.IcePhiInstruction;
 
 public class Helper {
     /**
@@ -15,7 +15,7 @@ public class Helper {
         for (IceBlock successor : block.getSuccessors()) {
             // block 会影响 successor 中的 phi 节点
             for (IceInstruction inst : successor.getInstructions()) {
-                if (inst instanceof IcePHINode phiNode) {
+                if (inst instanceof IcePhiInstruction phiNode) {
                     // 在这个 phi 节点中，删除这个分支
                     phiNode.removeBranch(block);
                 }

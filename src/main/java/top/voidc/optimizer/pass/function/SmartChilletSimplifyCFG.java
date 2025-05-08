@@ -9,7 +9,7 @@ import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceBinaryInstruction;
 import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceInstruction;
-import top.voidc.ir.ice.instruction.IcePHINode;
+import top.voidc.ir.ice.instruction.IcePhiInstruction;
 
 import top.voidc.misc.annotation.Pass;
 
@@ -96,7 +96,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
                 // 检查下一个 block 中是否有 phi 节点
                 boolean hasPHI = false;
                 for (IceInstruction inst : nextBlock.getInstructions()) {
-                    if (inst instanceof IcePHINode) {
+                    if (inst instanceof IcePhiInstruction) {
                         hasPHI = true;
                         break;
                     }
@@ -182,7 +182,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
             List<IceInstruction> instructions = block.getInstructions();
             for (int i = 0; i < instructions.size(); ++i) {
                 IceInstruction instruction = instructions.get(i);
-                if (!(instruction instanceof IcePHINode phiNode)) {
+                if (!(instruction instanceof IcePhiInstruction phiNode)) {
                     continue;
                 }
 

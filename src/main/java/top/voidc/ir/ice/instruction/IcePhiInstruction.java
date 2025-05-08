@@ -3,17 +3,16 @@ package top.voidc.ir.ice.instruction;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
-import top.voidc.misc.Log;
 
 import java.util.List;
 import java.util.ArrayList;
 
-public class IcePHINode extends IceInstruction {
+public class IcePhiInstruction extends IceInstruction {
     record IcePHIBranch(IceBlock block, IceValue value) {};
     private List<IcePHIBranch> branches;
     private IceValue valueToBeMerged;
 
-    public IcePHINode(IceBlock parent, String name, IceType type) {
+    public IcePhiInstruction(IceBlock parent, String name, IceType type) {
         super(parent, name, type);
         setInstructionType(InstructionType.PHI);
         this.branches = new ArrayList<>();

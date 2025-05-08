@@ -8,10 +8,10 @@ import top.voidc.ir.ice.constant.IceConstantInt;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class IcePHINodeTest {
+public class IcePHIInstructionTest {
     @Test
     public void testBasicPhi() {
-        IcePHINode phiNode = new IcePHINode(null, "phi", IceType.I32);
+        IcePhiInstruction phiNode = new IcePhiInstruction(null, "phi", IceType.I32);
 
         IceBlock block1 = new IceBlock(null, "b1");
         IceBlock block2 = new IceBlock(null, "b2");
