@@ -73,7 +73,7 @@ public class IceValue {
         return (withType ? getType() + " %" : "%") + getName();
     }
 
-    public String getReferenceName() {
+    public final String getReferenceName() {
         return getReferenceName(true);
     }
 

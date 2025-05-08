@@ -19,7 +19,7 @@ public class IceUndef extends IceConstant {
     }
 
     @Override
-    public String getReferenceName() {
-        return type + " undef";
+    public String getReferenceName(boolean withType) {
+        return (withType ? type : "") + " undef";
     }
 }
