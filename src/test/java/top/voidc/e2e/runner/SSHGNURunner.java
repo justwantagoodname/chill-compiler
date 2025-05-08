@@ -219,14 +219,11 @@ public class SSHGNURunner implements TestcaseRunner {
     }
 
     private static void compareOutput(TestResult result) throws IOException {
-        List<String> expectedLines = Files.readAllLines(result.getTestcase().out().toPath());
-        List<String> actualLines = Files.readAllLines(result.getActualOutput().toPath());
+        final var expectedLines = Files.readString(result.getTestcase().out().toPath()).strip();
+        final var actualLines = Files.readString(result.getActualOutput().toPath()).strip();
 
-//        if (!expectedLines.equals(actualLines)) {
-//            throw new AssertionError("Output mismatch for testcase: " + result.getTestcase().name());
-//        }
         assertEquals(expectedLines, actualLines,
-                "Output mismatch for testcase: " + result.getTestcase().name());
+                "输出和预期不符合: " + result.getTestcase().name());
     }
 
     private void connect() throws JSchException {
@@ -375,7 +372,7 @@ public class SSHGNURunner implements TestcaseRunner {
         final var testResult = testResultMap.get(test.name());
         final var redirectInput = testResult.getRemoteInputPath() == null ? "" : "< " + testResult.getRemoteInputPath();
         try {
-            final var executeResult = executeCommand(testResult.getRemoteExecutablePath(), redirectInput,
+            final var executeResult = executeCommand("timeout", "30s", testResult.getRemoteExecutablePath(), redirectInput,
                     ">", testResult.getRemoteActualOutputPath());
 
             Log.i("执行信息：" + executeResult.stderr());
