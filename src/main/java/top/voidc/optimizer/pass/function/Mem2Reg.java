@@ -24,7 +24,7 @@ import java.util.*;
  * This pass will try to delete alloca instructions, and replace them with ice-ir registers.
  */
 @Pass(
-        group = {"needfix"}
+        group = {"O0"}
 )
 public class Mem2Reg implements CompilePass<IceFunction> {
     /**
@@ -108,7 +108,7 @@ public class Mem2Reg implements CompilePass<IceFunction> {
 
         // phi node for each block, value: phi node if the block has already inserted a phi node
         // for the given value, null if not
-        Hashtable<IceBlock, IcePHINode> phiTable = new Hashtable<>();
+        Hashtable<IceBlock, IcePhiInstruction> phiTable = new Hashtable<>();
 
         // add all blocks that store value to workList
         for (IceBlock block : function.getBlocks()) {
@@ -129,7 +129,7 @@ public class Mem2Reg implements CompilePass<IceFunction> {
 //                System.out.println("Current block: " + dominator.getName());
                 if (!phiTable.containsKey(dominatee)) {
                     IceType type = ((IcePtrType<?>) value.getType()).getPointTo();
-                    IcePHINode phiNode = new IcePHINode(dominatee, value.getName(), type);
+                    IcePhiInstruction phiNode = new IcePhiInstruction(dominatee, value.getName(), type);
                     phiNode.setValueToBeMerged(value);
 
                     phiTable.put(dominatee, phiNode);
@@ -194,7 +194,7 @@ public class Mem2Reg implements CompilePass<IceFunction> {
                     // 因为删除了 load 指令，后面的指令会向前移动
                     --index;
                 }
-            } else if (instr instanceof IcePHINode phiNode) {
+            } else if (instr instanceof IcePhiInstruction phiNode) {
                 // 如果当前指令是 phi 指令，则获取其 valueToBeMerged
                 IceValue value = phiNode.getValueToBeMerged();
                 if (valueStack.containsKey(value)) {
@@ -226,7 +226,7 @@ public class Mem2Reg implements CompilePass<IceFunction> {
             for (IceInstruction instr : successor.getInstructions()) {
                 // 所有 phi 指令都应当在 block 的开头
                 // 因此，如果遇到第一个不是 phi 指令的指令，则说明已经处理结束
-                if (!(instr instanceof IcePHINode phiNode)) {
+                if (!(instr instanceof IcePhiInstruction phiNode)) {
                     break;
                 }
 

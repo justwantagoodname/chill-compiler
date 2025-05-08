@@ -356,7 +356,7 @@ public class IRBuilderTest {
                     "bb1", bb1,
                     "bb2", bb2
                 )));
-        assertInstanceOf(IcePHINode.class, phiInstr);
+        assertInstanceOf(IcePhiInstruction.class, phiInstr);
         alloc1.destroy();
         alloc2.destroy();
         load1.destroy();
