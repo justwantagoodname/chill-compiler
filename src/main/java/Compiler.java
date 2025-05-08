@@ -62,7 +62,7 @@ public class Compiler {
      */
     private PassManager getPassManager() {
         final var passManager = new PassManager(context);
-        passManager.setExecutionOrder(pm -> {
+        passManager.setPipeline(pm -> {
             pm.runPass(RenameVariable.class);
             pm.runPass(Mem2Reg.class);
             pm.runPass(ScalarReplacementOfAggregates.class);
