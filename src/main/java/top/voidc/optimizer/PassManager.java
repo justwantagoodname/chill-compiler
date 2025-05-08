@@ -45,7 +45,7 @@ public class PassManager {
         disabledGroup.add(group);
     }
 
-    public void setExecutionOrder(Consumer<PassManager> executionConfig) {
+    public void setPipeline(Consumer<PassManager> executionConfig) {
         this.executionConfig = executionConfig;
     }
 
