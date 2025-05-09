@@ -112,7 +112,7 @@ class SCCPSolver {
         IceBlock to = edge.to;
 
         for (IceInstruction inst : to.getInstructions()) {
-            if (inst instanceof IcePhiInstruction phiNode) {
+            if (inst instanceof IcePHINode phiNode) {
                 visitPHI(phiNode, from);
             }
         }
@@ -245,7 +245,7 @@ class SCCPSolver {
         enqueueUsers(bin);
     }
 
-    private void visitPHI(IcePhiInstruction phiNode, IceBlock block) {
+    private void visitPHI(IcePHINode phiNode, IceBlock block) {
         IceValue incomingValue = phiNode.getIncomingValue(block);
         ValueLatticeElement phiLat = getLattice(phiNode);
         ValueLatticeElement opLat = getLattice(incomingValue);
@@ -330,7 +330,7 @@ class SCCPSolver {
         for (IceBlock block : function.getBlocks()) {
             for (int i = 0; i < block.getInstructions().size(); ++i) {
                 IceInstruction inst = block.getInstructions().get(i);
-                if (inst instanceof IcePhiInstruction phiNode) {
+                if (inst instanceof IcePHINode phiNode) {
                     if (phiNode.getBranchCount() == 1) {
                         // 获取唯一一个分支的值
                         IceValue value = phiNode.getBranchValueOnIndex(0);
