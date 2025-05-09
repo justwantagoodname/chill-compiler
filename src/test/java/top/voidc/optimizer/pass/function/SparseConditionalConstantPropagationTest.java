@@ -93,7 +93,7 @@ public class SparseConditionalConstantPropagationTest {
         block2.addInstruction(add);
         block2.addInstruction(outBlock2);
 
-        IcePhiInstruction phi = new IcePhiInstruction(exit, "phi", IceType.I32);
+        IcePHINode phi = new IcePHINode(exit, "phi", IceType.I32);
         phi.addBranch(block1, sub);
         phi.addBranch(block2, add);
         exit.addInstruction(phi);
@@ -161,7 +161,7 @@ public class SparseConditionalConstantPropagationTest {
         block2.addInstruction(add);
         block2.addInstruction(outBlock2);
 
-        IcePhiInstruction phi = new IcePhiInstruction(exit, "phi", IceType.I32);
+        IcePHINode phi = new IcePHINode(exit, "phi", IceType.I32);
         phi.addBranch(block1, sub);
         phi.addBranch(block2, add);
         exit.addInstruction(phi);

@@ -227,7 +227,7 @@ public class InstructionVisitor extends IceBaseVisitor<IceInstruction> {
     public IceInstruction visitPhiInstr(IceParser.PhiInstrContext ctx) {
         String resultReg = ctx.IDENTIFIER(0).getText();
         IceType type = typeVisitor.visit(ctx.type());
-        IcePhiInstruction phiNode = new IcePhiInstruction(block, resultReg, type);
+        IcePHINode phiNode = new IcePHINode(block, resultReg, type);
 
         for (int i = 0; i < ctx.value().size(); i++) {
             IceValue value = getValue(ctx.value(i));
