@@ -215,7 +215,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
                 }
 
                 if (removable) {
-                    List<IceUser> users = phiNode.getUsersList();
+                    List<IceUser> users = phiNode.getUsers();
                     for (IceUser user : users) {
                         if (user instanceof IceInstruction instruction1) {
                             instruction1.replaceOperand(phiNode, firstBranch);
@@ -241,7 +241,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
         for (IceBlock block : function.getBlocks()) {
             for (IceInstruction instruction : block.getInstructions()) {
                 if (instruction instanceof IceBinaryInstruction binary) {
-                    if (binary.getUsersList().isEmpty()) {
+                    if (binary.getUsers().isEmpty()) {
                         workList.add(binary);
                     }
                 }
@@ -254,7 +254,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
             for (IceValue operand : binary.getOperands()) {
                 operand.removeUse(binary);
-                if (operand instanceof IceBinaryInstruction && operand.getUsersList().isEmpty()) {
+                if (operand instanceof IceBinaryInstruction && operand.getUsers().isEmpty()) {
                     workList.add((IceBinaryInstruction) operand);
                 }
             }

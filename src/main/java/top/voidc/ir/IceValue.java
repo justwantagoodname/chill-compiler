@@ -9,22 +9,22 @@ import top.voidc.ir.ice.type.IceType;
 import java.util.*;
 
 public class IceValue {
-    private int align = 4;
     private String name;
 
     protected IceType type;
 
-    private final List<IceUser> uses; // 使用者
+    // 使用者使用集合确保虽然某个操作数被同个指令使用多次的情况下其使用者唯一，使用者的操作数可能会重复多次且有序所以使用List
+    private final Set<IceUser> users;
 
     public IceValue() {
         this.name = null;
-        this.uses = new ArrayList<>();
+        this.users = new HashSet<>();
         this.type = IceType.VOID;
     }
 
     public IceValue(String name, IceType type) {
         this.name = name;
-        this.uses = new ArrayList<>();
+        this.users = new HashSet<>();
         this.type = type;
     }
 
@@ -45,19 +45,42 @@ public class IceValue {
     }
 
     public void addUse(IceUser user) {
-        uses.add(user);
+        users.add(user);
     }
 
     public void removeUse(IceUser user) {
-        uses.remove(user);
+        users.remove(user);
     }
 
-    public Iterable<? extends IceUser> getUsers() {
-        return uses;
+    /**
+     * 获取使用者列表
+     * @see IceValue#getUsers
+     * @return 使用者列表
+     */
+    public List<IceUser> users() {
+        return users.stream().toList();
     }
 
+    /**
+     * 获取使用者列表
+     * @return 使用者列表
+     */
+    public List<IceUser> getUsers() {
+        return users.stream().toList();
+    }
+
+    @Deprecated
     public List<IceUser> getUsersList() {
-        return uses;
+        return getUsers();
+    }
+
+    /**
+     * 用 value 替换所有使用者的引用
+     * 当 value 为 null 时，表示删除对此变量的引用
+     * @param newValue 新的值，可为 null
+     */
+    public void replaceAllUsesWith(IceValue newValue) {
+        users.forEach(user -> user.replaceOperand(this, newValue));
     }
 
     @Override
@@ -81,19 +104,16 @@ public class IceValue {
         builder.append(getReferenceName());
     }
 
+    public final String getTextIR() {
+        StringBuilder builder = new StringBuilder();
+        getTextIR(builder);
+        return builder.toString();
+    }
+
     protected static IceParser buildIRParser(String textIR) {
         var irStream = CharStreams.fromString(textIR);
         var tokenStream = new CommonTokenStream(new IceLexer(irStream));
         return new IceParser(tokenStream);
     }
-
-    public void setAlign(int align) {
-        this.align = align;
-    }
-
-    public int getAlign() {
-        return this.align;
-    }
-
 }
 
