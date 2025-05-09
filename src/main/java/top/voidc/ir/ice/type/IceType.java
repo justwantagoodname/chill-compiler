@@ -1,5 +1,7 @@
 package top.voidc.ir.ice.type;
 
+import java.util.Set;
+
 public class IceType implements Comparable<IceType> {
     public static final IceType I1 = new IceType(TypeEnum.I1);
     public static final IceType I8 = new IceType(TypeEnum.I8);
@@ -119,10 +121,8 @@ public class IceType implements Comparable<IceType> {
     }
 
     public boolean isNumeric() {
-        return this.getTypeEnum() == TypeEnum.I32
-                || this.getTypeEnum() == TypeEnum.F32
-                || this.getTypeEnum() == TypeEnum.I8
-                || this.getTypeEnum() == TypeEnum.I1;
+        return Set.of(TypeEnum.I1, TypeEnum.I8, TypeEnum.I32, TypeEnum.F32, TypeEnum.F64)
+                .contains(this.getTypeEnum());
     }
 
     public boolean isPointer() {

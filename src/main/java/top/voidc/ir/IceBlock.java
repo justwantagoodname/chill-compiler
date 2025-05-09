@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.StreamSupport;
+import java.util.stream.Collectors;
 
 public class IceBlock extends IceUser {
     private final List<IceInstruction> instructions;
@@ -52,21 +52,20 @@ public class IceBlock extends IceUser {
         return instructions;
     }
 
-    public Iterable<IceBlock> successors() {
-        return (Iterable<IceBlock>) this.getOperands();
+    public List<IceBlock> successors() {
+        return getSuccessors();
     }
 
     public List<IceBlock> getSuccessors() {
-        return StreamTools.toList(successors());
+        return this.getOperands().stream().map(value -> (IceBlock) value).collect(Collectors.toList());
     }
 
-    public Iterable<IceBlock> predecessors() {
+    public List<IceBlock> predecessors() {
         return getPredecessors();
     }
 
     public List<IceBlock> getPredecessors() {
-        return StreamSupport.stream(getUsers().spliterator(), false)
-                .filter(iceUser -> iceUser instanceof IceBlock)
+        return getUsers().stream()
                 .map(iceUser -> (IceBlock) iceUser).toList();
     }
 
