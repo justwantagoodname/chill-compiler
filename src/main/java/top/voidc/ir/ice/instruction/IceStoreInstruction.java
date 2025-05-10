@@ -36,4 +36,9 @@ public class IceStoreInstruction extends IceInstruction {
                 .append(getTargetPtr().getReferenceName());
     }
 
+    // For Debugger
+    @Override
+    public String toString() {
+        return getTextIR();
+    }
 }
