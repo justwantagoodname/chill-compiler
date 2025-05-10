@@ -24,7 +24,7 @@ import java.util.List;
  * 将 聚合类型 的变量（数组）替换为多个标量变量
  */
 @Pass(
-        group = {"needfix"}
+        group = {"O1", "needfix"}
 )
 public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
     private static ArrayList<IceAllocaInstruction> createPromotableList(IceFunction function) {
@@ -82,7 +82,7 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
         ArrayList<IceValue> result = new ArrayList<>();
         // 展开 alloca，并且删除原指令
         for (int i = 0; i < arrayType.getNumElements(); i++) {
-            IceAllocaInstruction newAlloca = new IceAllocaInstruction(aggregate.getParent(), aggregate.getName() + ".i" + i, elementType);
+            IceAllocaInstruction newAlloca = new IceAllocaInstruction(aggregate.getParent(), aggregate.getName() + "_i" + i, elementType);
             aggregate.getParent().addInstructionAtFront(newAlloca);
             result.add(newAlloca);
         }
