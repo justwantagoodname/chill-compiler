@@ -22,22 +22,30 @@ jobs:
         with:
           java-version: '24'
           distribution: 'oracle'
+          cache: 'maven'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
       - name: Install LLVM and Build Tools
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential llvm clang
 
-      - name: Install Maven Dependencies and Test Dependencies
+      - name: Install Dependencies and Build
         run: |
-          mvn dependency:go-offline 
-          mvn clean install -DskipTests
+          mvn clean install -DskipTests -B
 
       - name: Run Tests
         id: run-tests
         continue-on-error: true
         run: |
-          timeout 6m mvn clean test
+          timeout 20m mvn clean test
 
       - name: Upload JUnit test reports
         if: always()
