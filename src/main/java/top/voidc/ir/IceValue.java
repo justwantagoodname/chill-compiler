@@ -80,7 +80,15 @@ public class IceValue {
      * @param newValue 新的值，可为 null
      */
     public void replaceAllUsesWith(IceValue newValue) {
-        users.forEach(user -> user.replaceOperand(this, newValue));
+        // 使用 Set.copyOf(users) 是为了避免在遍历时删除元素导致 ConcurrentModificationException
+        Set.copyOf(users).forEach(user -> user.replaceOperand(this, newValue));
+    }
+
+    /**
+     * **销毁**当前变量，destroy的作用是维持正确的use/user引用关系以及和父节点的引用关系
+     */
+    public void destroy() {
+        replaceAllUsesWith(null);
     }
 
     @Override
