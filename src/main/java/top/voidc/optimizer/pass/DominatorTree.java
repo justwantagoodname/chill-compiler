@@ -1,35 +1,34 @@
 package top.voidc.optimizer.pass;
 
-import com.ibm.icu.text.ArabicShaping;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.constant.IceFunction;
-import top.voidc.ir.ice.instruction.IceLoadInstruction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Stack;
 
 public class DominatorTree {
     private final int blocksSize;
-    private IceFunction function;
+    private final IceFunction function;
 
-    private IceBlock[] dfsSortedBlocks;
-    private HashMap<IceBlock, Integer> dfsBlockIndex;
+    private final IceBlock[] dfsSortedBlocks;
 
+    // dfn[]
+    private final HashMap<IceBlock, Integer> dfsBlockIndex;
     // parent on dfs tree
-    int[] parent;
+    private final int[] parent;
     // successors on dfs tree
-    ArrayList<ArrayList<Integer>> successors;
+    private final ArrayList<ArrayList<Integer>> successors;
 
     // for union-find set use
-    int[] ancestor;
-    int[] semi;
-    int[] label;
-
-    int[] idom;
+    private final int[] ancestor;
+    private final int[] semi;
+    private final int[] label;
+    private final int[] idom;
 
     // bucket for each node
-    ArrayList<ArrayList<Integer>> bucket;
+    private final ArrayList<ArrayList<Integer>> bucket;
 
     public DominatorTree(IceFunction function) {
         this.function = function;
@@ -58,6 +57,11 @@ public class DominatorTree {
         return function;
     }
 
+    /**
+     * 获取 idom(block)
+     * @param block 支配树上的基本块
+     * @return idom(block)
+     */
     public IceBlock getDominator(IceBlock block) {
         int index = dfsBlockIndex.get(block);
         if (index == 0) {
@@ -66,7 +70,12 @@ public class DominatorTree {
         return dfsSortedBlocks[idom[index]];
     }
 
-    public ArrayList<IceBlock> getDominatees(IceBlock block) {
+    /**
+     * 获取 block 直接支配的所有基本块
+     * @param block 基本块
+     * @return block 直接支配的所有基本块
+     */
+    public List<IceBlock> getDominatees(IceBlock block) {
         int index = dfsBlockIndex.get(block);
 
         ArrayList<IceBlock> result = new ArrayList<>();
@@ -108,7 +117,7 @@ public class DominatorTree {
 
     private void dfs(IceBlock root) {
         // pair used for stack, to store the block and its parent index
-        record Pair(IceBlock block, int parentIndex) {};
+        record Pair(IceBlock block, int parentIndex) {}
 
         Stack<Pair> stack = new Stack<>();
         stack.push(new Pair(root, -1));
@@ -191,6 +200,9 @@ public class DominatorTree {
             return v;
         }
         compress(v);
+        if (semi[label[ancestor[v]]] < semi[label[v]]) {
+            label[v] = label[ancestor[v]];
+        }
         return label[v];
     }
 
