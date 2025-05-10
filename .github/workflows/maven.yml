@@ -30,10 +30,8 @@ jobs:
 
       - name: Install Maven Dependencies and Test Dependencies
         run: |
-          mvn dependency:go-offline -q
-          mvn dependency:resolve-plugins -q
-          mvn dependency:resolve -DincludeTypes=test-jar -q
-          mvn clean install -DskipTests -q
+          mvn dependency:go-offline 
+          mvn clean install -DskipTests
 
       - name: Run Tests
         id: run-tests
