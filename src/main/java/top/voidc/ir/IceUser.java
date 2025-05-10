@@ -25,6 +25,11 @@ public class IceUser extends IceValue {
         operands.add(operand);
     }
 
+    protected void removeAllOperands() {
+        operands.forEach(operand -> operand.removeUse(this));
+        operands.clear();
+    }
+
     /**
      * 删除操作数
      * @param operand 操作数
@@ -79,6 +84,13 @@ public class IceUser extends IceValue {
 
     public List<IceValue> getOperandsList() {
         return operands;
+    }
+
+    @Override
+    public void destroy() {
+        operands.forEach(operand -> operand.removeUse(this));
+        operands.clear();
+        super.destroy();
     }
 
     @Override
