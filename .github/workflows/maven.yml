@@ -1,4 +1,4 @@
-name: ARM Functional Test
+name: Functional & Performance Test
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
 
     env:
       MAVEN_OPTS: "-Xss8M"
-      TESTCASE_DIR: "testcases/functional;testcases/h_functional"
+      TESTCASE_DIR: "testcases/custom;testcases/functional;testcases/h_functional;testcases/performance;testcases/h_performance"
 
     steps:
       - name: Checkout code
