@@ -27,6 +27,7 @@ public class IceType implements Comparable<IceType> {
         I8,
         I32,
         F32,
+        I64,
         F64
     }
 
@@ -46,6 +47,7 @@ public class IceType implements Comparable<IceType> {
             case I1 -> "i1";
             case I8 -> "i8";
             case I32 -> "i32";
+            case I64 -> "i64";
             case F32 -> "float";
             case F64 -> "double";
             case VOID -> "void";
@@ -133,7 +135,7 @@ public class IceType implements Comparable<IceType> {
         return switch (this.getTypeEnum()) {
             case I1, I8 -> 1;
             case I32, F32 -> 4;
-            case F64 -> 8;
+            case I64, F64 -> 8;
             case VOID -> 0;
             case STRING -> 4; // 指针大小
             case FUNCTION -> 4; // 指针大小
