@@ -9,7 +9,7 @@ import java.util.Optional;
 public class IceRetInstruction extends IceInstruction {
 
     public IceRetInstruction(IceBlock parent, IceValue retValue) {
-        super(parent, retValue.getType());
+        super(parent, IceType.VOID);
         setInstructionType(InstructionType.RET);
         addOperand(retValue);
     }
@@ -36,5 +36,10 @@ public class IceRetInstruction extends IceInstruction {
             var retValue = getReturnValue().get();
             builder.append(retValue.getReferenceName());
         }
+    }
+
+    @Override
+    public String toString() {
+        return getTextIR();
     }
 }
