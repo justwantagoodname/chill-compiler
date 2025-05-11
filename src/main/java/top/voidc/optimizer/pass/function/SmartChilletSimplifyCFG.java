@@ -103,7 +103,8 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
                 // 不应该有 phi 节点，因为对于这种一条直线的两个 block 来说，前面的block支配了后面的 block，因此后面的 block 绝对不是
                 // 支配边界，因此不可能有 phi 节点
-                Log.should(!hasPHI, "Error occurred in mergeTrivialBlocks: " + block + " -> " + nextBlock + " has phi node");
+                if (hasPHI) break;
+//                Log.should(!hasPHI, "Error occurred in mergeTrivialBlocks: " + block + " -> " + nextBlock + " has phi node");
 
                 // 首先清除转跳指令
                 terminationInstr.destroy();

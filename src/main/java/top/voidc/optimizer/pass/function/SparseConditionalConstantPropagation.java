@@ -164,8 +164,10 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
                     IceBlock parent = inst.getParent();
 
                     // 删除 false 分支
-                    IceBranchInstruction trueBranch = new IceBranchInstruction(parent, inst.getTrueBlock());
+
+                    final var targetBlock = inst.getTrueBlock();
                     inst.destroy();
+                    IceBranchInstruction trueBranch = new IceBranchInstruction(parent, targetBlock);
                     parent.addInstruction(trueBranch);
 
                     changed = true;
@@ -173,8 +175,11 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
                     IceBlock parent = inst.getParent();
 
                     // 删除 true 分支
-                    IceBranchInstruction falseBranch = new IceBranchInstruction(parent, inst.getFalseBlock());
+                    // TODO: 这里暂时有问题可能需要修改IceUser
+                    // Destory会删除所有使用 这不太对
+                    final var targetBlock = inst.getFalseBlock();
                     inst.destroy();
+                    IceBranchInstruction falseBranch = new IceBranchInstruction(parent, targetBlock);
                     parent.addInstruction(falseBranch);
                     changed = true;
                 }
