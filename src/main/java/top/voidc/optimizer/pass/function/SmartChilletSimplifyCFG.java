@@ -15,7 +15,6 @@ import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
 
 import top.voidc.optimizer.pass.CompilePass;
-import top.voidc.optimizer.pass.Helper;
 
 import java.util.*;
 
@@ -61,7 +60,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
         for (IceBlock block : allBlocks) {
             if (!executableBlocks.contains(block)) {
-                Helper.removeBlock(block);
+                block.destroy();
                 flag = true;
             }
         }
