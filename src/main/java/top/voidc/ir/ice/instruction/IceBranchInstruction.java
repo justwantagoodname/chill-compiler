@@ -91,4 +91,9 @@ public class IceBranchInstruction extends IceInstruction {
         Log.should(!isConditional(), "Must called on an conditional branch");
         return (IceBlock) getOperand(0);
     }
+
+    @Override
+    public String toString() {
+        return getTextIR();
+    }
 }

@@ -13,7 +13,7 @@ public class IceInstruction extends IceUser {
 
     /**
      * 将当前指令移动到新的父节点
-     *
+     * @apiNote 如果需要移动一整个块的话，需要复制一份instructions的副本操作
      * @param parent 新的父节点
      */
     public void moveTo(IceBlock parent) {

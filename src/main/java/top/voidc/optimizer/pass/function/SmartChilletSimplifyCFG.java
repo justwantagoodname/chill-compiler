@@ -11,6 +11,7 @@ import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.instruction.IcePHINode;
 
+import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
 
 import top.voidc.optimizer.pass.CompilePass;
@@ -20,16 +21,15 @@ import java.util.*;
 
 /**
  * 聪明疾旋鼬 CFG 简化器
- * 会尝试删除无用的 block 和指令、合并无用的分支、合并无用的 phi 节点
+ * 理论上应该会有可爱的鼬子删除无用的 block 和指令、合并无用的分支、合并无用的 phi 节点
  */
 @Pass(
-        group = {"needfix"}
+        group = {"O1"},
+        parallel = true
 )
 public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
-    private static ArrayList<IceBlock> allBlocks;
-
-    private static boolean removeDeadBlocks(IceFunction function) {
+    private static boolean removeDeadBlocks(List<IceBlock> allBlocks, IceFunction function) {
         boolean flag = false;
 
         Set<IceBlock> executableBlocks = new HashSet<>();
@@ -78,53 +78,59 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
      * 则尝试将 B 中的指令移动到 A 中，然后删除块 B。
      * 这一过程也会将 B 的所有后继添加到 A 中。
      * 这个 method 将会从程序的入口 block 开始递归处理所有的 block。
-     *
+     * 这里 A 为当前正在处理的 block，B 为当前 block 的下一个 block。
      * @param block 当前正在处理的 block
      */
-    private static boolean mergeTrivialBlocks(IceBlock block) {
-        boolean flag = false;
-        if (block.getSuccessors().size() == 1) {
-            IceBlock nextBlock = block.getSuccessors().get(0);
-            if (nextBlock.getPredecessors().size() == 1) {
-                IceInstruction outBlock = block.getInstructions().get(block.getInstructions().size() - 1);
+    private static boolean mergeTrivialBlocks(Set<IceBlock> visited, IceBlock block) {
+        // CFG 是不保证无环的
+        if (!visited.add(block)) {
+            return false;
+        }
 
-                if (!(outBlock instanceof IceBranchInstruction br) || br.isConditional() || br.getTargetBlock() != nextBlock) {
+        boolean flag = false;
+        while (block.getSuccessors().size() == 1) {
+            IceBlock nextBlock = block.getSuccessors().getFirst();
+            if (nextBlock.getPredecessors().size() == 1) {
+                // A -> B(nextBlock)
+                IceInstruction terminationInstr = block.getInstructions().getLast();
+
+                if (!(terminationInstr instanceof IceBranchInstruction br) || br.isConditional() || !br.getTargetBlock().equals(nextBlock)) {
                     throw new RuntimeException("Error occurred in mergeTrivialBlocks: " + block + " -> " + nextBlock + " invalid CFG, " +
-                            "outBlock: " + outBlock);
+                            "outBlock: " + terminationInstr);
                 }
 
                 // 检查下一个 block 中是否有 phi 节点
-                boolean hasPHI = false;
-                for (IceInstruction inst : nextBlock.getInstructions()) {
-                    if (inst instanceof IcePHINode) {
-                        hasPHI = true;
-                        break;
-                    }
+                final boolean hasPHI = nextBlock.instructions().stream().anyMatch(in -> in instanceof IcePHINode);
+
+                // 不应该有 phi 节点，因为对于这种一条直线的两个 block 来说，前面的block支配了后面的 block，因此后面的 block 绝对不是
+                // 支配边界，因此不可能有 phi 节点
+                Log.should(!hasPHI, "Error occurred in mergeTrivialBlocks: " + block + " -> " + nextBlock + " has phi node");
+
+                // 首先清除转跳指令
+                terminationInstr.destroy();
+
+                // 将下一个 block 中的指令移动到当前 block 中
+                for (IceInstruction instruction : List.copyOf(nextBlock.instructions())) {
+                    instruction.moveTo(block);
                 }
+                // 这一过程中，下一个 block 的所有后继会随着 outBlock 被添加到当前 block 中
 
-                if (!hasPHI) {
-                    // 将下一个 block 中的指令移动到当前 block 中
-                    List<IceInstruction> instructions = nextBlock.getInstructions();
-                    for (int i = 0; i < instructions.size(); ++i) {
-                        instructions.get(i).moveTo(block);
-                    }
-                    // 这一过程中，下一个 block 的所有后继会随着 outBlock 被添加到当前 block 中
+                // 删除下一个 block
+                assert nextBlock.instructions().isEmpty();
 
-                    // 删除当前 block 的分支指令
-                    block.removeInstruction(br);
-                    // 删除下一个 block
-                    Helper.removeBlock(nextBlock);
-
-                    // 如果当前 block 合并成功了，说明可以继续合并
-                    // 递归处理当前 block 的下一个 block
-                    mergeTrivialBlocks(block);
-                    flag = true;
-                }
+                // 直接用当前 block 替换下一个 block 的所有使用
+                nextBlock.replaceAllUsesWith(block);
+                flag = true;
+                // 如果当前 block 合并成功了，尝试继续合并
+            } else {
+                break;
             }
-        } else {
-            // 递归处理所有的后继 block
-            for (IceBlock successor : block.getSuccessors()) {
-                flag |= mergeTrivialBlocks(successor);
+        }
+
+        // 递归处理所有的后继 block
+        for (IceBlock successor : block.getSuccessors()) {
+            if (!successor.equals(block)) {
+                flag |= mergeTrivialBlocks(visited, successor);
             }
         }
 
@@ -266,13 +272,12 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
     @Override
     public boolean run(IceFunction target) {
         boolean flag = false;
-        allBlocks = new ArrayList<>(target.getBlocks());
-        allBlocks.addAll(target.getBlocks());
+        final var allBlocks = new ArrayList<>(target.getBlocks());
 
-        simplifyBranch(target);
-        removeDeadBlocks(target);
+        flag |= simplifyBranch(target);
+        flag |= removeDeadBlocks(allBlocks, target);
         simplifyPHINode(target);
-        mergeTrivialBlocks(target.getEntryBlock());
+        flag |= mergeTrivialBlocks(new HashSet<>(), target.getEntryBlock());
         removeUnusedBinaryInstructions(target);
 
         return flag;

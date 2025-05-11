@@ -64,6 +64,15 @@ public class IceBlock extends IceUser {
         }
     }
 
+    public void addInstructionAfter(IceInstruction instruction, IceInstruction after) {
+        int index = instructions.indexOf(after);
+        if (index == -1) {
+            throw new IllegalArgumentException("指令不在基本块中");
+        }
+        instructions.add(index + 1, instruction);
+        if (instruction.isTerminal()) removeAfterInstruction(index);
+    }
+
     public void removeInstruction(IceInstruction instruction) {
         if (instructions.contains(instruction)) {
             switch (instruction) {
@@ -71,7 +80,7 @@ public class IceBlock extends IceUser {
                 // 因此在这里只用删除当前基本块对后继对引用而不是 use 引用
                 case IceBranchInstruction branch -> branch.getOperands().forEach(operand -> {
                     if (operand instanceof IceBlock block) {
-                        block.removeSuccessor(block);
+                        this.removeSuccessor(block);
                     }
                 });
                 case IceRetInstruction _, IceUnreachableInstruction _ -> this.removeAllOperands();
