@@ -7,5 +7,6 @@ import java.lang.annotation.*;
 public @interface Pass {
     boolean enable() default true;
     boolean disable() default false;
+    boolean parallel() default false;
     String[] group() default {};
 }

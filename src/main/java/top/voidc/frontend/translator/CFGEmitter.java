@@ -161,7 +161,7 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
 
     @Override
     public IceBlock visitWhileStmt(SysyParser.WhileStmtContext ctx) {
-        var whileName = currentFunction.generateLocalValueName();
+        var whileName = currentFunction.generateLabelName();
         if (whileName.equals("0")) whileName = "";
         final var condBlock = new IceBlock(currentFunction, "while.cond" + whileName);
         final var bodyBlock = new IceBlock(currentFunction, "while.body" + whileName);
