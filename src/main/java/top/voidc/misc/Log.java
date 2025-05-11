@@ -1,6 +1,8 @@
 package top.voidc.misc;
 
 import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class Log {
     private static final String ANSI_RESET = "\033[0m";
@@ -35,7 +37,9 @@ public class Log {
         String methodName = caller.getMethodName();
         String fileName = caller.getFileName();
         int lineNumber = caller.getLineNumber();
-        OUT.println("[" + level + "][" + className + "." + methodName + "() @ (" + fileName + ":" + lineNumber + ")] " + format);
+        final var prettyClass = Arrays.stream(className.split("\\."))
+                .map(packageName -> packageName.substring(0, 1)).collect(Collectors.joining("."));
+        OUT.println("[" + level + "][" + prettyClass + "." + methodName + "() @ (" + fileName + ":" + lineNumber + ")] " + format);
     }
 
     public static void should(boolean condition, String format) {
