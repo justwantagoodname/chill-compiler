@@ -14,29 +14,6 @@ public class IceBranchInstruction extends IceInstruction {
     private final boolean isConditional;
 
     @Override
-    public void moveTo(IceBlock newParent) {
-        if (this.getParent() != null) {
-            if (isConditional) {
-                this.getParent().removeSuccessor(getTrueBlock());
-                this.getParent().removeSuccessor(getFalseBlock());
-            } else {
-                this.getParent().removeSuccessor(getTargetBlock());
-            }
-        }
-
-        super.moveTo(newParent);
-
-        if (this.getParent() != null) {
-            if (isConditional) {
-                this.getParent().addSuccessor(getTrueBlock());
-                this.getParent().addSuccessor(getFalseBlock());
-            } else {
-                this.getParent().addSuccessor(getTargetBlock());
-            }
-        }
-    }
-
-    @Override
     public void getTextIR(StringBuilder builder) {
         builder.append("br ");
         if (isConditional) {
@@ -56,8 +33,6 @@ public class IceBranchInstruction extends IceInstruction {
         this.addOperand(condition);
         this.addOperand(trueBlock);
         this.addOperand(falseBlock);
-        this.getParent().addSuccessor(trueBlock);
-        this.getParent().addSuccessor(falseBlock);
     }
 
     public IceBranchInstruction(IceBlock parent, IceBlock targetBlock) {
@@ -65,7 +40,6 @@ public class IceBranchInstruction extends IceInstruction {
         setInstructionType(InstructionType.BRANCH);
         this.isConditional = false;
         this.addOperand(targetBlock);
-        this.getParent().addSuccessor(targetBlock);
     }
 
     public boolean isConditional() {
