@@ -88,7 +88,7 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
             result.add(newAlloca);
         }
 
-        aggregate.getParent().removeInstruction(aggregate);
+        aggregate.getParent().remove(aggregate);
 
         return result;
     }
@@ -128,7 +128,7 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
                     aliasTable.put(gep, newAlloca);
 
                     // 删除 gep
-                    block.removeInstruction(gep);
+                    block.remove(gep);
                     // 调整 index
                     --index;
                 } else {
