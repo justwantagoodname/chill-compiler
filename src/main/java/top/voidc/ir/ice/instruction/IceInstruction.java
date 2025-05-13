@@ -4,6 +4,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceUser;
 import top.voidc.ir.ice.type.IceType;
 
+import java.util.Iterator;
 import java.util.Objects;
 
 public class IceInstruction extends IceUser {
@@ -18,7 +19,7 @@ public class IceInstruction extends IceUser {
      */
     public void moveTo(IceBlock parent) {
         if (this.parent != null) {
-            this.parent.removeInstruction(this);
+            this.parent.remove(this);
         }
         this.parent = parent;
         if (parent != null) {
@@ -26,13 +27,26 @@ public class IceInstruction extends IceUser {
         }
     }
 
+    /**
+     * 删除当前指令，迭代时删除请用block迭代器的remove方法
+     * @apiNote 由父节点调用
+     */
     @Override
     public void destroy() {
         if (parent != null) {
-            parent.removeInstruction(this);
+            parent.remove(this);
             parent = null;
         }
         super.destroy();
+    }
+
+    /**
+     * 设置父节点，如果只是想要移动指令
+     * 不要直接调用这个方法应该使用{@link #moveTo(IceBlock)}
+     * @param parent 新的父节点
+     */
+    public void setParent(IceBlock parent) {
+        this.parent = parent;
     }
 
     public enum InstructionType {

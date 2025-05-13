@@ -10,9 +10,11 @@ import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.Log;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class IceBlock extends IceUser {
+public class IceBlock extends IceUser implements List<IceInstruction> {
     private final List<IceInstruction> instructions;
     private final IceFunction function; // 所属函数
 
@@ -37,8 +39,16 @@ public class IceBlock extends IceUser {
      * @param index 指令索引 index不会删除
      */
     private void removeAfterInstruction(int index) {
-        Log.w("在基本块中间插入了终止指令，确定这是想要的吗？");
-        List.copyOf(this.instructions.subList(index + 1, instructions.size())).forEach(IceInstruction::destroy);
+        final var destroyList = instructions.subList(index + 1, instructions.size());
+        if (!destroyList.isEmpty()) {
+            Log.w("在基本块中间插入了终止指令，确定这是想要的吗？");
+        }
+        final var iterator = destroyList.listIterator();
+        while (iterator.hasNext()) {
+            final var instruction = iterator.next();
+            instruction.setParent(null);
+            iterator.remove();
+        }
     }
 
     /**
@@ -71,14 +81,12 @@ public class IceBlock extends IceUser {
         if (instruction.isTerminal()) removeAfterInstruction(index);
     }
 
-    public void removeInstruction(IceInstruction instruction) {
-        instructions.remove(instruction);
-    }
-
+    @Deprecated
     public List<IceInstruction> getInstructions() {
         return instructions;
     }
 
+    @Deprecated
     public List<IceInstruction> instructions() {
         return instructions;
     }
@@ -124,14 +132,17 @@ public class IceBlock extends IceUser {
                 .map(inst -> ((IceInstruction) inst).getParent()).toList();
     }
 
+    /**
+     * 现在应该直接再最后的终结指令上添加后继基本块，现在添加的后继基本块不会有任何作用
+     */
     @Deprecated
-    public void addSuccessor(IceBlock block) {
-        this.addOperand(block);
-    }
+    public void addSuccessor(IceBlock block) {}
 
+    /**
+     * @see #addSuccessor(IceBlock)
+     */
     @Deprecated
     public void removeSuccessor(IceBlock block) {
-        this.removeOperand(block);
     }
 
     @Override
@@ -163,5 +174,245 @@ public class IceBlock extends IceUser {
         // 每个指令都要调用 destroy 方法，里面采用了remove方法，为了防止 ConcurrentModificationException 复制一份再删除
         List.copyOf(instructions).forEach(IceInstruction::destroy);
         super.destroy();
+    }
+
+    @Override
+    public int size() {
+        return instructions.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return instructions.isEmpty();
+    }
+
+    @Override
+    public boolean contains(Object o) {
+        return instructions.contains(o);
+    }
+
+    private class IceInstructionListIterator implements ListIterator<IceInstruction> {
+        private final ListIterator<IceInstruction> delegate;
+        private IceInstruction lastReturned;
+        
+        private IceInstructionListIterator(int index) {
+            this.delegate = instructions.listIterator(index);
+        }
+        
+        @Override
+        public boolean hasNext() {
+            return delegate.hasNext();
+        }
+        
+        @Override
+        public IceInstruction next() {
+            lastReturned = delegate.next();
+            return lastReturned;
+        }
+        
+        @Override
+        public boolean hasPrevious() {
+            return delegate.hasPrevious();
+        }
+        
+        @Override
+        public IceInstruction previous() {
+            lastReturned = delegate.previous();
+            return lastReturned;
+        }
+        
+        @Override
+        public int nextIndex() {
+            return delegate.nextIndex();
+        }
+        
+        @Override
+        public int previousIndex() {
+            return delegate.previousIndex();
+        }
+        
+        @Override
+        public void remove() {
+            if (lastReturned == null) {
+                throw new IllegalStateException();
+            }
+            lastReturned.setParent(null);
+            lastReturned.destroy();
+            lastReturned = null;
+            delegate.remove();
+        }
+        
+        @Override
+        public void set(IceInstruction e) {
+            delegate.set(e);
+        }
+        
+        @Override
+        public void add(IceInstruction e) {
+            delegate.add(e);
+            if (e.isTerminal()) {
+                removeAfterInstruction(delegate.previousIndex());
+            }
+        }
+    }
+
+    @Override
+    public Iterator<IceInstruction> iterator() {
+        return listIterator();
+    }
+
+    @Override
+    public Object[] toArray() {
+        return instructions.toArray();
+    }
+
+    @Override
+    public <T> T[] toArray(T[] a) {
+        return instructions.toArray(a);
+    }
+
+    @Override
+    public boolean add(IceInstruction iceInstruction) {
+        addInstruction(iceInstruction);
+        return true;
+    }
+
+    /**
+     * 将当前基本块中的某个指令移动出 并非销毁！！！
+     * @param o element to be removed from this list, if present
+     * @return true if this list contained the specified element
+     */
+    @Override
+    public boolean remove(Object o) {
+        if (!(o instanceof IceInstruction instruction)) {
+            return false;
+        }
+        if (!instructions.contains(instruction)) {
+            return false;
+        }
+        instruction.setParent(null);
+        instructions.remove(instruction);
+        return true;
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> c) {
+        return new HashSet<>(instructions).containsAll(c);
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends IceInstruction> c) {
+        boolean modified = false;
+        for (IceInstruction instruction : c) {
+            add(instruction);
+            modified = true;
+        }
+        return modified;
+    }
+
+    @Override
+    public boolean addAll(int index, Collection<? extends IceInstruction> c) {
+        ListIterator<IceInstruction> iterator = listIterator(index);
+        for (IceInstruction instruction : c) {
+            iterator.add(instruction);
+        }
+        return !c.isEmpty();
+    }
+
+    @Override
+    public boolean removeAll(Collection<?> c) {
+        boolean modified = false;
+        for (Object o : c) {
+            if (remove(o)) {
+                modified = true;
+            }
+        }
+        return modified;
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> c) {
+        Iterator<IceInstruction> it = iterator();
+        boolean modified = false;
+        while (it.hasNext()) {
+            if (!c.contains(it.next())) {
+                it.remove();
+                modified = true;
+            }
+        }
+        return modified;
+    }
+
+    @Override
+    public void clear() {
+        Iterator<IceInstruction> it = iterator();
+        while (it.hasNext()) {
+            it.next();
+            it.remove();
+        }
+    }
+
+    @Override
+    public IceInstruction get(int index) {
+        return instructions.get(index);
+    }
+
+    @Override
+    public IceInstruction set(int index, IceInstruction element) {
+        IceInstruction oldElement = instructions.get(index);
+        instructions.set(index, element);
+        if (element.isTerminal()) {
+            removeAfterInstruction(index);
+        }
+        return oldElement;
+    }
+
+    @Override
+    public void add(int index, IceInstruction element) {
+        ListIterator<IceInstruction> iterator = listIterator(index);
+        iterator.add(element);
+    }
+
+    @Override
+    public IceInstruction remove(int index) {
+        IceInstruction instruction = instructions.get(index);
+        instruction.setParent(null);
+        instruction.destroy();
+        return instruction;
+    }
+
+    @Override
+    public int indexOf(Object o) {
+        return instructions.indexOf(o);
+    }
+
+    @Override
+    public int lastIndexOf(Object o) {
+        return instructions.lastIndexOf(o);
+    }
+
+    @Override
+    public ListIterator<IceInstruction> listIterator() {
+        return new IceInstructionListIterator(0);
+    }
+
+    @Override
+    public ListIterator<IceInstruction> listIterator(int index) {
+        return new IceInstructionListIterator(index);
+    }
+
+    @Override
+    public List<IceInstruction> subList(int fromIndex, int toIndex) {
+        return instructions.subList(fromIndex, toIndex);
+    }
+
+    @Override
+    public void forEach(Consumer<? super IceInstruction> action) {
+        instructions.forEach(action);
+    }
+
+    @Override
+    public Stream<IceInstruction> stream() {
+        return instructions.stream();
     }
 }
