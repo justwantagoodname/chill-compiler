@@ -15,7 +15,7 @@ import java.util.*;
 
 
 @Pass(
-        group = {"O0", "needfix"}
+        group = {"O0"}
 )
 public class SparseConditionalConstantPropagation implements CompilePass<IceFunction> {
 
@@ -226,6 +226,7 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
                 case SUB -> result = opr1.intValue() - opr2.intValue();
                 case MUL -> result = opr1.intValue() * opr2.intValue();
                 case SDIV -> result = opr1.intValue() / opr2.intValue();
+                case MOD -> result = opr1.intValue() % opr2.intValue();
                 case FADD -> result = opr1.floatValue() + opr2.floatValue();
                 case FSUB -> result = opr1.floatValue() - opr2.floatValue();
                 case FMUL -> result = opr1.floatValue() * opr2.floatValue();
