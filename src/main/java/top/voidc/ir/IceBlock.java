@@ -2,10 +2,7 @@ package top.voidc.ir;
 
 import top.voidc.frontend.ir.IceBlockVisitor;
 import top.voidc.ir.ice.constant.IceFunction;
-import top.voidc.ir.ice.instruction.IceBranchInstruction;
-import top.voidc.ir.ice.instruction.IceInstruction;
-import top.voidc.ir.ice.instruction.IceRetInstruction;
-import top.voidc.ir.ice.instruction.IceUnreachableInstruction;
+import top.voidc.ir.ice.instruction.*;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.Log;
 
@@ -169,10 +166,25 @@ public class IceBlock extends IceUser implements List<IceInstruction> {
         return buildIRParser(textIR).basicBlock().accept(new IceBlockVisitor(parentFunction, new HashMap<>()));
     }
 
+    /**
+     * 不会移除使用！！！！
+     */
     @Override
     public void destroy() {
+        getUsers().forEach(iceUser -> {
+            assert iceUser instanceof IceInstruction;
+            switch (iceUser) {
+                case IcePHINode phi -> phi.removeBranch(this);
+                case IceBranchInstruction _ -> throw new IllegalStateException("移除前需要确保没有无转跳到这个Block的分支");
+                default -> iceUser.removeOperand(this);
+            }
+        });
+        assert getUsers().isEmpty();
         // 每个指令都要调用 destroy 方法，里面采用了remove方法，为了防止 ConcurrentModificationException 复制一份再删除
-        List.copyOf(instructions).forEach(IceInstruction::destroy);
+        final var iter = this.iterator();
+        while (iter.hasNext()) {
+            iter.remove();
+        }
         super.destroy();
     }
 
