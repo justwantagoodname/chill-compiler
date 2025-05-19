@@ -78,4 +78,12 @@ public class IceCmpInstruction extends IceInstruction {
     public CmpType getCmpType() {
         return cmpType;
     }
+
+    public IceValue getLhs() {
+        return getOperand(0);
+    }
+
+    public IceValue getRhs() {
+        return getOperand(1);
+    }
 }
