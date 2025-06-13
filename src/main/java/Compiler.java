@@ -72,7 +72,8 @@ public class Compiler {
             pm.untilStable(
                     SparseConditionalConstantPropagation.class,
                     ShowIR.class,
-                    SmartChilletSimplifyCFG.class
+                    SmartChilletSimplifyCFG.class,
+                    ShowIR.class
             );
             pm.runPass(RenameVariable.class);
             pm.runPass(LivenessAnalysis.class);
