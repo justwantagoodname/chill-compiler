@@ -1,5 +1,7 @@
 package top.voidc.ir.ice.type;
 
+import java.util.Set;
+
 public class IceType implements Comparable<IceType> {
     public static final IceType I1 = new IceType(TypeEnum.I1);
     public static final IceType I8 = new IceType(TypeEnum.I8);
@@ -25,6 +27,7 @@ public class IceType implements Comparable<IceType> {
         I8,
         I32,
         F32,
+        I64,
         F64
     }
 
@@ -44,6 +47,7 @@ public class IceType implements Comparable<IceType> {
             case I1 -> "i1";
             case I8 -> "i8";
             case I32 -> "i32";
+            case I64 -> "i64";
             case F32 -> "float";
             case F64 -> "double";
             case VOID -> "void";
@@ -119,10 +123,8 @@ public class IceType implements Comparable<IceType> {
     }
 
     public boolean isNumeric() {
-        return this.getTypeEnum() == TypeEnum.I32
-                || this.getTypeEnum() == TypeEnum.F32
-                || this.getTypeEnum() == TypeEnum.I8
-                || this.getTypeEnum() == TypeEnum.I1;
+        return Set.of(TypeEnum.I1, TypeEnum.I8, TypeEnum.I32, TypeEnum.F32, TypeEnum.F64)
+                .contains(this.getTypeEnum());
     }
 
     public boolean isPointer() {
@@ -133,7 +135,7 @@ public class IceType implements Comparable<IceType> {
         return switch (this.getTypeEnum()) {
             case I1, I8 -> 1;
             case I32, F32 -> 4;
-            case F64 -> 8;
+            case I64, F64 -> 8;
             case VOID -> 0;
             case STRING -> 4; // 指针大小
             case FUNCTION -> 4; // 指针大小

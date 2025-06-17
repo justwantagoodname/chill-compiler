@@ -21,7 +21,7 @@ public class IceExternFunction extends IceFunction {
     }
 
     @Override
-    public String getReferenceName() {
+    public String getReferenceName(boolean withType) {
         return "@" + getName() + "(" +
                 String.join(", ",
                         getParameters().stream()
