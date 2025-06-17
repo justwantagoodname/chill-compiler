@@ -37,19 +37,6 @@ public class IceBranchInstruction extends IceInstruction {
     }
 
     @Override
-    public void destroy() {
-        if (this.getParent() != null) {
-            if (isConditional) {
-                this.getParent().removeSuccessor(getTrueBlock());
-                this.getParent().removeSuccessor(getFalseBlock());
-            } else {
-                this.getParent().removeSuccessor(getTargetBlock());
-            }
-        }
-        super.destroy();
-    }
-
-    @Override
     public void getTextIR(StringBuilder builder) {
         builder.append("br ");
         if (isConditional) {

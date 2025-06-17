@@ -10,11 +10,7 @@ import top.voidc.misc.AssemblyBuilder;
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
 import top.voidc.optimizer.PassManager;
-import top.voidc.optimizer.pass.function.Mem2Reg;
-import top.voidc.optimizer.pass.function.ScalarReplacementOfAggregates;
-import top.voidc.optimizer.pass.function.SmartChilletSimplifyCFG;
-import top.voidc.optimizer.pass.function.SparseConditionalConstantPropagation;
-import top.voidc.optimizer.pass.function.RenameVariable;
+import top.voidc.optimizer.pass.function.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,16 +62,17 @@ public class Compiler {
      */
     private PassManager getPassManager() {
         final var passManager = new PassManager(context);
-        passManager.setExecutionOrder(pm -> {
+        passManager.setPipeline(pm -> {
             pm.runPass(RenameVariable.class);
-            pm.runPass(Mem2Reg.class);
             pm.runPass(ScalarReplacementOfAggregates.class);
+            pm.runPass(Mem2Reg.class);
             pm.runPass(SmartChilletSimplifyCFG.class);
             pm.untilStable(
                     SparseConditionalConstantPropagation.class,
                     SmartChilletSimplifyCFG.class
             );
             pm.runPass(RenameVariable.class);
+            pm.runPass(LivenessAnalysis.class);
         });
         return passManager;
     }
