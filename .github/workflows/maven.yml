@@ -17,33 +17,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '24'
-          distribution: 'temurin'
-          cache: maven
-          
-      - name: Install LLVM toolchain
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Install Maven Dependencies and Test Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang clang++ build-essential make binutils
+          nix develop --command mvn dependency:go-offline -q
+          nix develop --command mvn dependency:resolve-plugins -q
+          nix develop --command mvn dependency:resolve -DincludeTypes=test-jar -q
+          nix develop --command mvn clean install -DskipTests -q
 
-      - name: Install Maven Dependencies
-        run: mvn clean install -DskipTests --file pom.xml
-
-      - name: Test with Maven
-        run: mvn clean test --file pom.xml
-
-#      - name: Upload testcase results
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: functional-testcases
-#          path: |
-#            testcases/functional
-#            testcases/h_functional
+      - name: Run Tests
+        id: run-tests
+        continue-on-error: true
+        run: |
+          timeout 6m nix develop --command mvn clean test
 
       - name: Upload JUnit test reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: junit-reports

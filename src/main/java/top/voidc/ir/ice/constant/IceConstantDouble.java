@@ -1,23 +1,21 @@
 package top.voidc.ir.ice.constant;
 
-import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
 
-public class IceConstantFloat extends IceConstantData {
-    private final float value;
+public class IceConstantDouble extends IceConstantData {
+    private final double value;
 
-    public IceConstantFloat(float value) {
-        super(IceType.F32);
+    public IceConstantDouble(double value) {
+        super(IceType.F64);
         this.value = value;
     }
 
-    public float getValue() {
+    public double getValue() {
         return value;
     }
 
     @Override
     public String getReferenceName(boolean withType) {
-        // 一定要先转float再转回double确保没有超出的精度
         final var bits = Double.doubleToRawLongBits(value);
         return (withType ? getType() + " " : "") + "0x" + Long.toHexString(bits).toUpperCase();
     }
@@ -27,21 +25,22 @@ public class IceConstantFloat extends IceConstantData {
         return switch (targetType.getTypeEnum()) {
             case I32 -> new IceConstantInt((long) value);
             case I1 -> new IceConstantBoolean(getValue() != 0);
-            case F32 -> this.clone();
-            case F64 -> new IceConstantDouble(value);
-            default -> throw new IllegalStateException("Unexpected value: " + targetType);
+            case F32 -> new IceConstantFloat((float) value);
+            case F64 -> this.clone();
+            default -> throw new IllegalStateException("Unexpected value: " + type);
         };
     }
 
     @Override
     public IceConstantData clone() {
-        return new IceConstantFloat(value);
+        return new IceConstantDouble(value);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof IceConstantFloat that)) return false;
+        // TODO: 也许需要改进所有的字面量立即数比较
+        if (!(o instanceof IceConstantDouble that)) return false;
         return Double.compare(that.value, value) == 0;
     }
 }

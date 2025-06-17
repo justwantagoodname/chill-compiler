@@ -1,6 +1,5 @@
 package top.voidc.optimizer.pass.function;
 
-import javassist.tools.reflect.Compiler;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 
@@ -24,7 +23,9 @@ import java.util.*;
  * This pass creates SSA IR, and promotes memory accesses to register accesses.
  * This pass will try to delete alloca instructions, and replace them with ice-ir registers.
  */
-@Pass
+@Pass(
+        group = {"needfix"}
+)
 public class Mem2Reg implements CompilePass<IceFunction> {
     /**
      * Create a dominance frontier table for the given function.
@@ -142,11 +143,9 @@ public class Mem2Reg implements CompilePass<IceFunction> {
         }
     }
 
-    // 重命名计数器
-    private static int renameCounter = 0;
-
-    private static IceValue createNewName(IceValue value) {
-        String newName = value.getName() + "." + renameCounter++;
+    private static IceValue createNewName(IceBlock block, IceValue value) {
+        // Note: %1.1这种名字不合法，先生成一个新的名字，后续使用 RenameVariable Pass 来改名
+        String newName = block.getFunction().generateLocalValueName();
         // 这里需要注意的是，value.getType() 返回的是指针类型
         // 因此需要将其转换为指向的类型
         IceType type = ((IcePtrType<?>) value.getType()).getPointTo();
@@ -200,7 +199,7 @@ public class Mem2Reg implements CompilePass<IceFunction> {
                 IceValue value = phiNode.getValueToBeMerged();
                 if (valueStack.containsKey(value)) {
                     // 如果当前 phi 指令的 valueToBeMerged 在 valueStack 中，则获取栈顶元素并更新 phi 指令的源指针
-                    IceValue nextValue = createNewName(value);
+                    IceValue nextValue = createNewName(block, value);
                     // 由于 phi 指令的 valueToBeMerged 追踪的是原本的指针，因此不修改
                     // 但是需要修改 phi 指令的名字
                     phiNode.setName(nextValue.getName());
@@ -264,7 +263,6 @@ public class Mem2Reg implements CompilePass<IceFunction> {
 
     @Override
     public boolean run(IceFunction target) {
-        renameCounter = 0;
         ArrayList<IceValue> promotableValues = createPromotableList(target);
         DominatorTree domTree = new DominatorTree(target);
         Hashtable<IceBlock, ArrayList<IceBlock>> dfTable = createDominanceFrontierTable(target, domTree);

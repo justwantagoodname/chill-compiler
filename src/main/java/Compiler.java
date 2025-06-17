@@ -1,3 +1,4 @@
+import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import top.voidc.frontend.parser.SysyLexer;
@@ -9,6 +10,11 @@ import top.voidc.misc.AssemblyBuilder;
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
 import top.voidc.optimizer.PassManager;
+import top.voidc.optimizer.pass.function.Mem2Reg;
+import top.voidc.optimizer.pass.function.ScalarReplacementOfAggregates;
+import top.voidc.optimizer.pass.function.SmartChilletSimplifyCFG;
+import top.voidc.optimizer.pass.function.SparseConditionalConstantPropagation;
+import top.voidc.optimizer.pass.function.RenameVariable;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,10 +48,10 @@ public class Compiler {
         parseSource(context);
         generator.generateIR();
 
-        final var passManager = new PassManager(context);
-        passManager.scanPackage("top.voidc.optimizer.pass");
-
-        passManager.runAll(context.getCurrentIR());
+        final var passManager = getPassManager();
+        // TODO: 后续添加O0 O1的组
+        passManager.addDisableGroup("needfix");
+        passManager.runAll();
 
         emitLLVM();
 
@@ -54,19 +60,39 @@ public class Compiler {
         assemblyBuilder.close();
     }
 
+    /**
+     * 设置 Pass 的执行顺序
+     * @return PassManager
+     */
+    private PassManager getPassManager() {
+        final var passManager = new PassManager(context);
+        passManager.setExecutionOrder(pm -> {
+            pm.runPass(RenameVariable.class);
+            pm.runPass(Mem2Reg.class);
+            pm.runPass(ScalarReplacementOfAggregates.class);
+            pm.runPass(SmartChilletSimplifyCFG.class);
+            pm.untilStable(
+                    SparseConditionalConstantPropagation.class,
+                    SmartChilletSimplifyCFG.class
+            );
+            pm.runPass(RenameVariable.class);
+        });
+        return passManager;
+    }
+
     public void parseLibSource(IceContext context) throws IOException {
         final var headerStream = Compiler.class.getResourceAsStream("/lib.sy");
         Log.should(headerStream != null, "lib.sy not found");
         final var libSource = CharStreams.fromStream(headerStream);
-        final var lexer = new SysyLexer(libSource);
-        final var tokenStream = new CommonTokenStream(lexer);
-        final var parser = new SysyParser(tokenStream);
-        context.setAst(parser.compUnit());
-        context.setParser(parser);
+        initParse(libSource);
     }
 
     public void parseSource(IceContext context) throws IOException {
         final var inputSource = CharStreams.fromFileName(context.getSource().getAbsolutePath());
+        initParse(inputSource);
+    }
+
+    public void initParse(CharStream inputSource){
         final var lexer = new SysyLexer(inputSource);
         final var tokenStream = new CommonTokenStream(lexer);
         final var parser = new SysyParser(tokenStream);

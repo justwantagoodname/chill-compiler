@@ -3,10 +3,11 @@ package top.voidc.ir;
 import top.voidc.frontend.helper.SymbolTable;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.optimizer.pass.CompilePass;
 
 import java.io.File;
-import java.util.Objects;
-import java.util.Stack;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class IceContext {
 
@@ -22,9 +23,13 @@ public class IceContext {
 
     private IceFunction currentFunction;
 
-    public record IceIfLabel(IceBlock trueLabel, IceBlock falseLabel) { }
+    private final Set<Object> passResults = new HashSet<>();
 
-    public record IceLoopLabel(IceBlock condLabel, IceBlock endLabel) { }
+    public record IceIfLabel(IceBlock trueLabel, IceBlock falseLabel) {
+    }
+
+    public record IceLoopLabel(IceBlock condLabel, IceBlock endLabel) {
+    }
 
     private Stack<IceIfLabel> ifLabelStack = new Stack<>();
     private Stack<IceLoopLabel> loopLabelStack = new Stack<>();
@@ -93,5 +98,13 @@ public class IceContext {
 
     public void setLoopLabelStack(Stack<IceLoopLabel> loopLabelStack) {
         this.loopLabelStack = loopLabelStack;
+    }
+
+    public void setPassResult(Object result) {
+        passResults.add(result);
+    }
+
+    public Set<Object> getPassResults() {
+        return passResults;
     }
 }

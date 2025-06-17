@@ -8,10 +8,7 @@ import top.voidc.frontend.translator.exception.CompilationException;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.constant.IceConstantArray;
-import top.voidc.ir.ice.constant.IceConstantData;
-import top.voidc.ir.ice.constant.IceConstantInt;
-import top.voidc.ir.ice.constant.IceGlobalVariable;
+import top.voidc.ir.ice.constant.*;
 import top.voidc.ir.ice.instruction.*;
 import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.type.IcePtrType;
@@ -215,11 +212,20 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         throw new CompilationException("未知的数字类型: " + literal, ctx, context);
     }
 
+    /**
+     * 处理字符串常量，创建对应的全局常量并返回
+     * @param ctx the parse tree
+     * @return
+     */
     @Override
-    public IceConstantData visitString(SysyParser.StringContext ctx) {
+    public IceGlobalVariable visitString(SysyParser.StringContext ctx) {
         final var literal = ctx.getText();
         final var content = literal.substring(1, literal.length() - 1);
-        return IceConstantData.create(content);
+        final var strConstant = IceConstantData.create(content);
+        final var strPtrName = ".str." + context.getCurrentIR().generateGlobalVariableCount();
+        final var globalString = new IceGlobalVariable(strPtrName, strConstant.getType(), strConstant);
+        context.getCurrentIR().addGlobalDecl(globalString);
+        return globalString;
     }
 
     private static final Map<String, String> SPECIAL_FUNC = Map.of(
@@ -260,12 +266,13 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         }
 
         // 检查参数数量
-        if (function.getParameters().size() != arguments.size()) {
+        if (function.getParameters().size() != arguments.size()
+                && !(function instanceof IceExternFunction externFunction && externFunction.isVArgs())) {
             throw new CompilationException("函数 " + ctx.Ident().getText() + " 参数数量不匹配", ctx, context);
         }
 
         // 检查参数类型
-        final var convertedArgs = StreamTools.zip(arguments.stream(), function.getParameters().stream(), (arg, param) -> {
+        final var convertedArgs = new ArrayList<>(StreamTools.zip(arguments.stream(), function.getParameters().stream(), (arg, param) -> {
             if (!arg.getType().equals(param.getType())) {
 
                 if (param.getType().isPointer() && (arg.getType().isPointer() || arg.getType().isString() || arg.getType().isArray())) {
@@ -281,7 +288,28 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
             } else {
                 return arg;
             }
-        }).toList();
+        }).toList());
+
+        if (function instanceof IceExternFunction externFunction && externFunction.isVArgs()) {
+            // 可变参数函数，添加剩余的可变参数
+            // 在 GNU 的可变参中，浮点数均作为 double 传递。
+            final var vaArgs = arguments.subList(function.getParameters().size(), arguments.size());
+            final var convertedVaArgs = vaArgs.stream().map(iceValue ->
+                switch (iceValue.getType().getTypeEnum()) {
+                    case F32 -> {
+                        if (iceValue instanceof IceConstantFloat iceConstantFloat) {
+                            yield iceConstantFloat.castTo(IceType.F64);
+                        } else {
+                            final var cvtInstr = new IceConvertInstruction(block, IceType.F64, iceValue);
+                            block.addInstruction(cvtInstr);
+                            yield cvtInstr;
+                        }
+                    }
+                    default -> iceValue;
+                }
+            ).toList();
+            convertedArgs.addAll(convertedVaArgs);
+        }
 
         final var instr = new IceCallInstruction(block, function, convertedArgs);
         block.addInstruction(instr);
