@@ -22,7 +22,9 @@ import java.util.*;
  * 聪明疾旋鼬 CFG 简化器
  * 会尝试删除无用的 block 和指令、合并无用的分支、合并无用的 phi 节点
  */
-@Pass
+@Pass(
+        group = {"needfix"}
+)
 public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
     private static ArrayList<IceBlock> allBlocks;
@@ -37,7 +39,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
 
         while (!queue.isEmpty()) {
             IceBlock block = queue.poll();
-            IceInstruction exitBlock = block.getInstructions().get(block.getInstructions().size() - 1);
+            IceInstruction exitBlock = block.getInstructions().getLast();
 
             if (exitBlock instanceof IceBranchInstruction br) {
                 if (!br.isConditional()) {

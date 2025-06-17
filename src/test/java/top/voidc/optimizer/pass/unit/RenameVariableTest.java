@@ -10,6 +10,8 @@ import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IceType;
 
 import org.junit.jupiter.api.Test;
+import top.voidc.optimizer.pass.function.RenameVariable;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RenameVariableTest {
@@ -37,7 +39,7 @@ public class RenameVariableTest {
     public void testRenameVariable() {
         IceUnit unit = createFunction();
         RenameVariable pass = new RenameVariable();
-        pass.run(unit);
+        unit.getFunctions().forEach(pass::run);
 
         StringBuilder actual = new StringBuilder();
         unit.getTextIR(actual);
