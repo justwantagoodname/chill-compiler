@@ -4,7 +4,6 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceUser;
 import top.voidc.ir.ice.type.IceType;
 
-import java.util.Iterator;
 import java.util.Objects;
 
 public class IceInstruction extends IceUser {
@@ -158,5 +157,10 @@ public class IceInstruction extends IceUser {
 
     public boolean isTerminal() {
         return type == InstructionType.BRANCH || type == InstructionType.RET || type == InstructionType.UNREACHABLE;
+    }
+
+    @Override
+    public String toString() {
+        return getTextIR();
     }
 }

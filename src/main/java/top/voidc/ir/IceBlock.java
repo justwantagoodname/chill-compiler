@@ -166,25 +166,39 @@ public class IceBlock extends IceUser implements List<IceInstruction> {
         return buildIRParser(textIR).basicBlock().accept(new IceBlockVisitor(parentFunction, new HashMap<>()));
     }
 
-    /**
-     * 不会移除使用！！！！
-     */
     @Override
     public void destroy() {
         getUsers().forEach(iceUser -> {
             assert iceUser instanceof IceInstruction;
             switch (iceUser) {
-                case IcePHINode phi -> phi.removeBranch(this);
-                case IceBranchInstruction _ -> throw new IllegalStateException("移除前需要确保没有无转跳到这个Block的分支");
-                default -> iceUser.removeOperand(this);
+                case IcePHINode phi -> phi.removeOperand(this);
+                case IceBranchInstruction br -> {
+                    final var userBlock = br.getParent();
+                    if (userBlock == this) {
+                        br.destroy();
+                        return;
+                    }
+
+                    if (br.isConditional()) {
+                        IceBranchInstruction jump;
+                        if (br.getTrueBlock() == this) {
+                            jump = new IceBranchInstruction(userBlock, br.getFalseBlock());
+                        } else {
+                            jump = new IceBranchInstruction(userBlock, br.getTrueBlock());
+                        }
+                        br.destroy();
+                        userBlock.add(jump);
+                    } else {
+                        // 这里是无条件跳转的分支，直接替换unreachable指令
+                        br.destroy();
+                        userBlock.add(new IceUnreachableInstruction(userBlock));
+                    }
+                }
+                default -> throw new IllegalStateException("Unexpected user: " + iceUser);
             }
         });
+        this.clear();
         assert getUsers().isEmpty();
-        // 每个指令都要调用 destroy 方法，里面采用了remove方法，为了防止 ConcurrentModificationException 复制一份再删除
-        final var iter = this.iterator();
-        while (iter.hasNext()) {
-            iter.remove();
-        }
         super.destroy();
     }
 
@@ -290,7 +304,7 @@ public class IceBlock extends IceUser implements List<IceInstruction> {
     }
 
     /**
-     * 将当前基本块中的某个指令移动出 并非销毁！！！
+     * 将当前基本块中的某个指令移动出当前基本块 指令并没有销毁！！！
      * @param o element to be removed from this list, if present
      * @return true if this list contained the specified element
      */
@@ -357,11 +371,7 @@ public class IceBlock extends IceUser implements List<IceInstruction> {
 
     @Override
     public void clear() {
-        Iterator<IceInstruction> it = iterator();
-        while (it.hasNext()) {
-            it.next();
-            it.remove();
-        }
+        safeForEach(IceInstruction::destroy);
     }
 
     @Override
@@ -421,6 +431,14 @@ public class IceBlock extends IceUser implements List<IceInstruction> {
     @Override
     public void forEach(Consumer<? super IceInstruction> action) {
         instructions.forEach(action);
+    }
+
+    /**
+     * 采用复制方案来对基本块中指令遍历，会轻微降低性能，仅在需要遍历同时删除时使用
+     * @param action 对 instruction 执行的操作，可以删除
+     */
+    public void safeForEach(Consumer<? super IceInstruction> action) {
+        List.copyOf(instructions).forEach(action);
     }
 
     @Override

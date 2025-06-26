@@ -49,6 +49,21 @@ public class IceConstantBoolean extends IceConstantData {
     }
 
     @Override
+    public IceConstantBoolean eq(IceConstantData other) {
+        Objects.requireNonNull(other);
+        final var compare = this.getType().compareTo(other.getType());
+        if (compare < 0) {
+            return this.castTo(other.getType()).and(other);
+        } else if (compare > 0) {
+            return this.eq(other.castTo(this.getType()));
+        } else {
+            final var thisValue = this.getValue() != 0;
+            final var otherValue = ((IceConstantBoolean) other).getValue() != 0;
+            return IceConstantData.create(thisValue == otherValue);
+        }
+    }
+
+    @Override
     public IceConstantBoolean and(IceConstantData other) {
         Objects.requireNonNull(other);
         final var compare = this.getType().compareTo(other.getType());
