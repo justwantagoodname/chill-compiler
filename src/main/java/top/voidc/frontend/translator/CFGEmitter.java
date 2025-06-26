@@ -1,14 +1,11 @@
 package top.voidc.frontend.translator;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.xpath.XPath;
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.frontend.translator.exception.CompilationException;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceContext;
-import top.voidc.ir.ice.constant.IceConstantData;
-import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceConvertInstruction;
@@ -119,8 +116,10 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
     @Override
     public IceBlock visitIfStmt(SysyParser.IfStmtContext ctx) {
         final var hasElse = ctx.elseStmt != null;
-        final var ifName = currentFunction.generateLabelName();
+        var ifName = currentFunction.generateLabelName();
+        if (ifName.equals("0")) ifName = "";
 
+        var allEnds = true; // 当前If的所有块都是结束块时为true
         final var endBlock = new IceBlock(currentFunction, "if.end" + ifName);
         final var thenBlock = new IceBlock(currentFunction, "if.then" + ifName);
         IceBlock elseBlock = endBlock;
@@ -138,6 +137,7 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
         if (!thenEndBlock.equals(currentFunction.getExitBlock())) {
             final var brInstr = new IceBranchInstruction(thenEndBlock, endBlock);
             thenEndBlock.addInstruction(brInstr);
+            allEnds = false;
         }
 
         if (hasElse) {
@@ -146,19 +146,26 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
             if (!elseEndBlock.equals(currentFunction.getExitBlock())) {
                 final var brInstr = new IceBranchInstruction(elseEndBlock, endBlock);
                 elseEndBlock.addInstruction(brInstr);
+                allEnds = false;
             }
         }
 
-        return endBlock;
+        if (hasElse && allEnds) {
+            // 如果所有的分支都是结束块，那后续的end块就没有意义了，需要直接终结
+            endBlock.destroy();
+            return currentFunction.getExitBlock();
+        } else {
+            return endBlock;
+        }
     }
 
     @Override
     public IceBlock visitWhileStmt(SysyParser.WhileStmtContext ctx) {
-
-        final var whileName = currentFunction.generateLocalValueName();
+        var whileName = currentFunction.generateLabelName();
+        if (whileName.equals("0")) whileName = "";
         final var condBlock = new IceBlock(currentFunction, "while.cond" + whileName);
         final var bodyBlock = new IceBlock(currentFunction, "while.body" + whileName);
-        final var endBlock = new IceBlock(currentFunction, "while.end" + whileName);
+        var endBlock = new IceBlock(currentFunction, "while.end" + whileName);
         currentBlock.addInstruction(new IceBranchInstruction(currentBlock, condBlock));
 
         context.getLoopLabelStack().push(new IceContext.IceLoopLabel(condBlock, endBlock));
@@ -173,6 +180,8 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
         if (!bodyEndBlock.equals(currentFunction.getExitBlock())) {
             bodyEndBlock.addInstruction(new IceBranchInstruction(bodyEndBlock, condBlock));
         }
+
+        // Note: 若body内没有返回块，且后续没有代码，这是有返回值没写返回的情况，属于UB，后面插入 unreachable
 
         context.getLoopLabelStack().pop();
 
@@ -264,45 +273,4 @@ public class CFGEmitter extends SysyBaseVisitor<IceBlock> {
         ctx.accept(new VarDeclEmitter(context, currentBlock));
         return currentBlock;
     }
-
-    // 解析 Decl 元素
-    //    private IceValue visitVarArrayDef(SysyParser.VarDefContext ctx) {
-//        final var typeLiteral = ((SysyParser.VarDeclContext) ctx.parent).primitiveType().getText();
-//        var varType = IceType.fromSysyLiteral(typeLiteral);
-//        final var name = ctx.Ident().getText();
-//        final var arraySize = new ArrayList<Integer>();
-//        for (final var arraySizeItem : ctx.constExp()) {
-//            final var result = arraySizeItem.accept(new ConstExpEvaluator());
-//            Log.should(result instanceof IceConstantInt, "Array size must be constant");
-//            arraySize.add((int) ((IceConstantInt) result).getValue());
-//        }
-//        varType = IceArrayType.buildNestedArrayType(arraySize, varType);
-//        final var alloca = new IceAllocaInstruction(functionEntity.generateLocalValueName(), varType);
-//        functionEntity.insertInstructionFirst(alloca);
-//        SymbolTable.current().put(name, alloca);
-//        return alloca;
-//    }
-//
-//    @Override
-//    public IceValue visitVarDef(SysyParser.VarDefContext ctx) {
-//        final var typeLiteral = ((SysyParser.VarDeclContext) ctx.parent).primitiveType().getText();
-//        final var varType = IceType.fromSysyLiteral(typeLiteral);
-//        final var name = ctx.Ident().getText();
-//
-//        if (!ctx.constExp().isEmpty()) {
-//            return visitVarArrayDef(ctx);
-//        }
-//
-//        if (ctx.initVal() != null) {
-//            final var initVal = (IceBlock) ctx.initVal().accept(new ConstExpEvaluator());
-//            return null;
-//        }
-//
-//
-//        // For non-array type, generate an IceAllocaInstruction
-//        final var alloca = new IceAllocaInstruction(functionEntity.generateLocalValueName(), varType);
-//        functionEntity.insertInstructionFirst(alloca);
-//        SymbolTable.current().put(name, alloca);
-//        return alloca;
-//    }
 }

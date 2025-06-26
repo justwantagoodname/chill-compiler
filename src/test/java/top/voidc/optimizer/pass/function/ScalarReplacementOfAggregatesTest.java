@@ -40,10 +40,10 @@ public class ScalarReplacementOfAggregatesTest {
 
 //        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
 
-        String expected = "define void @testFunction() {\n" + "entry:\n" + "\t%b.i9 = alloca i32\n"
-            + "\t%b.i8 = alloca i32\n" + "\t%b.i7 = alloca i32\n" + "\t%b.i6 = alloca i32\n"
-            + "\t%b.i5 = alloca i32\n" + "\t%b.i4 = alloca i32\n" + "\t%b.i3 = alloca i32\n"
-            + "\t%b.i2 = alloca i32\n" + "\t%b.i1 = alloca i32\n" + "\t%b.i0 = alloca i32\n"
+        String expected = "define void @testFunction() {\n" + "entry:\n" + "\t%b_i9 = alloca i32\n"
+            + "\t%b_i8 = alloca i32\n" + "\t%b_i7 = alloca i32\n" + "\t%b_i6 = alloca i32\n"
+            + "\t%b_i5 = alloca i32\n" + "\t%b_i4 = alloca i32\n" + "\t%b_i3 = alloca i32\n"
+            + "\t%b_i2 = alloca i32\n" + "\t%b_i1 = alloca i32\n" + "\t%b_i0 = alloca i32\n"
             + "\t%a = alloca i32\n" + "\t%c = alloca float\n" + "exit:\n" + "\n" + "}";
 
         assertEquals(expected, actual.toString());
@@ -88,11 +88,11 @@ public class ScalarReplacementOfAggregatesTest {
 
         Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
 
-        String expected = "define i32 @testFunction() {\n" + "entry:\n" + "\t%arr.i9 = alloca i32\n"
-            + "\t%arr.i8 = alloca i32\n" + "\t%arr.i7 = alloca i32\n" + "\t%arr.i6 = alloca i32\n"
-            + "\t%arr.i5 = alloca i32\n" + "\t%arr.i4 = alloca i32\n" + "\t%arr.i3 = alloca i32\n"
-            + "\t%arr.i2 = alloca i32\n" + "\t%arr.i1 = alloca i32\n" + "\t%arr.i0 = alloca i32\n"
-            + "\tstore i32 42, i32* %arr.i3\n" + "exit:\n" + "\t%x = load i32, i32* %arr.i3\n"
+        String expected = "define i32 @testFunction() {\n" + "entry:\n" + "\t%arr_i9 = alloca i32\n"
+            + "\t%arr_i8 = alloca i32\n" + "\t%arr_i7 = alloca i32\n" + "\t%arr_i6 = alloca i32\n"
+            + "\t%arr_i5 = alloca i32\n" + "\t%arr_i4 = alloca i32\n" + "\t%arr_i3 = alloca i32\n"
+            + "\t%arr_i2 = alloca i32\n" + "\t%arr_i1 = alloca i32\n" + "\t%arr_i0 = alloca i32\n"
+            + "\tstore i32 42, i32* %arr_i3\n" + "exit:\n" + "\t%x = load i32, i32* %arr_i3\n"
             + "\tret i32 %x\n" + "\n" + "}";
 
         assertEquals(expected, actual.toString());

@@ -293,11 +293,6 @@ public class IceConstantArray extends IceConstantData {
         }
     }
 
-    @Override
-    public String getReferenceName() {
-        return getReferenceName(true);
-    }
-
     public IceType getInsideType() {
         IceType type = getType();
         while (type instanceof IceArrayType) {

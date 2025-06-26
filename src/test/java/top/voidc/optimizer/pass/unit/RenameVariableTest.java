@@ -29,7 +29,6 @@ public class RenameVariableTest {
         add2.setName("1919810");
         entry.addInstruction(add1);
         entry.addInstruction(add2);
-        entry.addSuccessor(exit);
 
         unit.addFunction(function);
         return unit;

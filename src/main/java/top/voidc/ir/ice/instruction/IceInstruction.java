@@ -2,10 +2,9 @@ package top.voidc.ir.ice.instruction;
 
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceUser;
-import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
 
-import java.util.List;
+import java.util.Iterator;
 import java.util.Objects;
 
 public class IceInstruction extends IceUser {
@@ -15,12 +14,12 @@ public class IceInstruction extends IceUser {
 
     /**
      * 将当前指令移动到新的父节点
-     *
+     * @apiNote 如果需要移动一整个块的话，需要复制一份instructions的副本操作
      * @param parent 新的父节点
      */
     public void moveTo(IceBlock parent) {
         if (this.parent != null) {
-            this.parent.removeInstruction(this);
+            this.parent.remove(this);
         }
         this.parent = parent;
         if (parent != null) {
@@ -28,14 +27,26 @@ public class IceInstruction extends IceUser {
         }
     }
 
+    /**
+     * 删除当前指令，迭代时删除请用block迭代器的remove方法
+     * @apiNote 由父节点调用
+     */
+    @Override
     public void destroy() {
         if (parent != null) {
-            parent.removeInstruction(this);
+            parent.remove(this);
             parent = null;
         }
-        for (IceValue operand : getOperandsList()) {
-            operand.removeUse(this);
-        }
+        super.destroy();
+    }
+
+    /**
+     * 设置父节点，如果只是想要移动指令
+     * 不要直接调用这个方法应该使用{@link #moveTo(IceBlock)}
+     * @param parent 新的父节点
+     */
+    public void setParent(IceBlock parent) {
+        this.parent = parent;
     }
 
     public enum InstructionType {
@@ -140,32 +151,12 @@ public class IceInstruction extends IceUser {
         this.type = type;
     }
 
-    public void replaceOperand(IceValue oldOperand, IceValue newOperand) {
-        if (oldOperand == null || newOperand == null) {
-            throw new IllegalArgumentException("Operands cannot be null");
-        }
-        if (oldOperand == newOperand) {
-            return;
-        }
-        if (oldOperand.getType() != newOperand.getType()) {
-            throw new IllegalArgumentException("Operands must have the same type");
-        }
-
-        List<IceValue> operands = getOperandsList();
-        for (int i = 0; i < operands.size(); ++i) {
-            if (operands.get(i) == oldOperand) {
-                operands.set(i, newOperand);
-                oldOperand.removeUse(this);
-                newOperand.addUse(this);
-                return;
-            }
-        }
-
-        throw new IllegalArgumentException("Old operand not found in instruction");
-    }
-
     @Override
     public void getTextIR(StringBuilder builder) {
         builder.append(getInstructionType());
+    }
+
+    public boolean isTerminal() {
+        return type == InstructionType.BRANCH || type == InstructionType.RET || type == InstructionType.UNREACHABLE;
     }
 }

@@ -1,6 +1,8 @@
-# Chill
+# ❄️ Chill-Compiler
 
-[![ARM Functional Test](https://github.com/nullnan/chill-compiler/actions/workflows/maven.yml/badge.svg)](https://github.com/nullnan/chill-compiler/actions/workflows/maven.yml)
+[![ARM Functional Test](https://github.com/justwantagoodname/chill-compiler/actions/workflows/maven.yml/badge.svg)](https://github.com/justwantagoodname/chill-compiler/actions/workflows/maven.yml)
+
+[![希冀 Gitlab Mirror](https://github.com/justwantagoodname/chill-compiler/actions/workflows/mirror.yml/badge.svg)](https://github.com/justwantagoodname/chill-compiler/actions/workflows/mirror.yml)
 
 ## Roadmap
 

@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class IceContext {
 
-    File source;
+    private File source;
 
     private SysyParser.CompUnitContext ast;
 
@@ -100,7 +100,7 @@ public class IceContext {
         this.loopLabelStack = loopLabelStack;
     }
 
-    public void setPassResult(Object result) {
+    public void addPassResult(Object result) {
         passResults.add(result);
     }
 
