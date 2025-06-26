@@ -219,9 +219,10 @@ public class SSHGNURunner implements TestcaseRunner {
     }
 
     private static void compareOutput(TestResult result) throws IOException {
-        final var expectedLines = Files.readString(result.getTestcase().out().toPath()).strip();
-        final var actualLines = Files.readString(result.getActualOutput().toPath()).strip();
-
+        final var expectedLines = Files.readString(result.getTestcase().out().toPath())
+                .replace("\r\n", "\n").replace("\r", "\n").stripTrailing();
+        final var actualLines = Files.readString(result.getActualOutput().toPath())
+                .replace("\r\n", "\n").replace("\r", "\n").stripTrailing();
         assertEquals(expectedLines, actualLines,
                 "输出和预期不符合: " + result.getTestcase().name());
     }
