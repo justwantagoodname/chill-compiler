@@ -8,6 +8,9 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.misc.Log;
 
+/**
+ * block 引用已经改了所以这个单元测试需要重写成按照指令引用block的形式
+ */
 class DominatorTreeTest {
     private IceFunction function;
     private IceBlock[] blocks;

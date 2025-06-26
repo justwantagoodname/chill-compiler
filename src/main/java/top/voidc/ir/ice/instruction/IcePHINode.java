@@ -40,20 +40,66 @@ public class IcePHINode extends IceInstruction {
 
     /**
      * 从 PHI 节点中删除所有经过 block 的定值
+     * 若删除之后只剩下一个操作数，则将其替换为当前节点的所有使用者
      * @param block 要删除的分支
      */
-    public void removeBranch(IceBlock block) {
+    public void removeValueByBranch(IceBlock block) {
         assert getOperands().size() % 2 == 0;
+
+        if (getOperands().size() % 2 != 0) {
+            Log.d("Name: " + this.getName() + "Param Size: " + this.getOperands().size());
+            throw new RuntimeException("Fuck you");
+        }
+
         final var iterator = getOperands().iterator();
         while (iterator.hasNext()) {
             var operand = iterator.next();
-            assert operand instanceof IceBlock;
             if (operand.equals(block)) {
+                operand.removeUse(this);
                 iterator.remove();
-                iterator.next(); // remove the value
+                iterator.next().removeUse(this); // remove the value
                 iterator.remove();
             }
         }
+
+        removeCheck();
+    }
+
+    /**
+     * 移除某个值（注意不是分支，移除分支请用remove）
+     * @param value 要移除的值
+     */
+    private void removeValue(IceValue value) {
+        assert getOperands().size() % 2 == 0;
+
+        final var iterator = getOperands().listIterator();
+        while (iterator.hasNext()) {
+            var operand = iterator.next();
+            if (operand.equals(value)) {
+                operand.removeUse(this);
+                iterator.remove();
+                iterator.previous().removeUse(this); // remove the value
+                iterator.remove();
+            }
+        }
+
+        removeCheck();
+    }
+
+    private void removeCheck() {
+        // 只剩一个值了，直接用这个值替换自身
+        assert getOperands().size() % 2 == 0;
+        if (getOperands().size() / 2 == 1) {
+            replaceAllUsesWith(getBranchValueOnIndex(0));
+
+            // 清空对最后的分支和值的使用
+            final var lastIter = getOperands().iterator();
+            while (lastIter.hasNext()) {
+                lastIter.next().removeUse(this);
+                lastIter.remove();
+            }
+        }
+        this.destroy();
     }
 
     /**
@@ -81,7 +127,7 @@ public class IcePHINode extends IceInstruction {
         if (index < 0 || index * 2 >= getOperands().size()) {
             throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + getOperands().size());
         }
-        return getOperands().get(index * 2);
+        return getOperands().get(index * 2 + 1);
     }
 
     public boolean containsBranch(IceBlock branch) {
@@ -121,6 +167,20 @@ public class IcePHINode extends IceInstruction {
             IceBlock branch = branches.get(i).block();
             IceValue value = branches.get(i).value();
             builder.append("[ ").append(value.getReferenceName(false)).append(", ").append(branch.getReferenceName(false)).append(" ]");
+        }
+    }
+
+    @Override
+    public void replaceOperand(IceValue oldOperand, IceValue newOperand) {
+        if (newOperand == null) {
+            // 删除操作数的情况，必须要成对删除
+            if (oldOperand instanceof IceBlock branch) {
+                this.removeValueByBranch(branch); // 同步删除分支和值
+            } else {
+                this.removeValue(oldOperand);
+            }
+        } else {
+            super.replaceOperand(oldOperand, newOperand);
         }
     }
 }

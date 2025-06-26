@@ -3,7 +3,6 @@ package top.voidc.frontend.ir;
 import top.voidc.frontend.parser.IceBaseVisitor;
 import top.voidc.frontend.parser.IceParser;
 import top.voidc.ir.ice.constant.*;
-import top.voidc.ir.ice.type.*;
 import top.voidc.misc.Log;
 
 public class ConstantVisitor extends IceBaseVisitor<IceConstantData> {
