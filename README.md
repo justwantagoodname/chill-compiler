@@ -13,9 +13,9 @@
 - [x] 使用 Ice IR 表示生成文本级别的 LLVM IR
 - [x] 使用 LLVM API 或者 LLC 生成可执行文件进行测试
 ### Stage 3: Optimization
-- [ ] 进行 SSA 转换
-- [ ] 进行常量传播
-- [ ] 进行死代码消除
+- [x] 进行 SSA 转换
+- [x] 进行常量传播
+- [x] 进行死代码消除
 - [ ] 寄存器分配
 ### Stage 4: Code Generation
 - [ ] 生成目标代码 (GNU ARM RISC-V汇编)
