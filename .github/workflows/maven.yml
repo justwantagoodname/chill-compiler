@@ -1,40 +1,54 @@
-name: ARM Functional Test
+name: Functional & Performance Test
 
 on:
   push:
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       MAVEN_OPTS: "-Xss8M"
-      TESTCASE_DIR: "testcases/functional;testcases/h_functional"
+      TESTCASE_DIR: "testcases/functional;testcases/h_functional;testcases/performance;testcases/h_performance"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+      - name: Set up JDK 24
+        uses: actions/setup-java@v4
+        with:
+          java-version: '24'
+          distribution: 'oracle'
+          cache: 'maven'
 
-      - name: Install Maven Dependencies and Test Dependencies
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Install LLVM and Build Tools
         run: |
-          nix develop --command mvn dependency:go-offline -q
-          nix develop --command mvn dependency:resolve-plugins -q
-          nix develop --command mvn dependency:resolve -DincludeTypes=test-jar -q
-          nix develop --command mvn clean install -DskipTests -q
+          sudo apt-get update
+          sudo apt-get install -y build-essential llvm clang
+
+      - name: Install Dependencies and Build
+        run: |
+          mvn clean install -DskipTests -B
 
       - name: Run Tests
         id: run-tests
-        continue-on-error: true
         run: |
-          timeout 6m nix develop --command mvn clean test
+          timeout 20m mvn clean test
 
       - name: Upload JUnit test reports
-        if: always()
+        if: always() 
         uses: actions/upload-artifact@v4
         with:
           name: junit-reports

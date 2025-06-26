@@ -64,8 +64,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
         final var funcEndBlock = ctx.block().accept(new CFGEmitter(context, context.getCurrentFunction().getEntryBlock()));
 
         if (!funcEndBlock.equals(context.getCurrentFunction().getExitBlock())
-                || funcEndBlock.getSuccessors().isEmpty()
-                || funcEndBlock.getInstructions().isEmpty()) {
+                && (funcEndBlock.getSuccessors().isEmpty() || funcEndBlock.getInstructions().isEmpty())) {
             // 不是终止块/空块/没有后继，说明没写return
             if (functionName.equals("main")) {
                 // main 函数需要返回 0
@@ -77,10 +76,10 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
             } else if (funcEndBlock.getInstructions().isEmpty()
                     && funcEndBlock.getSuccessors().isEmpty()) {
                 // 是空块并且没有后继 插入 unreachable 后面自动丢弃了
+                Log.w("在 " + funcEndBlock.getName() + " 函数 " + functionName + " 声明了返回值类型，但没有返回值");
                 funcEndBlock.addInstruction(new IceUnreachableInstruction(funcEndBlock));
             } else {
-                funcEndBlock.addInstruction(new IceUnreachableInstruction(funcEndBlock));
-                Log.w("在 " + funcEndBlock.getName() + " 函数 " + functionName + " 声明了返回值类型，但没有返回值");
+                throw new IllegalStateException();
             }
         }
 

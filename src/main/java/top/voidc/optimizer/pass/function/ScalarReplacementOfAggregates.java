@@ -5,6 +5,7 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstant;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.constant.IceGlobalVariable;
 import top.voidc.ir.ice.instruction.IceAllocaInstruction;
 import top.voidc.ir.ice.instruction.IceGEPInstruction;
 import top.voidc.ir.ice.instruction.IceInstruction;
@@ -24,7 +25,7 @@ import java.util.List;
  * 将 聚合类型 的变量（数组）替换为多个标量变量
  */
 @Pass(
-        group = {"needfix"}
+        group = {"O1", "needfix"}
 )
 public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
     private static ArrayList<IceAllocaInstruction> createPromotableList(IceFunction function) {
@@ -32,7 +33,7 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
         for (IceBlock block : function.getBlocks()) {
             for (IceInstruction instr : block.getInstructions()) {
                 if (instr instanceof IceAllocaInstruction alloca) {
-                    IceType type = ((IcePtrType<?>) alloca.getType()).getPointTo();
+                    IceType type = alloca.getType().getPointTo();
 
                     if (!(type instanceof IceArrayType arrayType)) {
                         continue;
@@ -76,18 +77,18 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
      */
     private ArrayList<IceValue> aggregatesExpansion(IceAllocaInstruction aggregate) {
         // type 的类型转换
-        IceArrayType arrayType = (IceArrayType) (((IcePtrType<?>) aggregate.getType()).getPointTo());
+        IceArrayType arrayType = (IceArrayType) (aggregate.getType().getPointTo());
         IceType elementType = arrayType.getElementType();
 
         ArrayList<IceValue> result = new ArrayList<>();
         // 展开 alloca，并且删除原指令
         for (int i = 0; i < arrayType.getNumElements(); i++) {
-            IceAllocaInstruction newAlloca = new IceAllocaInstruction(aggregate.getParent(), aggregate.getName() + ".i" + i, elementType);
+            IceAllocaInstruction newAlloca = new IceAllocaInstruction(aggregate.getParent(), aggregate.getName() + "_i" + i, elementType);
             aggregate.getParent().addInstructionAtFront(newAlloca);
             result.add(newAlloca);
         }
 
-        aggregate.getParent().removeInstruction(aggregate);
+        aggregate.getParent().remove(aggregate);
 
         return result;
     }
@@ -102,6 +103,11 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
                 IceInstruction instr = instructions.get(index);
                 if (instr instanceof IceGEPInstruction gep) {
                     IceValue basePtr = gep.getBasePtr();
+
+                    if (basePtr instanceof IceGlobalVariable || basePtr.getType().isPointer()) {
+                        // 如果是全局变量，则不需要处理
+                        continue;
+                    }
 
                     if (!(basePtr instanceof IceAllocaInstruction alloca)) {
                         throw new RuntimeException("GEP base pointer is not an alloca instruction");
@@ -122,7 +128,7 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
                     aliasTable.put(gep, newAlloca);
 
                     // 删除 gep
-                    block.removeInstruction(gep);
+                    block.remove(gep);
                     // 调整 index
                     --index;
                 } else {

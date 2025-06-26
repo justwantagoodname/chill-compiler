@@ -122,7 +122,7 @@ public class IceFunction extends IceConstant {
     }
 
     @Override
-    public String getReferenceName() {
+    public String getReferenceName(boolean withType) {
         return "@" + getName() + "(" +
                 String.join(", ",
                         parameters.stream()
