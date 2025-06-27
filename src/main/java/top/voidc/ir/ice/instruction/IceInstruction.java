@@ -58,42 +58,6 @@ public abstract class IceInstruction extends IceUser {
         this.parent = parent;
     }
 
-    @Override
-    public void getTextIR(StringBuilder builder) {
-        String instructionName = switch (this) {
-            case IceUnreachableInstruction _ -> "unreachable";
-            case IceIntrinsicInstruction _ -> "intrinsic";
-            case IceBranchInstruction _ -> "br";
-            case IceCmpInstruction _ -> "cmp";
-            case IceRetInstruction _ -> "ret";
-            case IceGEPInstruction _ -> "getelementptr";
-            case IceCallInstruction _ -> "call";
-            case IceConvertInstruction _ -> "tconvert";
-            case IceAllocaInstruction _ -> "alloca";
-            case IceLoadInstruction _ -> "load";
-            case IceStoreInstruction _ -> "store";
-            case IceBinaryInstruction.Add _ -> "add";
-            case IceBinaryInstruction.FAdd _ -> "fadd";
-            case IceBinaryInstruction.Sub _ -> "sub";
-            case IceBinaryInstruction.FSub _ -> "fsub";
-            case IceBinaryInstruction.Mul _ -> "mul";
-            case IceBinaryInstruction.FMul _ -> "fmul";
-            case IceBinaryInstruction.Div _ -> "div";
-            case IceBinaryInstruction.SDiv _ -> "sdiv";
-            case IceBinaryInstruction.FDiv _ -> "fdiv";
-            case IceBinaryInstruction.Mod _ -> "srem";
-            case IceBinaryInstruction.Shl _ -> "shl";
-            case IceBinaryInstruction.Shr _ -> "shr";
-            case IceBinaryInstruction.And _ -> "and";
-            case IceBinaryInstruction.Or _ -> "or";
-            case IceBinaryInstruction.Xor _ -> "xor";
-            case IceNegInstruction _ -> "neg";
-            case IcePHINode _ -> "phi";
-            default -> throw new IllegalStateException("Unexpected instruction type: " + this.getClass().getSimpleName());
-        };
-        builder.append(instructionName);
-    }
-
     public boolean isTerminal() {
         return this instanceof IceBranchInstruction || this instanceof IceRetInstruction || this instanceof IceUnreachableInstruction;
     }
