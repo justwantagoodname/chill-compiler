@@ -4,81 +4,170 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
 
+/**
+ * 二元指令类
+ */
 public class IceBinaryInstruction extends IceInstruction {
+    public static class Add extends IceBinaryInstruction {
+        public Add(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public Add(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class FAdd extends IceBinaryInstruction {
+        public FAdd(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public FAdd(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class Sub extends IceBinaryInstruction {
+        public Sub(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public Sub(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class FSub extends IceBinaryInstruction {
+        public FSub(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public FSub(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class Mul extends IceBinaryInstruction {
+        public Mul(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public Mul(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class FMul extends IceBinaryInstruction {
+        public FMul(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public FMul(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class Div extends IceBinaryInstruction {
+        public Div(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public Div(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class SDiv extends IceBinaryInstruction {
+        public SDiv(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public SDiv(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class FDiv extends IceBinaryInstruction {
+        public FDiv(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public FDiv(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class Mod extends IceBinaryInstruction {
+        public Mod(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public Mod(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class Shl extends IceBinaryInstruction {
+        public Shl(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public Shl(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class Shr extends IceBinaryInstruction {
+        public Shr(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public Shr(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class And extends IceBinaryInstruction {
+        public And(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public And(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class Or extends IceBinaryInstruction {
+        public Or(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public Or(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
+    
+    public static class Xor extends IceBinaryInstruction {
+        public Xor(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, type, lhs, rhs);
+        }
+        
+        public Xor(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+            super(parent, name, type, lhs, rhs);
+        }
+    }
 
     private boolean isNSW = false;
 
-    public IceBinaryInstruction(IceBlock parent,
-                              InstructionType op,
-                              String name,
-                              IceType type,
-                              IceValue lhs,
-                              IceValue rhs) {
-        super(parent, name, type);
-        switch (op) {
-            case DIV -> {
-                switch (lhs.getType().getTypeEnum()) {
-                    case I32 -> setInstructionType(InstructionType.SDIV);
-                    case F32 -> setInstructionType(InstructionType.FDIV);
-                }
-            }
-            case ADD -> {
-                switch (lhs.getType().getTypeEnum()) {
-                    case I32 -> setInstructionType(InstructionType.ADD);
-                    case F32 -> setInstructionType(InstructionType.FADD);
-                }
-            }
-            case SUB -> {
-                switch (lhs.getType().getTypeEnum()) {
-                    case I32 -> setInstructionType(InstructionType.SUB);
-                    case F32 -> setInstructionType(InstructionType.SUB);
-                }
-            }
-            case MUL -> {
-                switch (lhs.getType().getTypeEnum()) {
-                    case I32 -> setInstructionType(InstructionType.MUL);
-                    case F32 -> setInstructionType(InstructionType.FMUL);
-                }
-            }
-            default -> setInstructionType(op);
-        }
+    protected IceBinaryInstruction(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
+        super(parent, type);
         addOperand(lhs);
         addOperand(rhs);
     }
 
-    public IceBinaryInstruction(IceBlock parent,
-                                InstructionType op,
-                                IceType type,
-                                IceValue lhs,
-                                IceValue rhs) {
-        super(parent, type);
-        switch (op) {
-            case DIV -> {
-                switch (lhs.getType().getTypeEnum()) {
-                    case I32 -> setInstructionType(InstructionType.SDIV);
-                    case F32 -> setInstructionType(InstructionType.FDIV);
-                }
-            }
-            case ADD -> {
-                switch (lhs.getType().getTypeEnum()) {
-                    case I32 -> setInstructionType(InstructionType.ADD);
-                    case F32 -> setInstructionType(InstructionType.FADD);
-                }
-            }
-            case SUB -> {
-                switch (lhs.getType().getTypeEnum()) {
-                    case I32 -> setInstructionType(InstructionType.SUB);
-                    case F32 -> setInstructionType(InstructionType.FSUB);
-                }
-            }
-            case MUL -> {
-                switch (lhs.getType().getTypeEnum()) {
-                    case I32 -> setInstructionType(InstructionType.MUL);
-                    case F32 -> setInstructionType(InstructionType.FMUL);
-                }
-            }
-            default -> setInstructionType(op);
-        }
+    protected IceBinaryInstruction(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
+        super(parent, name, type);
         addOperand(lhs);
         addOperand(rhs);
     }
@@ -110,7 +199,26 @@ public class IceBinaryInstruction extends IceInstruction {
 
     @Override
     public void getTextIR(StringBuilder builder) {
-        builder.append("%").append(getName()).append(" = ").append(getInstructionType());
+        builder.append("%").append(getName()).append(" = ");
+        String opName = switch (this) {
+            case Add _ -> "add";
+            case FAdd _ -> "fadd";
+            case Sub _ -> "sub";
+            case FSub _ -> "fsub";
+            case Mul _ -> "mul";
+            case FMul _ -> "fmul";
+            case Div _ -> "div";
+            case SDiv _ -> "sdiv";
+            case FDiv _ -> "fdiv";
+            case Mod _ -> "srem";
+            case Shl _ -> "shl";
+            case Shr _ -> "shr";
+            case And _ -> "and";
+            case Or _ -> "or";
+            case Xor _ -> "xor";
+            default -> throw new IllegalStateException("Unexpected binary instruction: " + this.getClass().getSimpleName());
+        };
+        builder.append(opName);
         if (isNSW) {
             builder.append(" nsw");
         }

@@ -4,9 +4,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceUser;
 import top.voidc.ir.ice.type.IceType;
 
-import java.util.Objects;
-
-public class IceInstruction extends IceUser {
+public abstract class IceInstruction extends IceUser {
     public IceBlock getParent() {
         return parent;
     }
@@ -48,89 +46,7 @@ public class IceInstruction extends IceUser {
         this.parent = parent;
     }
 
-    public enum InstructionType {
-        UNREACHABLE,
-        INTRINSIC,
-        BRANCH,
-        CMP,
-        GEP,
-        CALL,
-        TCONVERT,
-        ALLOCA,
-        LOAD,
-        STORE,
-        BINARY,
-        NEG,
-        ADD,
-        FADD,
-        SUB,
-        FSUB,
-        MUL,
-        FMUL,
-        DIV,
-        SDIV,
-        FDIV,
-        MOD,
-        SHL,
-        SHR,
-        AND,
-        OR,
-        XOR,
-        RET,
-        PHI;
-
-        @Override
-        public String toString() {
-            return switch (this) {
-                case UNREACHABLE -> "unreachable";
-                case INTRINSIC -> "intrinsic";
-                case BRANCH -> "br";
-                case CMP -> "cmp";
-                case RET -> "ret";
-                case GEP -> "getelementptr";
-                case CALL -> "call";
-                case TCONVERT -> "tconvert";
-                case ALLOCA -> "alloca";
-                case LOAD -> "load";
-                case STORE -> "store";
-                case BINARY -> "binary";
-                case ADD -> "add";
-                case FADD -> "fadd";
-                case SUB -> "sub";
-                case FSUB -> "fsub";
-                case MUL -> "mul";
-                case FMUL -> "fmul";
-                case DIV -> "div";
-                case SDIV -> "sdiv";
-                case FDIV -> "fdiv";
-                case MOD -> "srem";
-                case SHL -> "shl";
-                case SHR -> "shr";
-                case AND -> "and";
-                case OR -> "or";
-                case XOR -> "xor";
-                case NEG -> "neg";
-                case PHI -> "phi";
-            };
-        }
-
-        public static InstructionType fromSysyLiteral(String str) {
-            str = Objects.requireNonNull(str);
-            return switch (str) {
-                case "+" -> InstructionType.ADD;
-                case "-" -> InstructionType.SUB;
-                case "*" -> InstructionType.MUL;
-                case "/" -> InstructionType.DIV;
-                case "%" -> InstructionType.MOD;
-                case "&" -> InstructionType.AND;
-                case "|" -> InstructionType.OR;
-                default -> throw new IllegalStateException("Unexpected value: " + str);
-            };
-        }
-    }
-
     private IceBlock parent;
-    InstructionType type;
 
     public IceInstruction(IceBlock parent, String name, IceType type) {
         super(name, type);
@@ -142,21 +58,44 @@ public class IceInstruction extends IceUser {
         this.parent = parent;
     }
 
-    public InstructionType getInstructionType() {
-        return this.type;
-    }
-
-    protected void setInstructionType(InstructionType type) {
-        this.type = type;
-    }
-
     @Override
     public void getTextIR(StringBuilder builder) {
-        builder.append(getInstructionType());
+        String instructionName = switch (this) {
+            case IceUnreachableInstruction _ -> "unreachable";
+            case IceIntrinsicInstruction _ -> "intrinsic";
+            case IceBranchInstruction _ -> "br";
+            case IceCmpInstruction _ -> "cmp";
+            case IceRetInstruction _ -> "ret";
+            case IceGEPInstruction _ -> "getelementptr";
+            case IceCallInstruction _ -> "call";
+            case IceConvertInstruction _ -> "tconvert";
+            case IceAllocaInstruction _ -> "alloca";
+            case IceLoadInstruction _ -> "load";
+            case IceStoreInstruction _ -> "store";
+            case IceBinaryInstruction.Add _ -> "add";
+            case IceBinaryInstruction.FAdd _ -> "fadd";
+            case IceBinaryInstruction.Sub _ -> "sub";
+            case IceBinaryInstruction.FSub _ -> "fsub";
+            case IceBinaryInstruction.Mul _ -> "mul";
+            case IceBinaryInstruction.FMul _ -> "fmul";
+            case IceBinaryInstruction.Div _ -> "div";
+            case IceBinaryInstruction.SDiv _ -> "sdiv";
+            case IceBinaryInstruction.FDiv _ -> "fdiv";
+            case IceBinaryInstruction.Mod _ -> "srem";
+            case IceBinaryInstruction.Shl _ -> "shl";
+            case IceBinaryInstruction.Shr _ -> "shr";
+            case IceBinaryInstruction.And _ -> "and";
+            case IceBinaryInstruction.Or _ -> "or";
+            case IceBinaryInstruction.Xor _ -> "xor";
+            case IceNegInstruction _ -> "neg";
+            case IcePHINode _ -> "phi";
+            default -> throw new IllegalStateException("Unexpected instruction type: " + this.getClass().getSimpleName());
+        };
+        builder.append(instructionName);
     }
 
     public boolean isTerminal() {
-        return type == InstructionType.BRANCH || type == InstructionType.RET || type == InstructionType.UNREACHABLE;
+        return this instanceof IceBranchInstruction || this instanceof IceRetInstruction || this instanceof IceUnreachableInstruction;
     }
 
     @Override

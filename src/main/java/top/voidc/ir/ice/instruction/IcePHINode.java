@@ -13,12 +13,12 @@ import java.util.ArrayList;
  * 按照(block, value), (block, value)的顺序存储
  */
 public class IcePHINode extends IceInstruction {
-    public record IcePHIBranch(IceBlock block, IceValue value) {};
+    public record IcePHIBranch(IceBlock block, IceValue value) {}
+
     private IceValue valueToBeMerged;
 
     public IcePHINode(IceBlock parent, String name, IceType type) {
         super(parent, name, type);
-        setInstructionType(InstructionType.PHI);
     }
 
     public List<IcePHIBranch> getBranches() {
