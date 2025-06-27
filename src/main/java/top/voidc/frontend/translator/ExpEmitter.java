@@ -1,7 +1,6 @@
 package top.voidc.frontend.translator;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.xpath.XPath;
 import top.voidc.frontend.parser.SysyBaseVisitor;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.frontend.translator.exception.CompilationException;
@@ -10,7 +9,6 @@ import top.voidc.ir.IceContext;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.*;
 import top.voidc.ir.ice.instruction.*;
-import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.Log;
@@ -19,8 +17,6 @@ import top.voidc.misc.StreamTools;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * 用于翻译*单个*表达式为 IceIR，注意生成的表达式会被插入到当前的基本块的最后
@@ -103,21 +99,24 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
                 switch (innerValue.getType().getTypeEnum()) {
                     case I32 -> {
                         // 生成非指令
-                        final var instr = new IceIcmpInstruction(block, IceCmpInstruction.CmpType.EQ,
+                        final var instr = new IceCmpInstruction.Icmp(block,
+                                IceCmpInstruction.Icmp.Type.EQ,
                                 innerValue, IceConstantData.create(0));
                         block.addInstruction(instr);
                         return instr;
                     }
                     case F32 -> {
                         // 生成非指令
-                        final var instr = new IceFcmpInstruction(block, IceCmpInstruction.CmpType.OEQ,
+                        final var instr = new IceCmpInstruction.Fcmp(block,
+                                IceCmpInstruction.Fcmp.Type.OEQ,
                                 innerValue, IceConstantData.create(0F));
                         block.addInstruction(instr);
                         return instr;
                     }
                     case I1 -> {
                         // 生成非指令
-                        final var instr = new IceIcmpInstruction(block, IceCmpInstruction.CmpType.EQ,
+                        final var instr = new IceCmpInstruction.Icmp(block,
+                                IceCmpInstruction.Icmp.Type.EQ,
                                 innerValue, IceConstantData.create(false));
                         block.addInstruction(instr);
                         return instr;
@@ -164,18 +163,50 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         IceInstruction instr;
         if (ctx.relOp != null) {
             // 关系运算符
-            final var instrOp = IceCmpInstruction.CmpType.fromSysyLiteral(ctx.relOp.getText(),
-                    lhsValue.getType().isFloat());
             if (lhsValue.getType().isInteger()) {
-                instr = new IceIcmpInstruction(block, instrOp, lhsValue, rhsValue);
+                var cmpType = IceCmpInstruction.Icmp.Type.fromSysyLiteral(ctx.relOp.getText());
+                instr = new IceCmpInstruction.Icmp(block, cmpType, lhsValue, rhsValue);
             } else {
                 // 浮点数比较
-                instr = new IceFcmpInstruction(block, instrOp, lhsValue, rhsValue);
+                var cmpType = IceCmpInstruction.Fcmp.Type.fromSysyLiteral(ctx.relOp.getText());
+                instr = new IceCmpInstruction.Fcmp(block, cmpType, lhsValue, rhsValue);
             }
         } else {
             // 算术运算符
-            final var instrOp = IceInstruction.InstructionType.fromSysyLiteral(ctx.arithOp.getText());
-            instr = new IceBinaryInstruction(block, instrOp, lhsValue.getType(), lhsValue, rhsValue);
+            instr = switch (ctx.arithOp.getText()) {
+                case "+" -> {
+                    if (lhsValue.getType().isFloat()) {
+                        yield new IceBinaryInstruction.FAdd(block, lhsValue.getType(), lhsValue, rhsValue);
+                    } else {
+                        yield new IceBinaryInstruction.Add(block, lhsValue.getType(), lhsValue, rhsValue);
+                    }
+                }
+                case "-" -> {
+                    if (lhsValue.getType().isFloat()) {
+                        yield new IceBinaryInstruction.FSub(block, lhsValue.getType(), lhsValue, rhsValue);
+                    } else {
+                        yield new IceBinaryInstruction.Sub(block, lhsValue.getType(), lhsValue, rhsValue);
+                    }
+                }
+                case "*" -> {
+                    if (lhsValue.getType().isFloat()) {
+                        yield new IceBinaryInstruction.FMul(block, lhsValue.getType(), lhsValue, rhsValue);
+                    } else {
+                        yield new IceBinaryInstruction.Mul(block, lhsValue.getType(), lhsValue, rhsValue);
+                    }
+                }
+                case "/" -> {
+                    if (lhsValue.getType().isFloat()) {
+                        yield new IceBinaryInstruction.FDiv(block, lhsValue.getType(), lhsValue, rhsValue);
+                    } else {
+                        yield new IceBinaryInstruction.SDiv(block, lhsValue.getType(), lhsValue, rhsValue);
+                    }
+                }
+                case "%" -> new IceBinaryInstruction.Mod(block, lhsValue.getType(), lhsValue, rhsValue);
+                case "&" -> new IceBinaryInstruction.And(block, lhsValue.getType(), lhsValue, rhsValue);
+                case "|" -> new IceBinaryInstruction.Or(block, lhsValue.getType(), lhsValue, rhsValue);
+                default -> throw new CompilationException("未知的运算符: " + ctx.arithOp.getText(), ctx, context);
+            };
         }
         block.addInstruction(instr);
         return instr;
@@ -215,7 +246,6 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
     /**
      * 处理字符串常量，创建对应的全局常量并返回
      * @param ctx the parse tree
-     * @return
      */
     @Override
     public IceGlobalVariable visitString(SysyParser.StringContext ctx) {
@@ -367,7 +397,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
 
         // 对于[i32 x N]*类型的数组(全局数组和栈上数组)需要第一个0偏移
         if (needFirstZero) {
-            indices.add(0, IceConstantInt.create(0));
+            indices.addFirst(IceConstantInt.create(0));
         }
 
         final var gepInstr = new IceGEPInstruction(block, targetVariable, indices);

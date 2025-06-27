@@ -6,8 +6,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
-import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
-import top.voidc.ir.ice.instruction.IceCmpInstruction.CmpType;
+
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.Log;
 
@@ -155,14 +154,31 @@ public class InstructionVisitor extends IceBaseVisitor<IceInstruction> {
     @Override
     public IceInstruction visitArithmeticInstr(IceParser.ArithmeticInstrContext ctx) {
         String resultReg = ctx.IDENTIFIER().getText();
-        InstructionType op = InstructionType.valueOf(ctx.binOp().getText().toUpperCase()); // e.g., ADD, SUB
+        String op = ctx.binOp().getText().toUpperCase(); // e.g., ADD, SUB
         IceType type = typeVisitor.visit(ctx.type());
         IceValue lhs = getValue(ctx.value(0));
         IceValue rhs = getValue(ctx.value(1));
 
         // Log.should(lhs.getType().equals(type) && rhs.getType().equals(type), "Arithmetic operand type mismatch");
 
-        IceBinaryInstruction binaryInst = new IceBinaryInstruction(block, op, resultReg, type, lhs, rhs);
+        IceBinaryInstruction binaryInst = switch (op) {
+            case "ADD" -> new IceBinaryInstruction.Add(block, resultReg, type, lhs, rhs);
+            case "FADD" -> new IceBinaryInstruction.FAdd(block, resultReg, type, lhs, rhs);
+            case "SUB" -> new IceBinaryInstruction.Sub(block, resultReg, type, lhs, rhs);
+            case "FSUB" -> new IceBinaryInstruction.FSub(block, resultReg, type, lhs, rhs);
+            case "MUL" -> new IceBinaryInstruction.Mul(block, resultReg, type, lhs, rhs);
+            case "FMUL" -> new IceBinaryInstruction.FMul(block, resultReg, type, lhs, rhs);
+            case "DIV" -> new IceBinaryInstruction.Div(block, resultReg, type, lhs, rhs);
+            case "SDIV" -> new IceBinaryInstruction.SDiv(block, resultReg, type, lhs, rhs);
+            case "FDIV" -> new IceBinaryInstruction.FDiv(block, resultReg, type, lhs, rhs);
+            case "MOD" -> new IceBinaryInstruction.Mod(block, resultReg, type, lhs, rhs);
+            case "SHL" -> new IceBinaryInstruction.Shl(block, resultReg, type, lhs, rhs);
+            case "SHR" -> new IceBinaryInstruction.Shr(block, resultReg, type, lhs, rhs);
+            case "AND" -> new IceBinaryInstruction.And(block, resultReg, type, lhs, rhs);
+            case "OR" -> new IceBinaryInstruction.Or(block, resultReg, type, lhs, rhs);
+            case "XOR" -> new IceBinaryInstruction.Xor(block, resultReg, type, lhs, rhs);
+            default -> throw new IllegalArgumentException("Unknown binary operator: " + op);
+        };
         putValue(resultReg, binaryInst);
         return binaryInst;
     }
@@ -248,7 +264,7 @@ public class InstructionVisitor extends IceBaseVisitor<IceInstruction> {
     public IceInstruction visitCompareInstr(IceParser.CompareInstrContext ctx) {
         String resultReg = ctx.IDENTIFIER().getText();
         boolean isIcmp = ctx.getChild(2).getText().equals("icmp"); // Check if it's icmp or fcmp
-        CmpType op = CmpType.valueOf(ctx.cmpOp().getText().toUpperCase()); // e.g., EQ, NE, SLT
+        String opStr = ctx.cmpOp().getText().toUpperCase(); // e.g., EQ, NE, SLT
         IceType type = typeVisitor.visit(ctx.type());
         IceValue lhs = getValue(ctx.value(0));
         IceValue rhs = getValue(ctx.value(1));
@@ -258,9 +274,11 @@ public class InstructionVisitor extends IceBaseVisitor<IceInstruction> {
 
         IceCmpInstruction cmpInst;
         if (isIcmp) {
-            cmpInst = new IceIcmpInstruction(block, resultReg, op, lhs, rhs);
+            var cmpType = IceCmpInstruction.Icmp.Type.valueOf(opStr);
+            cmpInst = new IceCmpInstruction.Icmp(block, resultReg, cmpType, lhs, rhs);
         } else {
-            cmpInst = new IceFcmpInstruction(block, resultReg, op, lhs, rhs);
+            var cmpType = IceCmpInstruction.Fcmp.Type.valueOf("O" + opStr); // Add O prefix for ordered float comparison
+            cmpInst = new IceCmpInstruction.Fcmp(block, resultReg, cmpType, lhs, rhs);
         }
 
         putValue(resultReg, cmpInst);

@@ -19,7 +19,6 @@ public class IceIntrinsicInstruction extends IceInstruction {
             String intrinsicName,
             List<IceValue> parameters) {
         super(parent, name, retType);
-        setInstructionType(InstructionType.INTRINSIC);
         this.intrinsicName = intrinsicName;
         parameters.forEach(this::addOperand);
     }
@@ -29,7 +28,6 @@ public class IceIntrinsicInstruction extends IceInstruction {
             String intrinsicName,
             List<IceValue> parameters) {
         super(parent, parent.getFunction().generateLocalValueName(), retType);
-        setInstructionType(InstructionType.INTRINSIC);
         this.intrinsicName = intrinsicName;
         parameters.forEach(this::addOperand);
     }

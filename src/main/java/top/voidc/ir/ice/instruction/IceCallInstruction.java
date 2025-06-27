@@ -7,13 +7,11 @@ import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.type.IceType;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class IceCallInstruction extends IceInstruction {
 
     public IceCallInstruction(IceBlock block, IceFunction target, List<IceValue> args) {
         super(block, target.getReturnType());
-        setInstructionType(InstructionType.CALL);
         addOperand(target);
         args.forEach(this::addOperand);
     }

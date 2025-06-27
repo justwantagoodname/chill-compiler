@@ -8,13 +8,11 @@ public class IceLoadInstruction extends IceInstruction {
 
     public IceLoadInstruction(IceBlock parent, String name, IceValue source) {
         super(parent, name, ((IcePtrType<?>)source.getType()).getPointTo());
-        setInstructionType(InstructionType.LOAD);
         this.addOperand(source);
     }
 
     public IceLoadInstruction(IceBlock parent, IceValue source) {
         super(parent, ((IcePtrType<?>)source.getType()).getPointTo());
-        setInstructionType(InstructionType.LOAD);
         this.addOperand(source);
     }
 
@@ -28,7 +26,7 @@ public class IceLoadInstruction extends IceInstruction {
 
     @Override
     public void getTextIR(StringBuilder builder) {
-        builder.append("%").append(getName()).append(" = ").append(getInstructionType()).append(" ")
+        builder.append("%").append(getName()).append(" = load ")
                 .append(getType()).append(", ").append(getSource().getReferenceName());
     }
 }

@@ -186,13 +186,24 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
                 final var ca = a.getConstant().orElseThrow();
                 final var cb = b.getConstant().orElseThrow();
 
-                var result = switch (cmp.getCmpType()) {
-                    case EQ, OEQ -> ca.eq(cb);
-                    case NE, ONE -> ca.ne(cb);
-                    case SLT, OLT -> ca.lt(cb);
-                    case SLE, OLE -> ca.le(cb);
-                    case SGT, OGT -> ca.gt(cb);
-                    case SGE, OGE -> ca.ge(cb);
+                var result = switch (cmp) {
+                    case IceCmpInstruction.Icmp icmp -> switch (icmp.getCmpType()) {
+                        case EQ -> ca.eq(cb);
+                        case NE -> ca.ne(cb);
+                        case SLT -> ca.lt(cb);
+                        case SLE -> ca.le(cb);
+                        case SGT -> ca.gt(cb);
+                        case SGE -> ca.ge(cb);
+                    };
+                    case IceCmpInstruction.Fcmp fcmp -> switch (fcmp.getCmpType()) {
+                        case OEQ -> ca.eq(cb);
+                        case ONE -> ca.ne(cb);
+                        case OLT -> ca.lt(cb);
+                        case OLE -> ca.le(cb);
+                        case OGT -> ca.gt(cb);
+                        case OGE -> ca.ge(cb);
+                    };
+                    default -> throw new IllegalArgumentException("Unknown comparison type: " + cmp);
                 };
 
                 lat.markConstant(result);
@@ -208,14 +219,13 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
             if (a.isConstant() && b.isConstant()) {
                 final var ca = a.getConstant().orElseThrow();
                 final var cb = b.getConstant().orElseThrow();
-                final var result = switch (bin.getInstructionType()) {
-                    case NEG -> null;
-                    case ADD, FADD -> ca.plus(cb);
-                    case SUB, FSUB -> ca.minus(cb);
-                    case MUL, FMUL -> ca.multiply(cb);
-                    case SDIV, FDIV -> ca.divide(cb);
-                    case MOD -> ca.mod(cb);
-                    default -> throw new IllegalArgumentException("Unsupported operation type: " + bin.getInstructionType());
+                final var result = switch (bin) {
+                    case IceBinaryInstruction.Add _, IceBinaryInstruction.FAdd _ -> ca.plus(cb);
+                    case IceBinaryInstruction.Sub _, IceBinaryInstruction.FSub _ -> ca.minus(cb);
+                    case IceBinaryInstruction.Mul _, IceBinaryInstruction.FMul _ -> ca.multiply(cb);
+                    case IceBinaryInstruction.SDiv _, IceBinaryInstruction.FDiv _ -> ca.divide(cb);
+                    case IceBinaryInstruction.Mod _ -> ca.mod(cb);
+                    default -> throw new IllegalArgumentException("Unsupported operation type: " + bin);
                 };
                 lat.markConstant(result);
             } else if (a.isOverdefined() || b.isOverdefined()) {
