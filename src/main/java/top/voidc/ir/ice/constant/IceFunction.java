@@ -144,8 +144,11 @@ public class IceFunction extends IceConstant {
                                 .map(IceValue::getReferenceName)
                                 .toList()))
                 .append(") {\n");
-        blocks().forEach(block -> block.getTextIR(builder));
-        builder.append("\n}");
+        blocks().forEach(block -> {
+            block.getTextIR(builder);
+            builder.append("\n");
+        });
+        builder.append("}");
     }
 
     /**
