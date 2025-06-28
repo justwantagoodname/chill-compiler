@@ -150,12 +150,13 @@ public class IceBlock extends IceUser implements List<IceInstruction> {
     @Override
     public void getTextIR(StringBuilder builder) {
         builder.append(this.getName()).append(":\n");
-        instructions
-                .forEach(instr -> {
-                    builder.append("\t");
-                    instr.getTextIR(builder);
-                    builder.append("\n");
-                });
+        for (int i = 0; i < instructions.size(); i++) {
+            builder.append("\t");
+            instructions.get(i).getTextIR(builder);
+            if (i != instructions.size() - 1) {
+                builder.append("\n");
+            }
+        }
     }
 
     public static IceBlock fromTextIR(String textIR, IceFunction parentFunction, Map<String, IceValue> environment) {
