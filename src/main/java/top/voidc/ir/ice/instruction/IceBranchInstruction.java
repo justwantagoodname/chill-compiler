@@ -14,29 +14,6 @@ public class IceBranchInstruction extends IceInstruction {
     private final boolean isConditional;
 
     @Override
-    public void moveTo(IceBlock newParent) {
-        if (this.getParent() != null) {
-            if (isConditional) {
-                this.getParent().removeSuccessor(getTrueBlock());
-                this.getParent().removeSuccessor(getFalseBlock());
-            } else {
-                this.getParent().removeSuccessor(getTargetBlock());
-            }
-        }
-
-        super.moveTo(newParent);
-
-        if (this.getParent() != null) {
-            if (isConditional) {
-                this.getParent().addSuccessor(getTrueBlock());
-                this.getParent().addSuccessor(getFalseBlock());
-            } else {
-                this.getParent().addSuccessor(getTargetBlock());
-            }
-        }
-    }
-
-    @Override
     public void getTextIR(StringBuilder builder) {
         builder.append("br ");
         if (isConditional) {
@@ -50,22 +27,17 @@ public class IceBranchInstruction extends IceInstruction {
 
     public IceBranchInstruction(IceBlock parent, IceValue condition, IceBlock trueBlock, IceBlock falseBlock) {
         super(parent, IceType.VOID);
-        setInstructionType(InstructionType.BRANCH);
         Log.should(condition.getType().isBoolean(), "Condition must be boolean");
         this.isConditional = true;
         this.addOperand(condition);
         this.addOperand(trueBlock);
         this.addOperand(falseBlock);
-        this.getParent().addSuccessor(trueBlock);
-        this.getParent().addSuccessor(falseBlock);
     }
 
     public IceBranchInstruction(IceBlock parent, IceBlock targetBlock) {
         super(parent, IceType.VOID);
-        setInstructionType(InstructionType.BRANCH);
         this.isConditional = false;
         this.addOperand(targetBlock);
-        this.getParent().addSuccessor(targetBlock);
     }
 
     public boolean isConditional() {
@@ -91,4 +63,5 @@ public class IceBranchInstruction extends IceInstruction {
         Log.should(!isConditional(), "Must called on an conditional branch");
         return (IceBlock) getOperand(0);
     }
+
 }

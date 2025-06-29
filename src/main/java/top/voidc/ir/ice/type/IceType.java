@@ -6,6 +6,7 @@ public class IceType implements Comparable<IceType> {
     public static final IceType I1 = new IceType(TypeEnum.I1);
     public static final IceType I8 = new IceType(TypeEnum.I8);
     public static final IceType I32 = new IceType(TypeEnum.I32);
+    public static final IceType I64 = new IceType(TypeEnum.I64);
     public static final IceType F32 = new IceType(TypeEnum.F32);
     public static final IceType F64 = new IceType(TypeEnum.F64);
     public static final IceType VOID = new IceType(TypeEnum.VOID);

@@ -5,8 +5,7 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
-import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
-import top.voidc.ir.ice.instruction.IceCmpInstruction.CmpType;
+
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.type.IceArrayType;
 
@@ -60,8 +59,7 @@ public class Mem2RegTest {
         block2.addSuccessor(block4);
         block3.addSuccessor(block4);
 
-        IceInstruction add = new IceBinaryInstruction(block3, IceInstruction.InstructionType.ADD, IceType.I32, new IceConstantInt(1), new IceConstantInt(2));
-        add.setName("add");
+        IceInstruction add = new IceBinaryInstruction.Add(block3, "add", IceType.I32, new IceConstantInt(1), new IceConstantInt(2));
         block3.addInstruction(add);
 
         IceInstruction alloca = new IceAllocaInstruction(block1, "a", IceType.I32);
@@ -88,7 +86,7 @@ public class Mem2RegTest {
 //        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
 
         // Check if the alloca instruction is removed
-        assertEquals(0, function.getEntryBlock().getInstructions().size());
+        assertEquals(0, function.getEntryBlock().size());
     }
 
     private static IceFunction createComplexPhiFunction() {
@@ -111,7 +109,7 @@ public class Mem2RegTest {
         // entry:
         IceInstruction z_ptr = new IceAllocaInstruction(entry, "z_ptr", IceType.I32);
         IceInstruction i_ptr = new IceAllocaInstruction(entry, "i_ptr", IceType.I32);
-        IceInstruction cmp = new IceIcmpInstruction(entry, "cmp", CmpType.SGT, x, new IceConstantInt(0));
+        IceInstruction cmp = new IceCmpInstruction.Icmp(entry, "cmp", IceCmpInstruction.Icmp.Type.SGT, x, new IceConstantInt(0));
         IceInstruction outEntry = new IceBranchInstruction(entry, cmp, thenBlock, elseBlock);
         entry.addInstruction(z_ptr);
         entry.addInstruction(i_ptr);
@@ -119,7 +117,7 @@ public class Mem2RegTest {
         entry.addInstruction(outEntry);
 
         // then:
-        IceInstruction add = new IceBinaryInstruction(thenBlock, InstructionType.ADD, "add", IceType.I32, x, y);
+        IceInstruction add = new IceBinaryInstruction.Add(thenBlock, "add", IceType.I32, x, y);
         IceInstruction store = new IceStoreInstruction(thenBlock, z_ptr, add);
         IceInstruction outThen = new IceBranchInstruction(thenBlock, ifEndBlock);
         thenBlock.addInstruction(add);
@@ -127,7 +125,7 @@ public class Mem2RegTest {
         thenBlock.addInstruction(outThen);
 
         // else:
-        IceInstruction sub = new IceBinaryInstruction(elseBlock, InstructionType.SUB, "sub", IceType.I32, x, y);
+        IceInstruction sub = new IceBinaryInstruction.Sub(elseBlock, "sub", IceType.I32, x, y);
         IceInstruction store2 = new IceStoreInstruction(elseBlock, z_ptr, sub);
         IceInstruction outElse = new IceBranchInstruction(elseBlock, ifEndBlock);
         elseBlock.addInstruction(sub);
@@ -142,7 +140,7 @@ public class Mem2RegTest {
 
         // loop:
         IceInstruction i_val = new IceLoadInstruction(loopBlock, "i_val", i_ptr);
-        IceInstruction cond = new IceIcmpInstruction(loopBlock, "cond", CmpType.SLT, i_val, new IceConstantInt(5));
+        IceInstruction cond = new IceCmpInstruction.Icmp(loopBlock, "cond", IceCmpInstruction.Icmp.Type.SLT, i_val, new IceConstantInt(5));
         IceInstruction outLoop = new IceBranchInstruction(loopBlock, cond, loopBodyBlock, afterLoopBlock);
         loopBlock.addInstruction(i_val);
         loopBlock.addInstruction(cond);
@@ -150,9 +148,9 @@ public class Mem2RegTest {
 
         // loop_body:
         IceInstruction z_val = new IceLoadInstruction(loopBodyBlock, "z_val", z_ptr);
-        IceInstruction z_new = new IceBinaryInstruction(loopBodyBlock, InstructionType.ADD, "z_new", IceType.I32, z_val, i_val);
+        IceInstruction z_new = new IceBinaryInstruction.Add(loopBodyBlock, "z_new", IceType.I32, z_val, i_val);
         IceInstruction store4 = new IceStoreInstruction(loopBodyBlock, z_ptr, z_new);
-        IceInstruction i_next = new IceBinaryInstruction(loopBodyBlock, InstructionType.ADD, "i_next", IceType.I32, i_val, new IceConstantInt(1));
+        IceInstruction i_next = new IceBinaryInstruction.Add(loopBodyBlock, "i_next", IceType.I32, i_val, new IceConstantInt(1));
         IceInstruction store5 = new IceStoreInstruction(loopBodyBlock, i_ptr, i_next);
         IceInstruction outLoopBody = new IceBranchInstruction(loopBodyBlock, loopBlock);
         loopBodyBlock.addInstruction(z_val);
@@ -189,18 +187,34 @@ public class Mem2RegTest {
 
 //        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
 
-        String expected = "define i32 @example(i32 %x, i32 %y) {\n" + "entry:\n"
-            + "\t%cmp = icmp sgt i32 %x, 0\n" + "\tbr i1 %cmp, label %then, label %else\n"
-            + "then:\n" + "\t%add = add i32 %x, %y\n" + "\tbr label %ifend\n" + "else:\n"
-            + "\t%sub = sub i32 %x, %y\n" + "\tbr label %ifend\n" + "ifend:\n"
-            + "\t%z_ptr.0 = phi i32 [ %sub, %else ], [ %add, %then ]\n" + "\tbr label %loop\n"
-            + "loop:\n" + "\t%i_ptr.1 = phi i32 [ 0, %ifend ], [ %i_next, %loop_body ]\n"
-            + "\t%z_ptr.2 = phi i32 [ %z_ptr.0, %ifend ], [ %z_new, %loop_body ]\n"
-            + "\t%cond = icmp slt i32 %i_ptr.1, 5\n"
-            + "\tbr i1 %cond, label %loop_body, label %after_loop\n" + "loop_body:\n"
-            + "\t%z_new = add i32 %z_ptr.2, %i_ptr.1\n" + "\t%i_next = add i32 %i_ptr.1, 1\n"
-            + "\tbr label %loop\n" + "after_loop:\n" + "exit:\n" + "\tret i32 %z_ptr.2\n" + "\n"
-            + "}";
+        String expected = """
+                define i32 @example(i32 %x, i32 %y) {
+                entry:
+                \t%cmp = icmp sgt i32 %x, 0
+                \tbr i1 %cmp, label %then, label %else
+                then:
+                \t%add = add i32 %x, %y
+                \tbr label %ifend
+                else:
+                \t%sub = sub i32 %x, %y
+                \tbr label %ifend
+                ifend:
+                \t%z_ptr.0 = phi i32 [ %sub, %else ], [ %add, %then ]
+                \tbr label %loop
+                loop:
+                \t%i_ptr.1 = phi i32 [ 0, %ifend ], [ %i_next, %loop_body ]
+                \t%z_ptr.2 = phi i32 [ %z_ptr.0, %ifend ], [ %z_new, %loop_body ]
+                \t%cond = icmp slt i32 %i_ptr.1, 5
+                \tbr i1 %cond, label %loop_body, label %after_loop
+                loop_body:
+                \t%z_new = add i32 %z_ptr.2, %i_ptr.1
+                \t%i_next = add i32 %i_ptr.1, 1
+                \tbr label %loop
+                after_loop:
+                exit:
+                \tret i32 %z_ptr.2
+                
+                }""";
         assertEquals(expected, actual.toString());
     }
 
@@ -232,10 +246,15 @@ public class Mem2RegTest {
         StringBuilder actual = new StringBuilder();
         function.getTextIR(actual);
 
-        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
+        Log.d("Before:\n" + before + "\nAfter:\n" + actual);
 
-        String expected = "define i32 @testFunction() {\n" + "entry:\n" + "exit:\n"
-            + "\tret i32 undef\n" + "\n" + "}";
+        String expected = """
+                define i32 @testFunction() {
+                entry:
+                exit:
+                \tret i32 undef
+                
+                }""";
         assertEquals(expected, actual.toString());
     }
 }

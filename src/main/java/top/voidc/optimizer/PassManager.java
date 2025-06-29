@@ -152,7 +152,8 @@ public class PassManager {
             return false;
         }
 
-        Log.i("执行Pass: " + clazz.getSimpleName());
+        parallel = parallel || clazz.getAnnotation(Pass.class).parallel();
+        Log.i((parallel ? "并行" : "") + "执行Pass: " + clazz.getSimpleName());
 
         final var pass = instantiatePass(clazz);
 

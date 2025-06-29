@@ -76,14 +76,14 @@ public class Mem2Reg implements CompilePass<IceFunction> {
      * @return the list of values that can be promoted
      */
     private static List<IceAllocaInstruction> createPromotableList(IceFunction function) {
-        return function.getEntryBlock().instructions().stream()
+        return function.getEntryBlock().stream()
                 .filter(instr ->
                         instr instanceof IceAllocaInstruction alloca && !alloca.getType().getPointTo().isArray())
                 .map(instr -> (IceAllocaInstruction) instr).toList();
     }
 
     private static IceValue findValueStored(IceBlock block, IceValue value) {
-        for (IceInstruction instr : block.getInstructions()) {
+        for (IceInstruction instr : block) {
             if (instr instanceof IceStoreInstruction store) {
                 if (store.getTargetPtr() == value) {
                     return store.getValue();
@@ -104,7 +104,7 @@ public class Mem2Reg implements CompilePass<IceFunction> {
 
         // add all blocks that store value to workList
         for (IceBlock block : function.getBlocks()) {
-            for (IceInstruction instr : block.getInstructions()) {
+            for (IceInstruction instr : block) {
                 if (instr instanceof IceStoreInstruction store) {
                     if (store.getTargetPtr() == value) {
                         workList.add(block);
@@ -150,7 +150,7 @@ public class Mem2Reg implements CompilePass<IceFunction> {
         valueStack.forEach((key, value) -> defCounter.put(key, value.size()));
 
         // 用迭代器正确处理边遍历器删除元素的问题
-        final var blockInstruction = block.instructions().iterator();
+        final var blockInstruction = block.iterator();
         while (blockInstruction.hasNext()){
             IceInstruction instr = blockInstruction.next();
             switch (instr) {
@@ -207,7 +207,7 @@ public class Mem2Reg implements CompilePass<IceFunction> {
 
         // 为所有 successor block 中的 phi 指令添加参数
         for (IceBlock successor : block.getSuccessors()) {
-            for (IceInstruction instr : successor.getInstructions()) {
+            for (IceInstruction instr : successor) {
                 // 所有 phi 指令都应当在 block 的开头
                 // 因此，如果遇到第一个不是 phi 指令的指令，则说明已经处理结束
                 if (!(instr instanceof IcePHINode phiNode)) {

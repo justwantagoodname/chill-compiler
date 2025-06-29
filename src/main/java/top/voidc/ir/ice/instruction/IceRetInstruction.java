@@ -9,14 +9,12 @@ import java.util.Optional;
 public class IceRetInstruction extends IceInstruction {
 
     public IceRetInstruction(IceBlock parent, IceValue retValue) {
-        super(parent, retValue.getType());
-        setInstructionType(InstructionType.RET);
+        super(parent, IceType.VOID);
         addOperand(retValue);
     }
 
     public IceRetInstruction(IceBlock parent) {
         super(parent, IceType.VOID);
-        setInstructionType(InstructionType.RET);
     }
 
     public Optional<IceValue> getReturnValue() {
@@ -36,5 +34,10 @@ public class IceRetInstruction extends IceInstruction {
             var retValue = getReturnValue().get();
             builder.append(retValue.getReferenceName());
         }
+    }
+
+    @Override
+    public String toString() {
+        return getTextIR();
     }
 }

@@ -1,16 +1,19 @@
 package top.voidc.misc;
 
 import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class Log {
     private static final String ANSI_RESET = "\033[0m";
     private static final String ANSI_BLUE = "\033[34m";
     private static final String ANSI_RED = "\033[31m";
+    private static final String ANSI_GREEN = "\033[32m";
     private static final boolean DEBUG = Boolean.parseBoolean(System.getProperty("debug"));
     private static PrintStream OUT = System.out;
 
     public static void d(String format) {
-        if (DEBUG) log(ANSI_BLUE + "DEBUG" + ANSI_RESET, format);
+        if (DEBUG) log(ANSI_GREEN + "DEBUG" + ANSI_RESET, format);
         else log("DEBUG", format);
     }
 
@@ -35,7 +38,9 @@ public class Log {
         String methodName = caller.getMethodName();
         String fileName = caller.getFileName();
         int lineNumber = caller.getLineNumber();
-        OUT.println("[" + level + "][" + className + "." + methodName + "() @ (" + fileName + ":" + lineNumber + ")] " + format);
+        final var prettyClass = Arrays.stream(className.split("\\."))
+                .map(packageName -> packageName.substring(0, 1)).collect(Collectors.joining("."));
+        OUT.println("[" + level + "][" + prettyClass + "." + methodName + "() @ (" + fileName + ":" + lineNumber + ")] " + format);
     }
 
     public static void should(boolean condition, String format) {

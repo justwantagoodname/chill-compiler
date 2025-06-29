@@ -5,362 +5,374 @@ import top.voidc.ir.IceUser;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.*;
 import top.voidc.ir.ice.instruction.*;
-import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
 
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.misc.annotation.Pass;
-import top.voidc.optimizer.pass.Helper;
 
 import java.util.*;
 
-enum LatticeValue {
-    Undefined,
-    Constant,
-    Overdefined
-}
-
-class ValueLatticeElement {
-    private LatticeValue state;
-    private IceConstant constant;
-
-    ValueLatticeElement(IceConstant constant) {
-        if (constant != null) {
-            state = LatticeValue.Constant;
-            this.constant = constant;
-        } else {
-            state = LatticeValue.Undefined;
-        }
-    }
-
-    public LatticeValue getState() {
-        return state;
-    }
-
-    public Optional<IceConstant> getConstant() {
-        return state == LatticeValue.Constant ? Optional.of(constant) : Optional.empty();
-    }
-
-    public void markConstant(IceConstant c) {
-        if (state == LatticeValue.Undefined) {
-            state = LatticeValue.Constant;
-            constant = c;
-        } else if (state == LatticeValue.Constant && !constant.equals(c)) {
-            state = LatticeValue.Overdefined;
-            constant = null;
-        }
-    }
-
-    public void markOverdefined() {
-        state = LatticeValue.Overdefined;
-        constant = null;
-    }
-
-    public boolean isConstant() {
-        return state == LatticeValue.Constant;
-    }
-
-    public boolean isOverdefined() {
-        return state == LatticeValue.Overdefined;
-    }
-}
-
-class SCCPSolver {
-    private final IceFunction function;
-
-    // 边分析器用的记录
-    private record Edge(IceBlock from, IceBlock to) {
-    }
-
-    private final Map<IceValue, ValueLatticeElement> valueLattice = new HashMap<>();
-    private final Set<IceBlock> executableBlocks = new HashSet<>();
-    private final Queue<IceBlock> blockWorkList = new ArrayDeque<>();
-    private final Queue<Edge> edgeWorkList = new ArrayDeque<>();
-    private final Queue<IceInstruction> instWorkList = new ArrayDeque<>();
-    private final Set<IceBlock> totalBlocks = new HashSet<>();
-
-    SCCPSolver(IceFunction function) {
-        this.function = function;
-    }
-
-    private ValueLatticeElement getLattice(IceValue value) {
-        return valueLattice.computeIfAbsent(value, k -> new ValueLatticeElement(value instanceof IceConstant ? (IceConstant) value : null));
-    }
-
-    private void markBlockExecutable(IceBlock block) {
-        if (executableBlocks.add(block)) {
-            blockWorkList.add(block);
-        }
-    }
-
-    private void markEdgeExecutable(IceBlock from, IceBlock to) {
-        edgeWorkList.add(new Edge(from, to));
-    }
-
-    private void processBlock(IceBlock block) {
-        instWorkList.addAll(block.getInstructions());
-
-        // 不知道在这里处理边是不是对的
-        // 先删了
-//        IceInstruction terminator = block.getInstructions().get(block.getInstructions().size() - 1);
-//        if (terminator instanceof IceBranchInstruction br) {
-//            visitBranch(br);
-//        }
-    }
-
-    private void processEdge(Edge edge) {
-        IceBlock from = edge.from;
-        IceBlock to = edge.to;
-
-        for (IceInstruction inst : to.getInstructions()) {
-            if (inst instanceof IcePHINode phiNode) {
-                visitPHI(phiNode, from);
-            }
-        }
-
-        // 标记边到达的块可执行
-        markBlockExecutable(to);
-    }
-
-    private void processInstruction(IceInstruction inst) {
-        // 在此处处理 branch 指令，将下面语句注释，同时保留以备未来 debug
-//        if (inst instanceof IceBranchInstruction) return;
-
-        if (inst instanceof IceBinaryInstruction bin) {
-            visitBin(bin);
-        } else if (inst instanceof IceIcmpInstruction cmp) {
-            // 先处理是 icmp 的情况
-            visitIcmp(cmp);
-        } else if (inst instanceof IceBranchInstruction br) {
-            visitBranch(br);
-        }
-    }
-
-    private void visitBranch(IceBranchInstruction inst) {
-        // 如果没有条件，直接标记分支可执行
-        if (!inst.isConditional()) {
-            markEdgeExecutable(inst.getParent(), inst.getTargetBlock());
-            return;
-        }
-
-        ValueLatticeElement condLat = getLattice(inst.getCondition());
-        if (condLat.isConstant()) {
-            IceConstantBoolean cond = (IceConstantBoolean) condLat.getConstant().orElseThrow();
-            markEdgeExecutable(inst.getParent(), cond.getValue() == 1 ? inst.getTrueBlock() : inst.getFalseBlock());
-
-            // 删除不能走的分支
-            if (cond.getValue() == 1) {
-                IceBlock parent = inst.getParent();
-
-                inst.destroy();
-
-                // 删除 false 分支
-                IceBranchInstruction trueBranch = new IceBranchInstruction(parent, inst.getTrueBlock());
-
-                parent.addInstruction(trueBranch);
-            } else {
-                IceBlock parent = inst.getParent();
-
-                inst.destroy();
-
-                // 删除 true 分支
-                IceBranchInstruction falseBranch = new IceBranchInstruction(parent, inst.getFalseBlock());
-
-                parent.addInstruction(falseBranch);
-            }
-        } else {
-            markEdgeExecutable(inst.getParent(), inst.getTrueBlock());
-            markEdgeExecutable(inst.getParent(), inst.getFalseBlock());
-        }
-    }
-
-    private void visitIcmp(IceIcmpInstruction inst) {
-        var operands = inst.getOperandsList();
-        ValueLatticeElement a = getLattice(operands.get(0));
-        ValueLatticeElement b = getLattice(operands.get(1));
-        ValueLatticeElement lat = getLattice(inst);
-        if (a.isConstant() && b.isConstant()) {
-            // icmp 指令的操作数是整数类型，因此这里可以直接强制转换为整数
-            IceConstantInt ca = (IceConstantInt) a.getConstant().orElseThrow();
-            IceConstantInt cb = (IceConstantInt) b.getConstant().orElseThrow();
-            long va = ca.getValue();
-            long vb = cb.getValue();
-
-            boolean result = switch (inst.getCmpType()) {
-                case EQ -> va == vb;
-                case NE -> va != vb;
-                case SLT -> va < vb;
-                case SLE -> va <= vb;
-                case SGT -> va > vb;
-                case SGE -> va >= vb;
-                default -> throw new IllegalArgumentException("Unsupported comparison type: " + inst.getCmpType());
-            };
-
-            lat.markConstant(new IceConstantBoolean(result));
-        } else if (a.isOverdefined() || b.isOverdefined()) {
-            lat.markOverdefined();
-        }
-        enqueueUsers(inst);
-    }
-
-    private <T extends Number> T calculateHelper(T opr1, T opr2, InstructionType type) {
-        Number result;
-
-        switch (type) {
-            case ADD -> result = opr1.intValue() + opr2.intValue();
-            case SUB -> result = opr1.intValue() - opr2.intValue();
-            case MUL -> result = opr1.intValue() * opr2.intValue();
-            case SDIV -> result = opr1.intValue() / opr2.intValue();
-            case FADD -> result = opr1.floatValue() + opr2.floatValue();
-            case FSUB -> result = opr1.floatValue() - opr2.floatValue();
-            case FMUL -> result = opr1.floatValue() * opr2.floatValue();
-            case FDIV -> result = opr1.floatValue() / opr2.floatValue();
-            default -> throw new IllegalArgumentException("Unsupported operation type: " + type);
-        }
-
-        return (T) result;
-    }
-
-    private void visitBin(IceBinaryInstruction bin) {
-        var operands = bin.getOperandsList();
-        ValueLatticeElement a = getLattice(operands.get(0));
-        ValueLatticeElement b = getLattice(operands.get(1));
-        ValueLatticeElement lat = getLattice(bin);
-        if (a.isConstant() && b.isConstant()) {
-            IceConstant ca = a.getConstant().orElseThrow();
-            IceConstant cb = b.getConstant().orElseThrow();
-            if (ca instanceof IceConstantInt va && cb instanceof IceConstantInt vb) {
-                int vaCast = (int) va.getValue();
-                int vbCast = (int) vb.getValue();
-                lat.markConstant(new IceConstantInt(calculateHelper(vaCast, vbCast, bin.getInstructionType())));
-            } else if (ca instanceof IceConstantFloat va && cb instanceof IceConstantFloat vb) {
-                lat.markConstant(new IceConstantFloat(calculateHelper(va.getValue(), vb.getValue(), bin.getInstructionType())));
-            } else {
-                // 其它类型不处理，直接标记为 overdefined
-                lat.markOverdefined();
-            }
-
-        } else if (a.isOverdefined() || b.isOverdefined()) {
-            lat.markOverdefined();
-        }
-        enqueueUsers(bin);
-    }
-
-    private void visitPHI(IcePHINode phiNode, IceBlock block) {
-        IceValue incomingValue = phiNode.getIncomingValue(block);
-        ValueLatticeElement phiLat = getLattice(phiNode);
-        ValueLatticeElement opLat = getLattice(incomingValue);
-        if (opLat.isOverdefined()) {
-            phiLat.markOverdefined();
-        } else if (opLat.isConstant()) {
-            IceConstant opConst = opLat.getConstant().orElseThrow();
-            phiLat.markConstant(opConst);
-        }
-        if (phiLat.getState() != LatticeValue.Overdefined) {
-            enqueueUsers(phiNode);
-        }
-    }
-
-    private void enqueueUsers(IceValue v) {
-        List<IceUser> users = v instanceof IceInstruction ? v.getUsersList() : Collections.emptyList();
-        for (IceUser user : users) {
-            if (user instanceof IceInstruction inst) {
-                if (inst instanceof IceBranchInstruction) {
-                    // 分支指令不需要入队
-                    continue;
-                }
-                instWorkList.add(inst);
-            }
-        }
-    }
-
-    public void solve() {
-        totalBlocks.addAll(function.getBlocks());
-
-        markBlockExecutable(function.getEntryBlock());
-        while (!blockWorkList.isEmpty() || !edgeWorkList.isEmpty() || !instWorkList.isEmpty()) {
-            if (!instWorkList.isEmpty()) {
-                processInstruction(instWorkList.poll());
-            } else if (!edgeWorkList.isEmpty()) {
-                processEdge(edgeWorkList.poll());
-            } else {
-                processBlock(blockWorkList.poll());
-            }
-        }
-    }
-
-    public boolean rewriteProgram() {
-        boolean flag = false;
-        // 常量折叠
-        for (IceBlock block : function.getBlocks()) {
-            List<IceInstruction> instructions = block.getInstructions();
-            for (int i = 0; i < instructions.size(); ++i) {
-                ValueLatticeElement lat = getLattice(instructions.get(i));
-                if (lat.isConstant()) {
-                    // 从 user 里替换这个常量
-                    IceConstant constant = lat.getConstant().orElseThrow();
-                    List<IceUser> users = instructions.get(i).getUsersList();
-
-                    // 这里不能改 enhanced for-loop!!!
-                    for (int j = 0; j < users.size(); ++j) {
-                        IceUser user = users.get(j);
-                        if (user instanceof IceInstruction inst) {
-                            inst.replaceOperand(instructions.get(i), constant);
-                        }
-                    }
-
-                    instructions.get(i).destroy();
-//                    instructions.remove(i);
-                    // 删除了一个指令，后面的指令往前移动，调整 i
-                    --i;
-                    flag = true;
-                }
-            }
-        }
-
-        // 删除不可达分支
-        for (IceBlock block : totalBlocks) {
-            if (!executableBlocks.contains(block)) {
-                // 删除不可达的块
-                Helper.removeBlock(block);
-                flag = true;
-            }
-        }
-
-        // 对于剩下的块中的 phi 节点，如果只有一个分支，则尝试删除
-        for (IceBlock block : function.getBlocks()) {
-            for (int i = 0; i < block.getInstructions().size(); ++i) {
-                IceInstruction inst = block.getInstructions().get(i);
-                if (inst instanceof IcePHINode phiNode) {
-                    if (phiNode.getBranchCount() == 1) {
-                        // 获取唯一一个分支的值
-                        IceValue value = phiNode.getBranchValueOnIndex(0);
-                        List<IceUser> users = phiNode.getUsersList();
-                        for (int j = 0; j < users.size(); ++j) {
-                            IceUser user = users.get(j);
-                            if (user instanceof IceInstruction inst2) {
-                                inst2.replaceOperand(phiNode, value);
-                            }
-                        }
-
-                        phiNode.destroy();
-                        flag = true;
-                    }
-                }
-            }
-        }
-        return flag;
-    }
-}
 
 @Pass(
-        group = {"needfix"}
+        group = {"O0"}
 )
 public class SparseConditionalConstantPropagation implements CompilePass<IceFunction> {
+
+    private static class SCCPSolver {
+        public boolean isChanged() {
+            return changed;
+        }
+
+        public class ValueLatticeElement {
+
+            enum LatticeValue {
+                Undefined,
+                Constant,
+                Overdefined
+            }
+
+            private LatticeValue state;
+            private IceConstantData constant;
+            private final IceValue bindValue;
+
+            ValueLatticeElement(IceValue bindValue, IceConstantData constant) {
+                this.bindValue = bindValue;
+                if (constant != null && !(constant instanceof IceUndef)) {
+                    state = LatticeValue.Constant;
+                    this.constant = constant;
+                } else {
+                    state = LatticeValue.Undefined;
+                }
+            }
+
+            public Optional<IceConstantData> getConstant() {
+                return state == LatticeValue.Constant ? Optional.of(constant) : Optional.empty();
+            }
+
+            public void markConstant(IceConstantData c) {
+                if (state == LatticeValue.Undefined) {
+                    if (bindValue != null) enqueueUsers(bindValue);
+
+                    state = LatticeValue.Constant;
+                    constant = c;
+                } else if (state == LatticeValue.Constant && !constant.equals(c)) {
+                    if (bindValue != null) enqueueUsers(bindValue);
+
+                    state = LatticeValue.Overdefined;
+                    constant = null;
+                }
+            }
+
+            public void markOverdefined() {
+                if (state != LatticeValue.Overdefined && bindValue != null) enqueueUsers(bindValue);
+
+                state = LatticeValue.Overdefined;
+                constant = null;
+            }
+
+            public boolean isConstant() {
+                return state == LatticeValue.Constant;
+            }
+
+            public boolean isOverdefined() {
+                return state == LatticeValue.Overdefined;
+            }
+
+            public boolean isUndefined() {
+                return state == LatticeValue.Undefined;
+            }
+        }
+
+        private boolean changed = false;
+        private final IceFunction function;
+        private final Map<IceValue, ValueLatticeElement> valueLattice = new HashMap<>();
+        private final Set<IceBlock> executableBlocks = new HashSet<>();
+        private final Queue<IceValue> workList = new ArrayDeque<>();
+        private final Set<IceBlock> totalBlocks = new HashSet<>();
+
+        SCCPSolver(IceFunction function) {
+            this.function = function;
+            // 将函数参数全部标记为 overdefined
+            function.getParameters().stream().map(this::getLattice).forEach(ValueLatticeElement::markOverdefined);
+        }
+
+        private ValueLatticeElement getLattice(IceValue value) {
+            if (value instanceof IceConstantData) {
+                // 常量不放进valueLattice中
+                return new ValueLatticeElement(value, (IceConstantData) value);
+            }
+            return valueLattice.computeIfAbsent(value, _ ->
+                    new ValueLatticeElement(value, null));
+        }
+
+        private void markBlockExecutable(IceBlock block) {
+            if (executableBlocks.add(block)) {
+                workList.add(block);
+            }
+        }
+
+        private void processBlock(IceBlock block) {
+            workList.addAll(block);
+        }
+
+        private void processInstruction(IceInstruction inst) {
+            if (!executableBlocks.contains(inst.getParent())) {
+                return; // 如果指令在不可达块中，则直接跳过，不进行任何处理
+            }
+
+            switch (inst) {
+                case IceBinaryInstruction bin -> visitBin(bin);
+                case IceCmpInstruction cmp -> visitCmp(cmp);
+                case IceBranchInstruction branch -> visitBranch(branch);
+                case IcePHINode phiNode -> visitPHI(phiNode);
+                case IceNegInstruction neg -> visitUnary(neg);
+                default -> {
+                    if (!inst.getType().isVoid()) {
+                        getLattice(inst).markOverdefined();
+                    }
+                }
+            }
+        }
+
+        private void revisitPHINodes(IceBlock block) {
+            // PHI 节点总是位于块的开头
+            for (IceInstruction instruction : block) {
+                if (instruction instanceof IcePHINode phi) {
+                    workList.add(phi);
+                } else {
+                    break; // 遇到非 PHI 指令即停止
+                }
+            }
+        }
+
+        private void visitBranch(IceBranchInstruction inst) {
+
+            // 如果没有条件，分支总是会跳转。
+            if (!inst.isConditional()) {
+                final var targetBlock = inst.getTargetBlock();
+                markBlockExecutable(targetBlock);
+                revisitPHINodes(targetBlock); // 强制重新求值目标块中的 PHI 节点。
+                return;
+            }
+
+            ValueLatticeElement condLat = getLattice(inst.getCondition());
+            if (condLat.isConstant()) {
+                IceConstantBoolean cond = (IceConstantBoolean) condLat.getConstant().orElseThrow();
+                // 条件是常量，所以只有一条路径是可执行的
+                if (cond.getValue() == 1) {
+                    final var trueBlock = inst.getTrueBlock();
+                    markBlockExecutable(trueBlock);
+                    revisitPHINodes(trueBlock); // 在 true 路径上重新求值 PHI
+                } else {
+                    final var falseBlock = inst.getFalseBlock();
+                    markBlockExecutable(falseBlock);
+                    revisitPHINodes(falseBlock); // 在 false 路径上重新求值 PHI
+                }
+            } else {
+                // 条件不是常量，两条路径都可能是可执行的
+                final var trueBlock = inst.getTrueBlock();
+                final var falseBlock = inst.getFalseBlock();
+                markBlockExecutable(trueBlock);
+                markBlockExecutable(falseBlock);
+                revisitPHINodes(trueBlock);
+                revisitPHINodes(falseBlock);
+            }
+        }
+
+        private void visitCmp(IceCmpInstruction cmp) {
+            ValueLatticeElement a = getLattice(cmp.getLhs());
+            ValueLatticeElement b = getLattice(cmp.getRhs());
+            ValueLatticeElement lat = getLattice(cmp);
+            if (a.isConstant() && b.isConstant()) {
+                final var ca = a.getConstant().orElseThrow();
+                final var cb = b.getConstant().orElseThrow();
+
+                var result = switch (cmp) {
+                    case IceCmpInstruction.Icmp icmp -> switch (icmp.getCmpType()) {
+                        case EQ -> ca.eq(cb);
+                        case NE -> ca.ne(cb);
+                        case SLT -> ca.lt(cb);
+                        case SLE -> ca.le(cb);
+                        case SGT -> ca.gt(cb);
+                        case SGE -> ca.ge(cb);
+                    };
+                    case IceCmpInstruction.Fcmp fcmp -> switch (fcmp.getCmpType()) {
+                        case OEQ -> ca.eq(cb);
+                        case ONE -> ca.ne(cb);
+                        case OLT -> ca.lt(cb);
+                        case OLE -> ca.le(cb);
+                        case OGT -> ca.gt(cb);
+                        case OGE -> ca.ge(cb);
+                    };
+                    default -> throw new IllegalArgumentException("Unknown comparison type: " + cmp);
+                };
+
+                lat.markConstant(result);
+            } else if (a.isOverdefined() || b.isOverdefined()) {
+                lat.markOverdefined();
+            }
+        }
+
+        private void visitBin(IceBinaryInstruction bin) {
+            ValueLatticeElement a = getLattice(bin.getLhs());
+            ValueLatticeElement b = getLattice(bin.getRhs());
+            ValueLatticeElement lat = getLattice(bin);
+            if (a.isConstant() && b.isConstant()) {
+                final var ca = a.getConstant().orElseThrow();
+                final var cb = b.getConstant().orElseThrow();
+                final var result = switch (bin) {
+                    case IceBinaryInstruction.Add _, IceBinaryInstruction.FAdd _ -> ca.plus(cb);
+                    case IceBinaryInstruction.Sub _, IceBinaryInstruction.FSub _ -> ca.minus(cb);
+                    case IceBinaryInstruction.Mul _, IceBinaryInstruction.FMul _ -> ca.multiply(cb);
+                    case IceBinaryInstruction.SDiv _, IceBinaryInstruction.FDiv _ -> ca.divide(cb);
+                    case IceBinaryInstruction.Mod _ -> ca.mod(cb);
+                    default -> throw new IllegalArgumentException("Unsupported operation type: " + bin);
+                };
+                lat.markConstant(result);
+            } else if (a.isOverdefined() || b.isOverdefined()) {
+                lat.markOverdefined();
+            }
+        }
+
+        private void visitUnary(IceNegInstruction neg) {
+            final var lat = getLattice(neg);
+            final var a = getLattice(neg.getOperand(0));
+            if (a.isConstant()) {
+                final var ca = a.getConstant().orElseThrow();
+                final var result = IceConstantData.create(0).minus(ca);
+                lat.markConstant(result);
+            } else if (a.isOverdefined()) {
+                lat.markOverdefined();
+            }
+        }
+
+        private void visitPHI(IcePHINode phiNode) {
+            final var phiLat = getLattice(phiNode);
+            final var reachableIncomingValues = phiNode.getBranches().stream()
+                    .filter(icePHIBranch -> executableBlocks.contains(icePHIBranch.block()))
+                    .map(icePHIBranch -> getLattice(icePHIBranch.value())).toList(); // 仅仅获取可达块的值
+
+
+            if (reachableIncomingValues.isEmpty()
+                    || reachableIncomingValues.stream().allMatch(ValueLatticeElement::isUndefined)) return;
+            // 全是 undefined 此时可以忽略
+
+            if (reachableIncomingValues.stream().anyMatch(ValueLatticeElement::isOverdefined)) {
+                phiLat.markOverdefined();
+            } else {
+                assert reachableIncomingValues.stream()
+                        .allMatch(valLat -> valLat.isConstant() || valLat.isUndefined());
+                // 全是常量或者 undefined
+                final var constantValues = reachableIncomingValues.stream()
+                        .filter(ValueLatticeElement::isConstant)
+                        .map(ValueLatticeElement::getConstant)
+                        .flatMap(Optional::stream)
+                        .distinct().toList();
+                if (constantValues.size() == 1) {
+                    phiLat.markConstant(constantValues.getFirst());
+                } else {
+                    phiLat.markOverdefined();
+                }
+            }
+        }
+
+        private void enqueueUsers(IceValue v) {
+            List<IceUser> users = v instanceof IceInstruction ? v.users() : Collections.emptyList();
+            for (IceUser user : users) {
+                if (user instanceof IceInstruction inst) {
+                    workList.add(inst);
+                }
+            }
+        }
+
+        public void solve() {
+            totalBlocks.addAll(function.getBlocks());
+
+            markBlockExecutable(function.getEntryBlock());
+            while (!workList.isEmpty()) {
+                final var value = workList.poll();
+//                Log.d("Processing value: " + value);
+                switch (value) {
+                    case IceBlock block -> processBlock(block); // 处理块
+                    case IceInstruction instruction -> processInstruction(instruction); // 处理指令
+                    default -> throw new IllegalArgumentException("Unsupported value type: " + value.getClass());
+                }
+            }
+        }
+
+        public void rewriteProgram() {
+            final var deadBlocks = new HashSet<>(totalBlocks);
+            deadBlocks.removeAll(executableBlocks);
+
+            // 常量折叠
+            for (IceBlock block : executableBlocks) {
+                block.safeForEach(instruction -> {
+                    switch (instruction) {
+                        case null -> {}
+                        case IceBranchInstruction _ -> {}
+                        case IceLoadInstruction _, IceStoreInstruction _ -> {} // 不做别名分析动不了这俩
+                        case IceRetInstruction _ -> {} // 返回的操作数如果是常量早就被替换了
+                        case IcePHINode phi -> phi.getBranches().forEach(phiBranch -> {
+                            if (deadBlocks.contains(phiBranch.block())) {
+                                phi.removeOperand(phiBranch.block());
+                            }
+                        });
+                        default -> {
+                            ValueLatticeElement lat = getLattice(instruction);
+                            if (lat.isConstant()) {
+                                // 从 user 里替换这个常量
+                                final var constant = lat.getConstant().orElseThrow();
+                                instruction.replaceAllUsesWith(constant);
+                                block.remove(instruction);
+                                changed = true;
+                            }
+                        }
+                    }
+                });
+
+                final var terminal = block.getLast();
+                if (terminal instanceof IceBranchInstruction branch) {
+
+                    if (branch.isConditional()) {
+                        // 实际删除死代码
+                        if (branch.getCondition() instanceof IceConstantBoolean constCond) {
+                            if (constCond.equals(IceConstantData.create(true))) {
+                                // 删除 false 分支
+                                final var targetBlock = branch.getTrueBlock();
+                                branch.destroy();
+                                IceBranchInstruction trueBranch = new IceBranchInstruction(block, targetBlock);
+                                block.addInstruction(trueBranch);
+                            } else {
+                                // 删除 true 分支
+                                final var targetBlock = branch.getFalseBlock();
+                                branch.destroy();
+                                IceBranchInstruction trueBranch = new IceBranchInstruction(block, targetBlock);
+                                block.addInstruction(trueBranch);
+                            }
+                            changed = true;
+                        }
+                    } else {
+                        // 理论上移除不了直接转跳的分支，如果移除了那就是bug
+                        assert executableBlocks.contains(branch.getTargetBlock());
+                    }
+                }
+            }
+
+            // 删除不可达块
+            for (IceBlock block : deadBlocks) {
+                block.destroy();
+                changed = true;
+            }
+
+            // 对于剩下的块中的 phi 节点，如果只有一个分支，则尝试删除 phiNode 中处理过了
+        }
+    }
+
     @Override
     public boolean run(IceFunction target) {
         SCCPSolver solver = new SCCPSolver(target);
         solver.solve();
-        return solver.rewriteProgram();
+        solver.rewriteProgram();
+        return solver.isChanged();
     }
 
     @Override

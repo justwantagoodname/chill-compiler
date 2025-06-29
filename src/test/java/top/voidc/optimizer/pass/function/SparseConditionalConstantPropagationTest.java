@@ -5,7 +5,6 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
-import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.Log;
 
@@ -19,11 +18,11 @@ public class SparseConditionalConstantPropagationTest {
 
         IceBlock entry = function.getEntryBlock();
         IceBlock exit = function.getExitBlock();
-        IceInstruction add = new IceBinaryInstruction(entry, InstructionType.ADD, "add", IceType.I32,
+        IceInstruction add = new IceBinaryInstruction.Add(entry, "add", IceType.I32,
                 new IceConstantInt(1), new IceConstantInt(2));
-        IceInstruction icmp1 = new IceIcmpInstruction(entry, IceIcmpInstruction.CmpType.EQ,
+        IceInstruction icmp1 = new IceCmpInstruction.Icmp(entry, IceCmpInstruction.Icmp.Type.EQ,
                 new IceConstantInt(1), new IceConstantInt(2));
-        IceInstruction icmp2 = new IceIcmpInstruction(entry, IceIcmpInstruction.CmpType.EQ,
+        IceInstruction icmp2 = new IceCmpInstruction.Icmp(entry, IceCmpInstruction.Icmp.Type.EQ,
                 new IceConstantInt(3), new IceConstantInt(3));
         IceInstruction outEntry = new IceBranchInstruction(entry, icmp1, exit, exit);
         entry.addInstruction(add);
@@ -50,15 +49,16 @@ public class SparseConditionalConstantPropagationTest {
         StringBuilder actual = new StringBuilder();
         function.getTextIR(actual);
 
-        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
+        Log.d("Before:\n" + before + "\nAfter:\n" + actual);
 
-        String expected = "define i32 @testFunction() {\n" +
-                "entry:\n" +
-                "\tbr label %exit\n" +
-                "exit:\n" +
-                "\tret i32 3\n" +
-                "\n" +
-                "}";
+        String expected = """
+                define i32 @testFunction() {
+                entry:
+                \tbr label %exit
+                exit:
+                \tret i32 3
+                
+                }""";
         assertEquals(expected, actual.toString());
     }
 
@@ -75,19 +75,19 @@ public class SparseConditionalConstantPropagationTest {
         IceBlock block2 = new IceBlock(function, "block2");
         IceBlock exit = function.getExitBlock();
 
-        IceInstruction icmp1 = new IceIcmpInstruction(entry, IceIcmpInstruction.CmpType.EQ,
+        IceInstruction icmp1 = new IceCmpInstruction.Icmp(entry, IceCmpInstruction.Icmp.Type.EQ,
                 new IceConstantInt(1), new IceConstantInt(2));
         IceInstruction outEntry = new IceBranchInstruction(entry, icmp1, block1, block2);
         entry.addInstruction(icmp1);
         entry.addInstruction(outEntry);
 
-        IceInstruction sub = new IceBinaryInstruction(block1, InstructionType.SUB, "sub", IceType.I32,
+        IceInstruction sub = new IceBinaryInstruction.Sub(block1, "sub", IceType.I32,
                 a, b);
         IceInstruction outBlock1 = new IceBranchInstruction(block1, exit);
         block1.addInstruction(sub);
         block1.addInstruction(outBlock1);
 
-        IceInstruction add = new IceBinaryInstruction(block2, InstructionType.ADD, "add", IceType.I32,
+        IceInstruction add = new IceBinaryInstruction.Add(block2, "add", IceType.I32,
                 new IceConstantInt(1), new IceConstantInt(2));
         IceInstruction outBlock2 = new IceBranchInstruction(block2, exit);
         block2.addInstruction(add);
@@ -116,17 +116,18 @@ public class SparseConditionalConstantPropagationTest {
         StringBuilder actual = new StringBuilder();
         function.getTextIR(actual);
 
-        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
+        Log.d("Before:\n" + before + "\nAfter:\n" + actual);
 
-        String expected = "define i32 @testFunction(i32 %a, i32 %b) {\n" +
-                "entry:\n" +
-                "\tbr label %block2\n" +
-                "block2:\n" +
-                "\tbr label %exit\n" +
-                "exit:\n" +
-                "\tret i32 3\n" +
-                "\n" +
-                "}";
+        String expected = """
+                define i32 @testFunction(i32 %a, i32 %b) {
+                entry:
+                \tbr label %block2
+                block2:
+                \tbr label %exit
+                exit:
+                \tret i32 3
+                
+                }""";
         assertEquals(expected, actual.toString());
     }
 
@@ -143,19 +144,19 @@ public class SparseConditionalConstantPropagationTest {
         IceBlock block2 = new IceBlock(function, "block2");
         IceBlock exit = function.getExitBlock();
 
-        IceInstruction icmp1 = new IceIcmpInstruction(entry, IceIcmpInstruction.CmpType.EQ,
+        IceInstruction icmp1 = new IceCmpInstruction.Icmp(entry, IceCmpInstruction.Icmp.Type.EQ,
                 new IceConstantInt(1), new IceConstantInt(2));
         IceInstruction outEntry = new IceBranchInstruction(entry, icmp1, block1, block2);
         entry.addInstruction(icmp1);
         entry.addInstruction(outEntry);
 
-        IceInstruction sub = new IceBinaryInstruction(block2, InstructionType.SUB, "sub", IceType.I32,
+        IceInstruction sub = new IceBinaryInstruction.Sub(block2, "sub", IceType.I32,
                 a, new IceConstantInt(1));
         IceInstruction outBlock1 = new IceBranchInstruction(block1, exit);
         block1.addInstruction(sub);
         block1.addInstruction(outBlock1);
 
-        IceInstruction add = new IceBinaryInstruction(block1, InstructionType.ADD, "add", IceType.I32,
+        IceInstruction add = new IceBinaryInstruction.Add(block1, "add", IceType.I32,
                 b, new IceConstantInt(2));
         IceInstruction outBlock2 = new IceBranchInstruction(block2, exit);
         block2.addInstruction(add);
@@ -184,18 +185,19 @@ public class SparseConditionalConstantPropagationTest {
         StringBuilder actual = new StringBuilder();
         function.getTextIR(actual);
 
-        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
+        Log.d("Before:\n" + before + "\nAfter:\n" + actual);
 
-        String expected = "define i32 @testFunction(i32 %a, i32 %b) {\n" +
-                "entry:\n" +
-                "\tbr label %block2\n" +
-                "block2:\n" +
-                "\t%add = add i32 %b, 2\n" +
-                "\tbr label %exit\n" +
-                "exit:\n" +
-                "\tret i32 %add\n" +
-                "\n" +
-                "}";
+        String expected = """
+                define i32 @testFunction(i32 %a, i32 %b) {
+                entry:
+                \tbr label %block2
+                block2:
+                \t%add = add i32 %b, 2
+                \tbr label %exit
+                exit:
+                \tret i32 %add
+                
+                }""";
 
         assertEquals(expected, actual.toString());
     }
