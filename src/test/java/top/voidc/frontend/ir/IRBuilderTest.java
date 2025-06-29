@@ -10,8 +10,6 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
-import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
-import top.voidc.ir.ice.instruction.IceCmpInstruction.CmpType;
 import top.voidc.ir.ice.type.*;
 
 import java.util.HashMap;
@@ -128,9 +126,9 @@ public class IRBuilderTest {
                 ret void
             """, func);
         assertEquals("block1", blockWithInstr.getName());
-        assertEquals(2, blockWithInstr.getInstructions().size());
-        assertInstanceOf(IceAllocaInstruction.class, blockWithInstr.getInstructions().get(0));
-        assertInstanceOf(IceRetInstruction.class, blockWithInstr.getInstructions().get(1));
+        assertEquals(2, blockWithInstr.size());
+        assertInstanceOf(IceAllocaInstruction.class, blockWithInstr.getFirst());
+        assertInstanceOf(IceRetInstruction.class, blockWithInstr.get(1));
         
         // 测试带多条指令和跳转的块
         var nextBlock = new IceBlock(func, "next");
@@ -143,7 +141,7 @@ public class IRBuilderTest {
             """, func, env("next", nextBlock));
         
         assertEquals("block2", blockWithBranch.getName());
-        assertEquals(4, blockWithBranch.getInstructions().size());
+        assertEquals(4, blockWithBranch.size());
         assertEquals(1, blockWithBranch.getSuccessors().size());
         assertEquals(nextBlock, blockWithBranch.getSuccessors().getFirst());
         
@@ -162,7 +160,7 @@ public class IRBuilderTest {
             ));
         
         assertEquals("block3", blockWithCond.getName());
-        assertEquals(2, blockWithCond.getInstructions().size());
+        assertEquals(2, blockWithCond.size());
         assertTrue(blockWithCond.getSuccessors().contains(thenBlock));
         assertTrue(blockWithCond.getSuccessors().contains(elseBlock));
     }
@@ -254,8 +252,7 @@ public class IRBuilderTest {
         var load2 = new IceLoadInstruction(block, alloc2);
         var addInstr = buildIRParser("%result = add i32 %a, %b")
                 .instruction().accept(new InstructionVisitor(block, env("a", load1, "b", load2)));
-        assertInstanceOf(IceBinaryInstruction.class, addInstr);
-        assertEquals(InstructionType.ADD, addInstr.getInstructionType());
+        assertInstanceOf(IceBinaryInstruction.Add.class, addInstr);
         alloc1.destroy();
         alloc2.destroy();
         load1.destroy();
@@ -271,8 +268,8 @@ public class IRBuilderTest {
         load2 = new IceLoadInstruction(block, alloc2);
         var cmpInstr = buildIRParser("%cond = icmp slt i32 %x, %y")
                 .instruction().accept(new InstructionVisitor(block, env("x", load1, "y", load2)));
-        assertInstanceOf(IceIcmpInstruction.class, cmpInstr);
-        assertEquals(CmpType.SLT, ((IceIcmpInstruction) cmpInstr).getCmpType());
+        assertInstanceOf(IceCmpInstruction.Icmp.class, cmpInstr);
+        assertEquals(IceCmpInstruction.Icmp.Type.SLT, ((IceCmpInstruction.Icmp) cmpInstr).getCmpType());
         alloc1.destroy();
         alloc2.destroy();
         load1.destroy();

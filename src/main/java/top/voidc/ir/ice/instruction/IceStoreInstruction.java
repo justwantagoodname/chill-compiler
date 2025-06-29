@@ -9,7 +9,6 @@ public class IceStoreInstruction extends IceInstruction {
 
     public IceStoreInstruction(IceBlock parent, IceValue targetPtr, IceValue value) {
         super(parent, IceType.VOID);
-        setInstructionType(InstructionType.STORE);
         Log.should(targetPtr.getType().isPointer(), "store 目标指针类型错误");
         addOperand(targetPtr);
         addOperand(value);

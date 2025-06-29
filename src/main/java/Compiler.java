@@ -11,6 +11,7 @@ import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
 import top.voidc.optimizer.PassManager;
 import top.voidc.optimizer.pass.function.*;
+import top.voidc.optimizer.pass.unit.ShowIR;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,7 +70,9 @@ public class Compiler {
             pm.runPass(SmartChilletSimplifyCFG.class);
             pm.untilStable(
                     SparseConditionalConstantPropagation.class,
-                    SmartChilletSimplifyCFG.class
+                    ShowIR.class,
+                    SmartChilletSimplifyCFG.class,
+                    ShowIR.class
             );
             pm.runPass(RenameVariable.class);
             pm.runPass(LivenessAnalysis.class);

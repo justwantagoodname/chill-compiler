@@ -1,0 +1,44 @@
+name: 希冀 Gitlab 镜像
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: false
+
+      - name: Set up Git
+        run: |
+          git config lfs.${{ vars.GIT_REPO_URL }}/info/lfs.locksverify true
+          git config --global user.email "${{ vars.GIT_EMAIL }}"
+          git config --global user.name "${{ vars.GIT_USERNAME }}"
+          git config lfs.allowincompletepush true
+
+      - name: Install filter-repo
+        run: |
+          curl -sLo git-filter-repo https://raw.githubusercontent.com/newren/git-filter-repo/main/git-filter-repo
+          chmod +x git-filter-repo
+          sudo mv git-filter-repo /usr/local/bin/
+
+      - name: Prepare mirror
+        run: |
+          rm -rf testcases src/test
+          # commit the deletion (if there's nothing to delete, skip)
+          git add -u
+          git diff --cached --quiet || git commit -m "chore(mirror): [Action] strip testcases & src/test"
+          git filter-repo --path testcases --path src/test --invert-paths --force
+
+      - uses: yesolutions/mirror-action@master
+        with:
+          REMOTE: ${{ vars.GIT_REPO_URL }}
+          GIT_USERNAME: ${{ vars.GIT_USERNAME }}
+          GIT_PASSWORD: ${{ secrets.GIT_PASSWORD }}
+          PUSH_ALL_REFS: "false"
+          DEBUG: "true"
