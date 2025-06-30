@@ -9,7 +9,9 @@ import top.voidc.ir.IceValue;
  * @param <T> pass 的目标类型，可以是 IceFunction、IceUnit
  */
 public interface CompilePass <T extends IceValue> {
-    String getName();
+    default String getName() {
+        return this.getClass().getSimpleName();
+    }
 
     /**
      * 静态运行 pass

@@ -16,6 +16,12 @@ public class IceCallInstruction extends IceInstruction {
         args.forEach(this::addOperand);
     }
 
+    public IceCallInstruction(IceBlock block, String name, IceFunction target, List<IceValue> args) {
+        super(block, name, target.getReturnType());
+        addOperand(target);
+        args.forEach(this::addOperand);
+    }
+
     public IceFunction getTarget() {
         return (IceFunction) getOperand(0);
     }
