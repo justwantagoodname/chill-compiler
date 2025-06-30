@@ -230,4 +230,27 @@ public class IceBinaryInstruction extends IceInstruction {
     public boolean isNSW() {
         return isNSW;
     }
+
+    public int getTypeHash() {
+        int hash = switch (this) {
+            case Add _ -> 0x31451;
+            case FAdd _ -> 0xfa195;
+            case Sub _ -> 0x1ff39;
+            case FSub _ -> 0x6b378;
+            case Mul _ -> 0x0542b;
+            case FMul _ -> 0xbb945;
+            case Div _ -> 0xfad90;
+            case SDiv _ -> 0x84add;
+            case FDiv _ -> 0xcc603;
+            case Mod _ -> 0x594e2;
+            case Shl _ -> 0x1e2f3;
+            case Shr _ -> 0xff304;
+            case And _ -> 0x95510;
+            case Or _ -> 0xabfdc;
+            case Xor _ -> 0x105fc;
+            default -> throw new IllegalStateException("Unexpected binary instruction: " + this.getClass().getSimpleName());
+        };
+
+        return hash;
+    }
 }

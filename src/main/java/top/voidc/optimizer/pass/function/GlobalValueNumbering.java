@@ -57,9 +57,36 @@ public class GlobalValueNumbering implements CompilePass<IceFunction> {
         return val.hashCode();
     }
 
+    /**
+     * 返回表达式是否符合二元运算的交换律
+     *
+     * @param binary 待观测表达式
+     * @return true if yes, false otherwise
+     */
+    private static boolean isCommutativeBinaryExpression(IceBinaryInstruction binary) {
+        return binary instanceof IceBinaryInstruction.Add
+                || binary instanceof IceBinaryInstruction.FAdd
+                || binary instanceof IceBinaryInstruction.Mul
+                || binary instanceof IceBinaryInstruction.FMul
+                || binary instanceof IceBinaryInstruction.And
+                || binary instanceof IceBinaryInstruction.Or
+                || binary instanceof IceBinaryInstruction.Xor;
+    }
+
     private static int hashBinaryExpression(IceBinaryInstruction binary) {
-        assert false;
-        return 0;
+        int lhsHash = getCanonicalHash(binary.getLhs());
+        int rhsHash = getCanonicalHash(binary.getRhs());
+        int opHash = binary.getTypeHash();
+
+        if (isCommutativeBinaryExpression(binary) && lhsHash > rhsHash) {
+            int t = lhsHash;
+            lhsHash = rhsHash;
+            rhsHash = t;
+        }
+
+        int h = hashCombine(opHash, lhsHash);
+        h = hashCombine(h, rhsHash);
+        return h;
     }
 
     @Override
