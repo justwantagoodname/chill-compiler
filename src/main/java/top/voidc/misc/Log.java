@@ -8,11 +8,12 @@ public class Log {
     private static final String ANSI_RESET = "\033[0m";
     private static final String ANSI_BLUE = "\033[34m";
     private static final String ANSI_RED = "\033[31m";
+    private static final String ANSI_GREEN = "\033[32m";
     private static final boolean DEBUG = Boolean.parseBoolean(System.getProperty("debug"));
     private static PrintStream OUT = System.out;
 
     public static void d(String format) {
-        if (DEBUG) log(ANSI_BLUE + "DEBUG" + ANSI_RESET, format);
+        if (DEBUG) log(ANSI_GREEN + "DEBUG" + ANSI_RESET, format);
         else log("DEBUG", format);
     }
 

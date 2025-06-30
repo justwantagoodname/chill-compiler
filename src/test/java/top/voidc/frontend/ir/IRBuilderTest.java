@@ -10,8 +10,6 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
-import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
-import top.voidc.ir.ice.instruction.IceCmpInstruction.CmpType;
 import top.voidc.ir.ice.type.*;
 
 import java.util.HashMap;
@@ -59,6 +57,7 @@ public class IRBuilderTest {
 
         assertEquals("empty", emptyFunc.getName());
         assertEquals(IceType.VOID, emptyFunc.getReturnType());
+        assertNull(emptyFunc.getEntryBlock().getFirst().getName());
         assertTrue(emptyFunc.getParameterTypes().isEmpty());
 
         assertEquals(1, emptyFunc.getBlocks().size());
@@ -76,6 +75,12 @@ public class IRBuilderTest {
         assertEquals(IceType.I32, addFunc.getReturnType());
         assertEquals(List.of(IceType.I32, IceType.I32), addFunc.getParameterTypes());
         assertEquals(1, addFunc.getBlocks().size());
+
+        assertInstanceOf(IceBinaryInstruction.Add.class, addFunc.getEntryBlock().getFirst());
+        assertEquals("sum", addFunc.getEntryBlock().getFirst().getName());
+
+        assertInstanceOf(IceRetInstruction.class, addFunc.getEntryBlock().getLast());
+        assertNull(addFunc.getEntryBlock().getLast().getName());
 
         var params = addFunc.getParameters();
         assertEquals(2, params.size());
@@ -128,9 +133,9 @@ public class IRBuilderTest {
                 ret void
             """, func);
         assertEquals("block1", blockWithInstr.getName());
-        assertEquals(2, blockWithInstr.getInstructions().size());
-        assertInstanceOf(IceAllocaInstruction.class, blockWithInstr.getInstructions().get(0));
-        assertInstanceOf(IceRetInstruction.class, blockWithInstr.getInstructions().get(1));
+        assertEquals(2, blockWithInstr.size());
+        assertInstanceOf(IceAllocaInstruction.class, blockWithInstr.getFirst());
+        assertInstanceOf(IceRetInstruction.class, blockWithInstr.get(1));
         
         // 测试带多条指令和跳转的块
         var nextBlock = new IceBlock(func, "next");
@@ -143,7 +148,7 @@ public class IRBuilderTest {
             """, func, env("next", nextBlock));
         
         assertEquals("block2", blockWithBranch.getName());
-        assertEquals(4, blockWithBranch.getInstructions().size());
+        assertEquals(4, blockWithBranch.size());
         assertEquals(1, blockWithBranch.getSuccessors().size());
         assertEquals(nextBlock, blockWithBranch.getSuccessors().getFirst());
         
@@ -162,7 +167,7 @@ public class IRBuilderTest {
             ));
         
         assertEquals("block3", blockWithCond.getName());
-        assertEquals(2, blockWithCond.getInstructions().size());
+        assertEquals(2, blockWithCond.size());
         assertTrue(blockWithCond.getSuccessors().contains(thenBlock));
         assertTrue(blockWithCond.getSuccessors().contains(elseBlock));
     }
@@ -222,6 +227,7 @@ public class IRBuilderTest {
         var loadInstr = buildIRParser("%val = load i32, i32* %ptr")
                 .instruction().accept(new InstructionVisitor(block, env("ptr", ptr1)));
         assertInstanceOf(IceLoadInstruction.class, loadInstr);
+        assertEquals("val", loadInstr.getName());
         ptr1.destroy();
         loadInstr.destroy();
 
@@ -232,6 +238,7 @@ public class IRBuilderTest {
         var storeInstr = buildIRParser("store i32 42, i32* %ptr")
                 .instruction().accept(new InstructionVisitor(block, env("ptr", ptr2)));
         assertInstanceOf(IceStoreInstruction.class, storeInstr);
+        assertNull(storeInstr.getName());
         ptr2.destroy();
         storeInstr.destroy();
 
@@ -242,6 +249,7 @@ public class IRBuilderTest {
         var gepInstr = buildIRParser("%arrayptr = getelementptr [10 x i32], [10 x i32]* %arr, i32 0, i32 5")
                 .instruction().accept(new InstructionVisitor(block, env("arr", arr)));
         assertInstanceOf(IceGEPInstruction.class, gepInstr);
+        assertEquals("arrayptr", gepInstr.getName());
         arr.destroy();
         gepInstr.destroy();
 
@@ -254,8 +262,8 @@ public class IRBuilderTest {
         var load2 = new IceLoadInstruction(block, alloc2);
         var addInstr = buildIRParser("%result = add i32 %a, %b")
                 .instruction().accept(new InstructionVisitor(block, env("a", load1, "b", load2)));
-        assertInstanceOf(IceBinaryInstruction.class, addInstr);
-        assertEquals(InstructionType.ADD, addInstr.getInstructionType());
+        assertInstanceOf(IceBinaryInstruction.Add.class, addInstr);
+        assertEquals("result", addInstr.getName());
         alloc1.destroy();
         alloc2.destroy();
         load1.destroy();
@@ -271,8 +279,9 @@ public class IRBuilderTest {
         load2 = new IceLoadInstruction(block, alloc2);
         var cmpInstr = buildIRParser("%cond = icmp slt i32 %x, %y")
                 .instruction().accept(new InstructionVisitor(block, env("x", load1, "y", load2)));
-        assertInstanceOf(IceIcmpInstruction.class, cmpInstr);
-        assertEquals(CmpType.SLT, ((IceIcmpInstruction) cmpInstr).getCmpType());
+        assertInstanceOf(IceCmpInstruction.Icmp.class, cmpInstr);
+        assertEquals(IceCmpInstruction.Icmp.Type.SLT, ((IceCmpInstruction.Icmp) cmpInstr).getCmpType());
+        assertEquals("cond",  cmpInstr.getName());
         alloc1.destroy();
         alloc2.destroy();
         load1.destroy();
@@ -287,6 +296,7 @@ public class IRBuilderTest {
         var convInstr = buildIRParser("%float_val = sitofp i32 %int_val to float")
                 .instruction().accept(new InstructionVisitor(block, env("int_val", load1)));
         assertInstanceOf(IceConvertInstruction.class, convInstr);
+        assertEquals("float_val", convInstr.getName());
         alloc1.destroy();
         load1.destroy();
         convInstr.destroy();
@@ -299,6 +309,7 @@ public class IRBuilderTest {
                 .terminatorInstr().accept(new InstructionVisitor(block, env("label", targetBlock)));
         assertInstanceOf(IceBranchInstruction.class, brInstr);
         assertFalse(((IceBranchInstruction) brInstr).isConditional());
+        assertNull(brInstr.getName());
         brInstr.destroy();
 
         func = createTestFunction();
@@ -315,6 +326,7 @@ public class IRBuilderTest {
                 )));
         assertInstanceOf(IceBranchInstruction.class, condBrInstr);
         assertTrue(((IceBranchInstruction) condBrInstr).isConditional());
+        assertNull(condBrInstr.getName());
         alloc1.destroy();
         load1.destroy();
         condBrInstr.destroy();
@@ -326,6 +338,7 @@ public class IRBuilderTest {
                 .terminatorInstr().accept(new InstructionVisitor(block, env()));
         assertInstanceOf(IceRetInstruction.class, retVoidInstr);
         assertTrue(((IceRetInstruction) retVoidInstr).isReturnVoid());
+        assertNull(retVoidInstr.getName());
         retVoidInstr.destroy();
 
         func = createTestFunction();
@@ -336,6 +349,7 @@ public class IRBuilderTest {
                 .terminatorInstr().accept(new InstructionVisitor(block, env("value", load1)));
         assertInstanceOf(IceRetInstruction.class, retValInstr);
         assertTrue(((IceRetInstruction) retValInstr).getReturnValue().isPresent());
+        assertNull(retValInstr.getName());
         alloc1.destroy();
         load1.destroy();
         retValInstr.destroy();
@@ -357,6 +371,7 @@ public class IRBuilderTest {
                     "bb2", bb2
                 )));
         assertInstanceOf(IcePHINode.class, phiInstr);
+        assertEquals("result", phiInstr.getName());
         alloc1.destroy();
         alloc2.destroy();
         load1.destroy();
@@ -369,6 +384,7 @@ public class IRBuilderTest {
         var unreachableInstr = buildIRParser("unreachable")
                 .terminatorInstr().accept(new InstructionVisitor(block, env()));
         assertInstanceOf(IceUnreachableInstruction.class, unreachableInstr);
+        assertNull(unreachableInstr.getName());
         unreachableInstr.destroy();
 
         // Test call instruction
@@ -384,6 +400,7 @@ public class IRBuilderTest {
                     "arg", load1
                 )));
         assertInstanceOf(IceCallInstruction.class, callInstr);
+        assertEquals("result", callInstr.getName());
         alloc1.destroy();
         load1.destroy();
         callInstr.destroy();

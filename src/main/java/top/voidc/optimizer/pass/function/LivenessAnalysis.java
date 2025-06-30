@@ -5,8 +5,11 @@ import top.voidc.ir.IceContext;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.constant.IceGlobalVariable;
 import top.voidc.ir.ice.instruction.IceBranchInstruction;
+import top.voidc.ir.ice.instruction.IcePHINode;
 import top.voidc.ir.ice.instruction.IceStoreInstruction;
+import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
 
@@ -19,23 +22,20 @@ import java.util.concurrent.ConcurrentHashMap;
  * out[B] = ∪ in[S]    // S 为 B 的所有后继块
  * in[B]  = use[B] ∪ (out[B] - def[B])
  */
-@Pass(group = "needfix")
+@Pass(group = {"O0", "needfix"})
 public class LivenessAnalysis implements CompilePass<IceFunction> {
-    public record LivenessInfo(Set<IceValue> use, Set<IceValue> def, Set<IceValue> in, Set<IceValue> out) {
-        public LivenessInfo() {
-            this(new HashSet<>(), new HashSet<>(), new HashSet<>(), new HashSet<>());
-        }
-    }
+    // 结果的Data
+    public record LivenessInfo(Set<IceValue> use, Set<IceValue> def, Set<IceValue> in, Set<IceValue> out) {}
 
-    public record LivenessResult(Map<IceFunction, Map<IceBlock, LivenessInfo>> livenessInfo) {
-    }
+    // 计算时的Data
+    private record LivenessData(BitSet use, BitSet def, BitSet in, BitSet out) {}
 
-    private final IceContext context;
+    public record LivenessResult(Map<IceFunction, Map<IceBlock, LivenessInfo>> livenessInfo) { }
+
     private final LivenessResult livenessResult = new LivenessResult(new ConcurrentHashMap<>());
 
     public LivenessAnalysis(IceContext context) {
-        this.context = context;
-        this.context.addPassResult(livenessResult);
+        context.addPassResult(livenessResult);
     }
 
     @Override
@@ -50,15 +50,13 @@ public class LivenessAnalysis implements CompilePass<IceFunction> {
      * @param block 基本块
      * @return Def(block)
      */
-    private Set<IceValue> getDef(IceBlock block) {
-        final var def = new HashSet<IceValue>();
-        for (var instruction : block.getInstructions()) {
-            // 对于全局变量特殊处理
-            if (Objects.requireNonNull(instruction) instanceof IceStoreInstruction storeInst) {
-                def.add(storeInst.getTargetPtr());
-            } else {
+    private BitSet getDef(Map<IceValue, Integer> valueId, IceBlock block) {
+        final var def = new BitSet(valueId.size());
+        for (var instruction : block.instructions()) {
+            // 对于全局变量不加入分析
+            if (!(instruction instanceof IceStoreInstruction)) {
                 if (!instruction.getType().isVoid()) {
-                    def.add(instruction);
+                    def.set(valueId.get(instruction));
                 }
             }
         }
@@ -73,19 +71,39 @@ public class LivenessAnalysis implements CompilePass<IceFunction> {
      * @param block 基本块
      * @return Use(B)
      */
-    private Set<IceValue> getUse(Set<IceValue> def, IceBlock block) {
-        final var use = new HashSet<IceValue>();
+    private BitSet getUse(Map<IceValue, Integer> valueId, BitSet def, IceBlock block) {
+        final var use = new BitSet(valueId.size());
+
         for (var instruction : block.getInstructions()) {
-            if (Objects.requireNonNull(instruction) instanceof IceBranchInstruction branchInst) {
-                // 对于分支指令，使用的变量是条件表达式
-                if (branchInst.isConditional() && !(branchInst.getCondition() instanceof IceConstantData)) {
-                    use.add(branchInst.getCondition());
+            switch (instruction) {
+                case IceBranchInstruction branch -> {
+                    if (branch.isConditional()
+                            && !(branch.getCondition() instanceof IceConstantData)
+                            && !(branch.getCondition() instanceof IceGlobalVariable)
+                            && !def.get(valueId.get(branch.getCondition()))) {
+                        use.set(valueId.get(branch.getCondition()));
+                    }
                 }
-            } else {
-                for (var operand : instruction.getOperands()) {
-                    // 遇到的时候不在 Def(B) 中 且不是常量
-                    if (!def.contains(operand) && !(operand instanceof IceConstantData)) {
-                        use.add(operand);
+                case IcePHINode phiNode -> {
+                    // TODO: 先当作指令吧，应该先移除phi指令
+                    for (var branchValue : phiNode.getBranches()) {
+                        if (!(branchValue.value() instanceof IceConstantData)
+                                && !(branchValue.value() instanceof IceFunction)
+                                && !(branchValue.value() instanceof IceGlobalVariable)
+                                && !def.get(valueId.get(branchValue.value()))) {
+                            use.set(valueId.get(branchValue.value()));
+                        }
+                    }
+                }
+                default -> {
+                    for (var operand : instruction.getOperands()) {
+                        // 遇到的时候不在 Def(B) 中 且不是常量 不是函数
+                        if (!(operand instanceof IceConstantData)
+                                && !(operand instanceof IceFunction)
+                                && !(operand instanceof IceGlobalVariable)
+                                && !def.get(valueId.get(operand))) {
+                            use.set(valueId.get(operand));
+                        }
                     }
                 }
             }
@@ -95,17 +113,38 @@ public class LivenessAnalysis implements CompilePass<IceFunction> {
 
     @Override
     public boolean run(IceFunction target) {
-        final Map<IceBlock, LivenessInfo> blockInfo = new HashMap<>();
-        livenessResult.livenessInfo().put(target, blockInfo);
+        final Map<IceValue, Integer> valueId = new HashMap<>();
+        final List<IceValue> idValue = new ArrayList<>();
+
+        final Map<IceBlock, LivenessData> blockInfo = new HashMap<>();
+//        livenessResult.livenessInfo().put(target, blockInfo);
+
         final var blocks = target.getBlocks();
 
         for (var block : blocks) {
-            final var def = getDef(block);
-            final var use = getUse(def, block);
-            final var in = new HashSet<IceValue>();
-            final var out = new HashSet<IceValue>();
-            blockInfo.put(block, new LivenessInfo(use, def, in, out));
+            for (var instruction : block.instructions()) {
+                if (instruction.getType().isVoid()) {
+                    continue;
+                }
+                if (instruction instanceof IceStoreInstruction) {
+                    // 对于全局变量不加入分析
+                    continue;
+                }
+                idValue.add(block);
+                valueId.put(instruction, idValue.size() - 1);
+            }
         }
+
+        var sum = 0;
+        for (var block : blocks) {
+            final var def = getDef(valueId, block);
+            final var use = getUse(valueId, def, block);
+            final var in = new BitSet(idValue.size());
+            final var out = new BitSet(idValue.size());
+            blockInfo.put(block, new LivenessData(use, def, in, out));
+            sum += block.instructions().size();
+        }
+        Log.d("变量总数: " + sum + "blocks: " + blocks.size());
 
         /*
           out[B] = ∪ in[S]    // S 为 B 的所有后继块
@@ -113,30 +152,43 @@ public class LivenessAnalysis implements CompilePass<IceFunction> {
          */
         boolean changed;
         do {
+            Log.d("iteration once");
             changed = false;
             for (var block : blocks) {
+//                Log.d("========");
+//                Log.d("block: " + block.getName());
+//                Log.d("successors: " + block.getSuccessors());
+//                Log.d("predecessors: " + block.getPredecessors());
+//                Log.d("def: " + blockInfo.get(block).def());
+//                Log.d("use: " + blockInfo.get(block).use());
+//                Log.d("in: " + blockInfo.get(block).in());
+//                Log.d("out: " + blockInfo.get(block).out());
+
                 final var use = blockInfo.get(block).use();
                 final var def = blockInfo.get(block).def();
 
                 final var out = blockInfo.get(block).out();
-                final var oldOutSize = out.size();
-//                out.clear();
-                block.getSuccessors().stream()
-                        .map(successorBlock -> blockInfo.get(successorBlock).in())
-                        .forEach(out::addAll);
-                if (out.size() != oldOutSize) {
+
+                final var in = blockInfo.get(block).in();
+
+                final var newOut = new BitSet(idValue.size());
+                // 计算 out[B]
+                for (var successor : block.getSuccessors()) {
+                    final var successorInfo = blockInfo.get(successor);
+                    newOut.or(successorInfo.in());
+                }
+
+                if (!newOut.equals(out)) {
                     changed = true;
                 }
 
-                final var in = blockInfo.get(block).in();
-                final var oldInSize = in.size();
-//                in.clear();
-                in.addAll(use);
-                final var outMinusDef = new HashSet<>(out);
-                outMinusDef.removeAll(def);
-                in.addAll(outMinusDef);
+                final var newIn = new BitSet(idValue.size());
+                newIn.or(use);
 
-                if (in.size() != oldInSize) {
+                // 计算 out[B] - def[B]
+                newOut.andNot(def);
+                newIn.or(newOut);
+                if (!newIn.equals(in)) {
                     changed = true;
                 }
             }

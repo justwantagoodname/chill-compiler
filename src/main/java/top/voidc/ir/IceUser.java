@@ -5,7 +5,6 @@ import top.voidc.ir.ice.type.IceType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 public class IceUser extends IceValue {
     private final List<IceValue> operands;
@@ -46,19 +45,19 @@ public class IceUser extends IceValue {
     public void replaceOperand(IceValue oldOperand, IceValue newOperand) {
         Objects.requireNonNull(oldOperand);
 
+        // 或许应该改成 equals 方法？
         if (oldOperand == newOperand) return;
+
+        oldOperand.removeUse(this);
 
         if (newOperand != null) {
             newOperand.addUse(this);
-        }
-        oldOperand.removeUse(this);
 
-        if (newOperand == null) {
-            // 删除所有等于 oldValue 的元素
-            operands.removeIf(e -> e == oldOperand);
-        } else {
             // 替换所有等于 oldValue 的元素为 newValue
             operands.replaceAll(e -> e == oldOperand ? newOperand : e);
+        } else  {
+            // 删除所有等于 oldValue 的元素
+            operands.removeIf(e -> e == oldOperand);
         }
     }
 

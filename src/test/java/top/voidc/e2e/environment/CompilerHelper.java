@@ -17,7 +17,7 @@ public class CompilerHelper {
             SY_COMPILER = Class.forName("Compiler");
             SY_COMPILER_MAIN = SY_COMPILER.getMethod("main", String[].class);
         } catch (Exception e) {
-            throw new AssertionError("Can't find Compiler class");
+            throw new RuntimeException("Can't find Compiler class");
         }
     }
 

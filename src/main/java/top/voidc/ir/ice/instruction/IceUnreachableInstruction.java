@@ -6,6 +6,5 @@ import top.voidc.ir.ice.type.IceType;
 public class IceUnreachableInstruction extends IceInstruction {
     public IceUnreachableInstruction(IceBlock parent) {
         super(parent, null, IceType.VOID);
-        setInstructionType(InstructionType.UNREACHABLE);
     }
 }

@@ -10,7 +10,6 @@ import top.voidc.ir.ice.instruction.IceAllocaInstruction;
 import top.voidc.ir.ice.instruction.IceGEPInstruction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IceArrayType;
-import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
 
 import top.voidc.optimizer.pass.CompilePass;
@@ -23,6 +22,7 @@ import java.util.List;
 /**
  * 标量替换聚合
  * 将 聚合类型 的变量（数组）替换为多个标量变量
+ * 收益好像不是很大？还需要修复吗？
  */
 @Pass(
         group = {"O1", "needfix"}
@@ -31,7 +31,7 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
     private static ArrayList<IceAllocaInstruction> createPromotableList(IceFunction function) {
         ArrayList<IceAllocaInstruction> result = new ArrayList<>();
         for (IceBlock block : function.getBlocks()) {
-            for (IceInstruction instr : block.getInstructions()) {
+            for (IceInstruction instr : block) {
                 if (instr instanceof IceAllocaInstruction alloca) {
                     IceType type = alloca.getType().getPointTo();
 
@@ -98,9 +98,8 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
         Hashtable<IceValue, IceValue> aliasTable = new Hashtable<>();
 
         for (IceBlock block : function.getBlocks()) {
-            List<IceInstruction> instructions = block.getInstructions();
-            for (int index = 0; index < instructions.size(); ++index) {
-                IceInstruction instr = instructions.get(index);
+            for (int index = 0; index < block.size(); ++index) {
+                IceInstruction instr = block.get(index);
                 if (instr instanceof IceGEPInstruction gep) {
                     IceValue basePtr = gep.getBasePtr();
 

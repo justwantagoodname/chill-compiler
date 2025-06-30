@@ -5,78 +5,115 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.Log;
 
-public class IceCmpInstruction extends IceInstruction {
+public abstract class IceCmpInstruction extends IceInstruction {
+    public static class Icmp extends IceCmpInstruction {
+        public enum Type {
+            EQ, NE, SLT, SLE, SGT, SGE;
+            
+            @Override 
+            public String toString() {
+                return name().toLowerCase();
+            }
+            
+            public static Type fromSysyLiteral(String literal) {
+                return switch (literal) {
+                    case "==" -> EQ;
+                    case "!=" -> NE;
+                    case "<" -> SLT;
+                    case "<=" -> SLE;
+                    case ">" -> SGT;
+                    case ">=" -> SGE;
+                    default -> throw new IllegalArgumentException("Unknown comparison operator: " + literal);
+                };
+            }
+        }
 
-    public enum CmpType {
-        EQ,
-        NE,
-        SLT,
-        SLE,
-        SGT,
-        SGE,
+        private final Type cmpType;
 
-        OEQ,
-        ONE,
-        OLT,
-        OLE,
-        OGT,
-        OGE;
+        public Type getCmpType() {
+            return cmpType;
+        }
+
+        public Icmp(IceBlock parent, String name, Type cmpType, IceValue lhs, IceValue rhs) {
+            super(parent, name, lhs, rhs);
+            Log.should(lhs.getType().isInteger(), "icmp operands must be integer");
+            this.cmpType = cmpType;
+        }
+
+        public Icmp(IceBlock parent, Type cmpType, IceValue lhs, IceValue rhs) {
+            super(parent, lhs, rhs);
+            Log.should(lhs.getType().isInteger(), "icmp operands must be integer");
+            this.cmpType = cmpType;
+        }
 
         @Override
-        public String toString() {
-            return switch (this) {
-                case EQ -> "eq";
-                case NE -> "ne";
-                case SLT -> "slt";
-                case SLE -> "sle";
-                case SGT -> "sgt";
-                case SGE -> "sge";
-                case OEQ -> "oeq";
-                case ONE -> "one";
-                case OLT -> "olt";
-                case OLE -> "ole";
-                case OGT -> "ogt";
-                case OGE -> "oge";
-            };
-        }
-
-        public static CmpType fromSysyLiteral(String literal, boolean isFloat) {
-            return switch (literal) {
-                case "==" -> isFloat ? OEQ : EQ;
-                case "!=" -> isFloat ? ONE : NE;
-                case "<" -> isFloat ? OLT : SLT;
-                case "<=" -> isFloat ? OLE : SLE;
-                case ">" -> isFloat ? OGT : SGT;
-                case ">=" -> isFloat ? OGE : SGE;
-                default -> throw new IllegalArgumentException("Unknown comparison operator: " + literal);
-            };
+        public void getTextIR(StringBuilder builder) {
+            builder.append("%").append(getName()).append(" = icmp ").append(cmpType).append(" ")
+                    .append(getOperand(0).getReferenceName(true)).append(", ")
+                    .append(getOperand(1).getReferenceName(false));
         }
     }
 
-    protected final CmpType cmpType;
+    public static class Fcmp extends IceCmpInstruction {
+        public enum Type {
+            OEQ, ONE, OLT, OLE, OGT, OGE;
+            
+            @Override 
+            public String toString() {
+                return name().toLowerCase();
+            }
+            
+            public static Type fromSysyLiteral(String literal) {
+                return switch (literal) {
+                    case "==" -> OEQ;
+                    case "!=" -> ONE;
+                    case "<" -> OLT;
+                    case "<=" -> OLE;
+                    case ">" -> OGT;
+                    case ">=" -> OGE;
+                    default -> throw new IllegalArgumentException("Unknown comparison operator: " + literal);
+                };
+            }
+        }
 
-    public IceCmpInstruction(IceBlock parent, String name, CmpType cmpType, IceValue lhs, IceValue rhs) {
+        private final Type cmpType;
+
+        public Type getCmpType() {
+            return cmpType;
+        }
+
+        public Fcmp(IceBlock parent, String name, Type cmpType, IceValue lhs, IceValue rhs) {
+            super(parent, name, lhs, rhs);
+            Log.should(lhs.getType().isFloat(), "fcmp operands must be float");
+            this.cmpType = cmpType;
+        }
+
+        public Fcmp(IceBlock parent, Type cmpType, IceValue lhs, IceValue rhs) {
+            super(parent, lhs, rhs);
+            Log.should(lhs.getType().isFloat(), "fcmp operands must be float");
+            this.cmpType = cmpType;
+        }
+
+        @Override
+        public void getTextIR(StringBuilder builder) {
+            builder.append("%").append(getName()).append(" = fcmp ").append(cmpType).append(" ")
+                    .append(getOperand(0).getReferenceName(true)).append(", ")
+                    .append(getOperand(1).getReferenceName(false));
+        }
+    }
+
+    protected IceCmpInstruction(IceBlock parent, String name, IceValue lhs, IceValue rhs) {
         super(parent, name, IceType.I1);
-        setInstructionType(InstructionType.CMP);
-        Log.should(lhs.getType().equals(rhs.getType()), "cmp 指令操作数类型不匹配");
-
-        this.cmpType = cmpType;
-        this.addOperand(lhs);
-        this.addOperand(rhs);
+        Log.should(lhs.getType().equals(rhs.getType()), "cmp operands must have same type");
+        addOperand(lhs);
+        addOperand(rhs);
     }
 
-    public IceCmpInstruction(IceBlock parent, CmpType cmpType, IceValue lhs, IceValue rhs) {
+    protected IceCmpInstruction(IceBlock parent, IceValue lhs, IceValue rhs) {
         super(parent, IceType.I1);
-        setInstructionType(InstructionType.CMP);
-        Log.should(lhs.getType().equals(rhs.getType()), "cmp 指令操作数类型不匹配");
-
-        this.cmpType = cmpType;
-        this.addOperand(lhs);
-        this.addOperand(rhs);
-    }
-
-    public CmpType getCmpType() {
-        return cmpType;
+        Log.should(lhs.getType().equals(rhs.getType()), "cmp operands must have same type");
+        addOperand(lhs);
+        addOperand(rhs);
     }
 
     public IceValue getLhs() {

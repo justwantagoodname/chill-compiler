@@ -10,7 +10,6 @@ public class IceConvertInstruction extends IceInstruction {
                                  IceType type,
                                  IceValue operand) {
         super(parent, name, type);
-        setInstructionType(InstructionType.TCONVERT);
         addOperand(operand);
     }
 
@@ -18,7 +17,6 @@ public class IceConvertInstruction extends IceInstruction {
                                  IceType type,
                                  IceValue operand) {
         super(parent, type);
-        setInstructionType(InstructionType.TCONVERT);
         addOperand(operand);
     }
 

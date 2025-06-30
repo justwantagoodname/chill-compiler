@@ -11,7 +11,6 @@ public class IceNegInstruction extends IceInstruction {
                              IceType type,
                              IceValue operand) {
         super(parent, name, type);
-        setInstructionType(InstructionType.NEG);
         addOperand(operand);
     }
 
@@ -19,7 +18,6 @@ public class IceNegInstruction extends IceInstruction {
                              IceType type,
                              IceValue operand) {
         super(parent, type);
-        setInstructionType(InstructionType.NEG);
         addOperand(operand);
     }
 
