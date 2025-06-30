@@ -5,8 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import top.voidc.ir.IceBlock;
+import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.misc.Log;
+
+import java.util.Comparator;
 
 /**
  * block 引用已经改了所以这个单元测试需要重写成按照指令引用block的形式
@@ -19,39 +22,50 @@ class DominatorTreeTest {
 
     @Test
     void testDominatorRelations() {
-        function = new IceFunction("testFunction");
-        blocks = new IceBlock[]{
-                function.getEntryBlock(),
-                new IceBlock(function, "b2"),
-                new IceBlock(function, "b3"),
-                new IceBlock(function, "b4"),
-                new IceBlock(function, "b5"),
-                new IceBlock(function, "b6")
-        };
-
         // 构建CFG（控制流图）
-        blocks[0].addSuccessor(blocks[1]);     // entry -> b2
-        blocks[1].addSuccessor(blocks[2]);     // b2 -> b3
-        blocks[1].addSuccessor(blocks[3]);     // b2 -> b4
-        blocks[2].addSuccessor(blocks[4]);     // b3 -> b5
-        blocks[3].addSuccessor(blocks[4]);     // b4 -> b5
-        blocks[4].addSuccessor(blocks[5]);     // b5 -> b6
+        // entry -> b2
+        // b2 -> b3
+        // b2 -> b4
+        // b3 -> b5
+        // b4 -> b5
+        // b5 -> b6
+        function = IceFunction.fromTextIR("""
+                define void @f() {
+                %entry:
+                	br label %b2
+                %b2:
+                    br i1 true, label %b3, label %b4
+                %b3:
+                    br label %b5
+                %b4:
+                    br label %b5
+                %b5:
+                    br label %b6
+                %b6:
+                    ret void
+                }
+               """);
+        var blocks = function.blocks();
+        blocks.sort(Comparator.comparing(IceValue::getName));
+        blocks.addFirst(blocks.removeLast());
 
-        expectedDominators = new IceBlock[]{null, blocks[0], blocks[1], blocks[1], blocks[1], blocks[4]};
+        // [entry, b2, b3, b4, b5, b6]
+
+        expectedDominators = new IceBlock[]{null, blocks.getFirst(), blocks.get(1), blocks.get(1), blocks.get(1), blocks.get(4)};
         dominatorTree = new DominatorTree(function);
 
-        for (int i = 0; i < blocks.length; i++) {
-            IceBlock actualDominator = dominatorTree.getDominator(blocks[i]);
+        for (int i = 0; i < blocks.size(); i++) {
+            IceBlock actualDominator = dominatorTree.getDominator(blocks.get(i));
             IceBlock expectedDominator = expectedDominators[i];
-            
+
             if (expectedDominator == null) {
                 // 对于入口块，其支配节点为null
-                assertNull(actualDominator, String.format("入口块 %s 的支配节点应该为null", blocks[i].getName()));
+                assertNull(actualDominator, String.format("入口块 %s 的支配节点应该为null", blocks.get(i).getName()));
             } else {
                 assertEquals(expectedDominator.getName(), actualDominator.getName(),
-                    String.format("块 %s 的支配节点应该为 %s，但得到了 %s", 
-                        blocks[i].getName(), 
-                        expectedDominator.getName(), 
+                    String.format("块 %s 的支配节点应该为 %s，但得到了 %s",
+                        blocks.get(i).getName(),
+                        expectedDominator.getName(),
                         actualDominator.getName()));
             }
         }
@@ -59,41 +73,50 @@ class DominatorTreeTest {
 
     @Test
     void testDominatorRelations2() {
-        function = new IceFunction("testFunction");
-        blocks = new IceBlock[]{
-                function.getEntryBlock(),
-                new IceBlock(function, "b1"),
-                new IceBlock(function, "b2"),
-                new IceBlock(function, "b3"),
-                new IceBlock(function, "b4"),
-                new IceBlock(function, "b5")
-        };
-
         // 构建CFG（控制流图）
-        blocks[0].addSuccessor(blocks[1]);
-        blocks[0].addSuccessor(blocks[2]);
-        blocks[1].addSuccessor(blocks[3]);
-        blocks[1].addSuccessor(blocks[4]);
-        blocks[2].addSuccessor(blocks[5]);
-        blocks[3].addSuccessor(blocks[4]);
-        blocks[4].addSuccessor(blocks[5]);
+        // entry -> b1, b2
+        // b1 -> b3, b4
+        // b2 -> b5
+        // b3 -> b4
+        // b4 -> b5
+        function = IceFunction.fromTextIR("""
+                define void @testFunction() {
+                %entry:
+                    br i1 true, label %b1, label %b2
+                %b1:
+                    br i1 true, label %b3, label %b4
+                %b2:
+                    br label %b5
+                %b3:
+                    br label %b4
+                %b4:
+                    br label %b5
+                %b5:
+                    ret void
+                }
+               """);
+        var blocks = function.blocks();
+        blocks.sort(Comparator.comparing(IceValue::getName));
+        blocks.addFirst(blocks.removeLast());
 
-        expectedDominators = new IceBlock[]{null, blocks[0], blocks[0], blocks[1], blocks[1], blocks[0]};
+        // [entry, b1, b2, b3, b4, b5]
+        
+        expectedDominators = new IceBlock[]{null, blocks.get(0), blocks.get(0), blocks.get(1), blocks.get(1), blocks.get(0)};
         dominatorTree = new DominatorTree(function);
 
-        for (int i = 0; i < blocks.length; i++) {
-            IceBlock actualDominator = dominatorTree.getDominator(blocks[i]);
+        for (int i = 0; i < blocks.size(); i++) {
+            IceBlock actualDominator = dominatorTree.getDominator(blocks.get(i));
             IceBlock expectedDominator = expectedDominators[i];
-            Log.d(dominatorTree.getDominatees(blocks[i]).toString());
+            
             if (expectedDominator == null) {
                 // 对于入口块，其支配节点为null
-                assertNull(actualDominator, String.format("入口块 %s 的支配节点应该为null", blocks[i].getName()));
+                assertNull(actualDominator, String.format("入口块 %s 的支配节点应该为null", blocks.get(i).getName()));
             } else {
                 assertEquals(expectedDominator.getName(), actualDominator.getName(),
-                        String.format("块 %s 的支配节点应该为 %s，但得到了 %s",
-                                blocks[i].getName(),
-                                expectedDominator.getName(),
-                                actualDominator.getName()));
+                    String.format("块 %s 的支配节点应该为 %s，但得到了 %s",
+                        blocks.get(i).getName(),
+                        expectedDominator.getName(),
+                            actualDominator.getName()));
             }
         }
     }
