@@ -19,6 +19,13 @@ public class IceGEPInstruction extends IceInstruction {
         indices.forEach(this::addOperand);
     }
 
+    public IceGEPInstruction(IceBlock block, String name, IceValue basePtr, List<IceValue> indices) {
+        super(block, name, getReturnType(basePtr, indices));
+        Log.should(basePtr.getType().isPointer(), "GEP指令的基址必须是指针类型");
+        this.addOperand(basePtr);
+        indices.forEach(this::addOperand);
+    }
+
     /**
      * 通过给定指针和索引计算返回类型
      * @param basePtr

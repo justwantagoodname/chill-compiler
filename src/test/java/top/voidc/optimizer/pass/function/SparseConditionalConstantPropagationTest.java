@@ -57,7 +57,6 @@ public class SparseConditionalConstantPropagationTest {
                 \tbr label %exit
                 exit:
                 \tret i32 3
-                
                 }""";
         assertEquals(expected, actual.toString());
     }
@@ -126,7 +125,6 @@ public class SparseConditionalConstantPropagationTest {
                 \tbr label %exit
                 exit:
                 \tret i32 3
-                
                 }""";
         assertEquals(expected, actual.toString());
     }
@@ -196,7 +194,6 @@ public class SparseConditionalConstantPropagationTest {
                 \tbr label %exit
                 exit:
                 \tret i32 %add
-                
                 }""";
 
         assertEquals(expected, actual.toString());

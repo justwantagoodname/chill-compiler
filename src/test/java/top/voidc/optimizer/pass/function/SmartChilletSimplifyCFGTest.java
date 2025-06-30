@@ -61,7 +61,6 @@ public class SmartChilletSimplifyCFGTest {
                 define i32 @testFunction() {
                 entry:
                 \tret i32 0
-                
                 }""";
 
         assertEquals(expected, actual.toString());
@@ -107,7 +106,6 @@ public class SmartChilletSimplifyCFGTest {
                         define void @testFunction(i32 %a) {
                         entry:
                         \tret void
-                        
                         }""";
 
         assertEquals(expected, actual.toString());
