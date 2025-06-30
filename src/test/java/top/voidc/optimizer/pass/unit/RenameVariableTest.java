@@ -40,14 +40,14 @@ public class RenameVariableTest {
         StringBuilder actual = new StringBuilder();
         unit.getTextIR(actual);
 
-        String expected = "; testUnit\n" +
-                "define void @testFunction() {\n" +
-                "entry:\n" +
-                "\t%0 = add i32 1, 2\n" +
-                "\t%1 = add i32 1, %0\n" +
-                "exit:\n" +
-                "\n" +
-                "}\n";
+        String expected = """
+                ; testUnit
+                define void @testFunction() {
+                entry:
+                \t%0 = add i32 1, 2
+                \t%1 = add i32 1, %0
+                }
+                """;
 
         assertEquals(expected, actual.toString());
     }
