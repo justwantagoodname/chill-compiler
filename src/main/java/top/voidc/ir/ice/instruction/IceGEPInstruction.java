@@ -14,7 +14,13 @@ public class IceGEPInstruction extends IceInstruction {
 
     public IceGEPInstruction(IceBlock block, IceValue basePtr, List<IceValue> indices) {
         super(block, getReturnType(basePtr, indices));
-        setInstructionType(InstructionType.GEP);
+        Log.should(basePtr.getType().isPointer(), "GEP指令的基址必须是指针类型");
+        this.addOperand(basePtr);
+        indices.forEach(this::addOperand);
+    }
+
+    public IceGEPInstruction(IceBlock block, String name, IceValue basePtr, List<IceValue> indices) {
+        super(block, name, getReturnType(basePtr, indices));
         Log.should(basePtr.getType().isPointer(), "GEP指令的基址必须是指针类型");
         this.addOperand(basePtr);
         indices.forEach(this::addOperand);
@@ -61,7 +67,7 @@ public class IceGEPInstruction extends IceInstruction {
 
     @Override
     public void getTextIR(StringBuilder builder) {
-        builder.append("%").append(getName()).append(" = ").append(getInstructionType());
+        builder.append("%").append(getName()).append(" = getelementptr");
         if (isInBounds) {
             builder.append(" inbounds");
         }

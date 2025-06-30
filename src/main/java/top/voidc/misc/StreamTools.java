@@ -113,4 +113,29 @@ public class StreamTools {
                 .mapToObj(list::get);
     }
 
+    /**
+     * 判断一个流中所有元素是否都相等（使用 Objects.equals）
+     * 空流返回 true
+     *
+     * @param stream 要检查的 Stream
+     * @param <T> 元素类型
+     * @return 是否所有元素都相等
+     */
+    public static <T> boolean allEqual(Stream<T> stream) {
+        // 转为 iterator 只遍历一次流
+        var iterator = stream.iterator();
+        if (!iterator.hasNext()) {
+            return true; // 空流视为全部相等
+        }
+
+        T first = iterator.next();
+        while (iterator.hasNext()) {
+            T next = iterator.next();
+            if (!Objects.equals(first, next)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 }

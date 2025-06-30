@@ -6,7 +6,7 @@ import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
 
 // Debug 用途就是打印 IR
-@Pass
+@Pass(enable = false)
 public class ShowIR implements CompilePass<IceUnit> {
     @Override
     public String getName() {
@@ -15,7 +15,7 @@ public class ShowIR implements CompilePass<IceUnit> {
 
     @Override
     public boolean run(IceUnit target) {
-        Log.d(target.getTextIR());
+        Log.d("\n" + target.getTextIR());
         return false;
     }
 }

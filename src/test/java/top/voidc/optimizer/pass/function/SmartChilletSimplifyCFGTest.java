@@ -6,7 +6,6 @@ import top.voidc.ir.ice.constant.IceConstantBoolean;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
-import top.voidc.ir.ice.instruction.IceInstruction.InstructionType;
 import top.voidc.ir.ice.type.IceType;
 
 import org.junit.jupiter.api.Test;
@@ -23,7 +22,6 @@ public class SmartChilletSimplifyCFGTest {
      * B   C
      *  \ /
      *  exit
-     * @return
      */
     private static IceFunction createSimpleDiamondCFG() {
         IceFunction function = new IceFunction("testFunction");
@@ -59,8 +57,11 @@ public class SmartChilletSimplifyCFGTest {
 
         Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
 
-        String expected = "define i32 @testFunction() {\n" + "entry:\n" + "\tret i32 0\n" + "\n"
-            + "}";
+        String expected = """
+                define i32 @testFunction() {
+                entry:
+                \tret i32 0
+                }""";
 
         assertEquals(expected, actual.toString());
     }
@@ -72,9 +73,9 @@ public class SmartChilletSimplifyCFGTest {
         function.addParameter(a);
 
         IceBlock entry = function.getEntryBlock();
-        IceInstruction add = new IceBinaryInstruction(entry, InstructionType.ADD, "add", IceType.I32, a, new IceConstantInt(2));
-        IceInstruction sub = new IceBinaryInstruction(entry, InstructionType.SUB, "sub", IceType.I32, add, new IceConstantInt(1));
-        IceInstruction mul = new IceBinaryInstruction(entry, InstructionType.MUL, "mul", IceType.I32, add, new IceConstantInt(3));
+        var add = new IceBinaryInstruction.Add(entry, "add", IceType.I32, a, new IceConstantInt(2));
+        var sub = new IceBinaryInstruction.Sub(entry, "sub", IceType.I32, add, new IceConstantInt(1));
+        var mul = new IceBinaryInstruction.Mul(entry, "mul", IceType.I32, add, new IceConstantInt(3));
         entry.addInstruction(add);
         entry.addInstruction(sub);
         entry.addInstruction(mul);
@@ -98,10 +99,14 @@ public class SmartChilletSimplifyCFGTest {
         StringBuilder actual = new StringBuilder();
         function.getTextIR(actual);
 
-        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
+        Log.d("Before:\n" + before + "\nAfter:\n" + actual);
 
         String expected =
-            "define void @testFunction(i32 %a) {\n" + "entry:\n" + "\tret void\n" + "\n" + "}";
+                """
+                        define void @testFunction(i32 %a) {
+                        entry:
+                        \tret void
+                        }""";
 
         assertEquals(expected, actual.toString());
     }

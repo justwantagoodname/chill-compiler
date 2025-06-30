@@ -9,8 +9,7 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceCmpInstruction;
-import top.voidc.ir.ice.instruction.IceFcmpInstruction;
-import top.voidc.ir.ice.instruction.IceIcmpInstruction;
+
 
 /**
  * 翻译条件语句为 IceIR 因为对于 && 和 || 需要短路求值改变控制流
@@ -30,9 +29,9 @@ public class CondEmitter extends ExpEmitter {
             if (!value.getType().isBoolean()) {
                 // 内部不是布尔值，添加 CMP 指令
                 final var cmpInstr = switch (value.getType().getTypeEnum()) {
-                    case I32 -> new IceIcmpInstruction(block, IceCmpInstruction.CmpType.NE, value,
+                    case I32 -> new IceCmpInstruction.Icmp(block, IceCmpInstruction.Icmp.Type.NE, value,
                             IceConstantData.create(0));
-                    case F32 -> new IceFcmpInstruction(block, IceCmpInstruction.CmpType.ONE, value,
+                    case F32 -> new IceCmpInstruction.Fcmp(block, IceCmpInstruction.Fcmp.Type.ONE, value,
                             IceConstantData.create(0F));
                     default -> throw new CompilationException(
                             value.getType().toString() + "不能转换为布尔值", ctx, context);

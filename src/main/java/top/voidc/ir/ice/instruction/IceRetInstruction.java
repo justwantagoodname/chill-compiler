@@ -10,13 +10,11 @@ public class IceRetInstruction extends IceInstruction {
 
     public IceRetInstruction(IceBlock parent, IceValue retValue) {
         super(parent, IceType.VOID);
-        setInstructionType(InstructionType.RET);
         addOperand(retValue);
     }
 
     public IceRetInstruction(IceBlock parent) {
         super(parent, IceType.VOID);
-        setInstructionType(InstructionType.RET);
     }
 
     public Optional<IceValue> getReturnValue() {

@@ -27,7 +27,6 @@ public class IceBranchInstruction extends IceInstruction {
 
     public IceBranchInstruction(IceBlock parent, IceValue condition, IceBlock trueBlock, IceBlock falseBlock) {
         super(parent, IceType.VOID);
-        setInstructionType(InstructionType.BRANCH);
         Log.should(condition.getType().isBoolean(), "Condition must be boolean");
         this.isConditional = true;
         this.addOperand(condition);
@@ -37,7 +36,6 @@ public class IceBranchInstruction extends IceInstruction {
 
     public IceBranchInstruction(IceBlock parent, IceBlock targetBlock) {
         super(parent, IceType.VOID);
-        setInstructionType(InstructionType.BRANCH);
         this.isConditional = false;
         this.addOperand(targetBlock);
     }
@@ -66,8 +64,4 @@ public class IceBranchInstruction extends IceInstruction {
         return (IceBlock) getOperand(0);
     }
 
-    @Override
-    public String toString() {
-        return getTextIR();
-    }
 }

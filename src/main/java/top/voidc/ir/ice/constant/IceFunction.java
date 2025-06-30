@@ -10,8 +10,9 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
 
 import java.util.*;
+import java.util.function.Consumer;
 
-public class IceFunction extends IceConstant {
+public class IceFunction extends IceConstant implements Iterable<IceBlock> {
     private int tempValueCounter = 0;
     private int blockLabelCounter = 0;
     private final List<IceType> parameterTypes;
@@ -75,29 +76,26 @@ public class IceFunction extends IceConstant {
         return ret;
     }
 
+
+    private void listBlocks(Set<IceBlock> visited, List<IceBlock> result, IceBlock currentBlock) {
+        if (visited.contains(currentBlock)) return;
+        visited.add(currentBlock);
+        currentBlock.successors().forEach(block -> {
+            if (!visited.contains(block)) listBlocks(visited, result, block);
+        });
+        result.add(currentBlock);
+    }
+
     /**
      * Get all blocks in the function.
+     * 以逆后序遍历顺序打印
      * @return 当前函数的所有基本块
      */
     public List<IceBlock> blocks() {
         final var blockSet = new HashSet<IceBlock>();
         final var result = new ArrayList<IceBlock>();
-        final Queue<IceBlock> blockQueue = new ArrayDeque<>();
-        blockQueue.add(entryBlock);
-        result.add(entryBlock);
-        blockSet.add(entryBlock);
-
-        while (!blockQueue.isEmpty()) {
-            final var currentBlock = blockQueue.poll();
-            currentBlock.successors().forEach(block -> {
-                if (!blockSet.contains(block)) {
-                    result.add(block);
-                    blockQueue.add(block);
-                    blockSet.add(block);
-                }
-            });
-        }
-
+        listBlocks(blockSet, result, getEntryBlock());
+        Collections.reverse(result);
         return result;
     }
 
@@ -144,8 +142,11 @@ public class IceFunction extends IceConstant {
                                 .map(IceValue::getReferenceName)
                                 .toList()))
                 .append(") {\n");
-        blocks().forEach(block -> block.getTextIR(builder));
-        builder.append("\n}");
+        blocks().forEach(block -> {
+            block.getTextIR(builder);
+            builder.append("\n");
+        });
+        builder.append("}");
     }
 
     /**
@@ -191,5 +192,15 @@ public class IceFunction extends IceConstant {
         var tokenStream = new CommonTokenStream(new IceLexer(irStream));
         var parser = new IceParser(tokenStream);
         return parser.functionDecl().accept(new FunctionVisitor(environment));
+    }
+
+    /**
+     * Returns an iterator over elements of type {@code T}.
+     *
+     * @return an Iterator.
+     */
+    @Override
+    public Iterator<IceBlock> iterator() {
+        return blocks().iterator();
     }
 }
