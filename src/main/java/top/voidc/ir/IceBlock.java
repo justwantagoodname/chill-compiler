@@ -132,13 +132,13 @@ public class IceBlock extends IceUser implements List<IceInstruction> {
     /**
      * 现在应该直接再最后的终结指令上添加后继基本块，现在添加的后继基本块不会有任何作用
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public void addSuccessor(IceBlock block) {}
 
     /**
      * @see #addSuccessor(IceBlock)
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public void removeSuccessor(IceBlock block) {
     }
 
