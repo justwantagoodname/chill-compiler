@@ -1,15 +1,4 @@
-int long_func() {
-  int ans, i;
-  while (0) {
-    int ml = 1, al = 0, c = 1;
-    while (1) {
-      ans = 0;
-      i = 0;
-    }
-  }
-  return 0;
-}
-
-int main() {
-  return long_func();
+int f(int a, int b) {
+    int c = a + b;
+    return c;
 }
