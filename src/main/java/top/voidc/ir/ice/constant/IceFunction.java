@@ -10,15 +10,29 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 public class IceFunction extends IceConstant implements Iterable<IceBlock> {
+
+    public static class IceFunctionParameter extends IceValue {
+
+        private final IceFunction function;
+
+        public IceFunctionParameter(IceFunction parent, String name, IceType type) {
+            super(name, type);
+            this.function = parent;
+        }
+
+        public IceFunction getFunction() {
+            return function;
+        }
+    }
+
     private int tempValueCounter = 0;
     private int blockLabelCounter = 0;
     private final List<IceType> parameterTypes;
     private IceType returnType;
 
-    private final List<IceValue> parameters;
+    private final List<IceFunctionParameter> parameters;
 
     private IceBlock entryBlock;
 
@@ -44,11 +58,11 @@ public class IceFunction extends IceConstant implements Iterable<IceBlock> {
         return parameterTypes;
     }
 
-    public List<IceValue> getParameters() {
+    public List<IceFunctionParameter> getParameters() {
         return parameters;
     }
 
-    public void addParameter(IceValue parameter) {
+    public void addParameter(IceFunctionParameter parameter) {
         parameters.add(parameter);
         parameterTypes.add(parameter.getType());
     }

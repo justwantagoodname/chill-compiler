@@ -38,7 +38,7 @@ public class ControlInstructionPattern {
         @Override
         public IceMachineRegister emit(InstructionSelector selector, IceValue value) {
             var ret = (IceRetInstruction) value;
-            selector.emit(ret.getReturnValue().get());
+            selector.emit(ret.getReturnValue().orElseThrow());
             var instr1 = new ARM64Instruction("MOV w0, x");
             var instr2 = new ARM64Instruction("RET");
             selector.addEmittedInstruction(instr1);
