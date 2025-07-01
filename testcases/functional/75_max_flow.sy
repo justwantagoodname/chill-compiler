@@ -72,6 +72,7 @@ int max_flow(int s, int t)
             return flow;
         flow = flow + f;
     }
+    return flow; // 后面添加和希冀原版不同
 }
 
 int main()
