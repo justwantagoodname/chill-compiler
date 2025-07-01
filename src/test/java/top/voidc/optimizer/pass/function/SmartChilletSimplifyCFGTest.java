@@ -69,7 +69,7 @@ public class SmartChilletSimplifyCFGTest {
     private static IceFunction createUnusedParameter() {
         IceFunction function = new IceFunction("testFunction");
         function.setReturnType(IceType.VOID);
-        IceValue a = new IceValue("a", IceType.I32);
+        var a = new IceFunction.IceFunctionParameter(function, "a", IceType.I32);
         function.addParameter(a);
 
         IceBlock entry = function.getEntryBlock();
