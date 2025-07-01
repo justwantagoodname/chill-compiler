@@ -26,7 +26,7 @@ public class GlobalValueNumbering implements CompilePass<IceFunction> {
     /** 用于作用域管理的栈
      * 由 LinkedList 实现，新入栈的元素位于第 0 个
      */
-    private class ExpressionTableStack {
+    private static class ExpressionTableStack {
         LinkedList<Hashtable<Integer, IceInstruction>> stack = new LinkedList<>();
 
         void pushScope() {
