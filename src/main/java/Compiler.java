@@ -37,6 +37,11 @@ public class Compiler {
     }
 
     public void compile() throws IOException {
+        final var passManager = getPassManager();
+        this.compile(passManager);
+    }
+
+    public void compile(PassManager passManager) throws IOException {
         context.setCurrentIR(new IceUnit(Flag.get("source")));
         IRGenerator generator = new IRGenerator(context);
         parseLibSource(context);
@@ -45,7 +50,6 @@ public class Compiler {
         parseSource(context);
         generator.generateIR();
 
-        final var passManager = getPassManager();
         // TODO: 后续添加O0 O1的组
         passManager.addDisableGroup("needfix");
         passManager.runAll();
@@ -56,6 +60,7 @@ public class Compiler {
         assemblyBuilder.writeRaw(context.getCurrentIR().toString());
         assemblyBuilder.close();
     }
+
 
     /**
      * 设置 Pass 的执行顺序
