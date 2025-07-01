@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  * 对函数中的每一个基本块进行指令选择
  * 然后替换掉原有指令
  */
-@Pass(group = {"O0", "needfix"})
+@Pass(group = {"O0"})
 public class InstructionSelectionPass implements CompilePass<IceFunction> {
     private final IceContext context;
 

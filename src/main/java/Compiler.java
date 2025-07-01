@@ -79,7 +79,7 @@ public class Compiler {
             pm.runPass(RenameVariable.class);
             pm.runPass(LivenessAnalysis.class);
             pm.runPass(ShowIR.class);
-            pm.runPass(InstructionSelectionPass.class);
+//            pm.runPass(InstructionSelectionPass.class);
         });
         return passManager;
     }
