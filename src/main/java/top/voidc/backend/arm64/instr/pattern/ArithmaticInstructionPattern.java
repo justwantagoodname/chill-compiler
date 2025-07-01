@@ -23,7 +23,7 @@ public class ArithmaticInstructionPattern {
         @Override
         public IceMachineRegister emit(InstructionSelector selector, IceValue value) {
             // x + y = dst
-            var inst = new ARM64Instruction("ADD dst, x, y"); // TODO: add operand
+            var inst = new ARM64Instruction("ADD {dst}, {x}, {y}"); // TODO: add operand
             selector.addEmittedInstruction(inst);
             return inst.getResultReg();
         }
@@ -54,8 +54,8 @@ public class ArithmaticInstructionPattern {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             return value instanceof IceBinaryInstruction.Mul mulNode
-                    && mulNode.getLhs() instanceof IceInstruction
-                    && mulNode.getRhs() instanceof IceInstruction;
+                    && isReg(mulNode.getLhs())
+                    && isReg(mulNode.getRhs());
         }
     }
 

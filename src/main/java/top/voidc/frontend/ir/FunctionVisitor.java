@@ -5,11 +5,8 @@ import top.voidc.frontend.parser.IceParser;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
-import top.voidc.ir.ice.type.IceType;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class FunctionVisitor extends IceBaseVisitor<IceFunction> {
@@ -41,7 +38,7 @@ public class FunctionVisitor extends IceBaseVisitor<IceFunction> {
         for (var i = 0; i < ctx.IDENTIFIER().size(); i++) {
             var paramType = typeVisitor.visit(ctx.type(i + 1)); // +1跳过返回类型
             var paramName = ctx.IDENTIFIER(i).getText().substring(1); // 去掉%前缀
-            var param = new IceValue(paramName, paramType);
+            var param = new IceFunction.IceFunctionParameter(function, paramName, paramType);
             function.addParameter(param);
             environment.put(paramName, param);
         }
