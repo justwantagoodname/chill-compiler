@@ -23,7 +23,11 @@ public class ArithmaticInstructionPattern {
         @Override
         public IceMachineRegister emit(InstructionSelector selector, IceValue value) {
             // x + y = dst
-            var inst = new ARM64Instruction("ADD {dst}, {x}, {y}"); // TODO: add operand
+            var addInstr = (IceBinaryInstruction.Add) value;
+            var xReg = selector.emit(addInstr.getLhs());
+            var yReg = selector.emit(addInstr.getRhs());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var inst = new ARM64Instruction("ADD {dst}, {x}, {y}", dstReg, xReg, yReg); // TODO: add operand
             selector.addEmittedInstruction(inst);
             return inst.getResultReg();
         }

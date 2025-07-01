@@ -17,7 +17,17 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
 
     private final Map<IceValue, IceMachineRegister> valueToVRegMap = new HashMap<>();
 
-    public abstract IceMachineRegister getVirtualRegisterForValue(IceValue value);
+    public abstract void bindVirtualRegisterToValue(IceValue value, IceMachineRegister register);
 
-    public abstract IceMachineRegister getVirtualRegisterForValue(IceValue value, IceType registerType);
+    public abstract void bindPhysicalRegisterToValue(IceValue value, IceMachineRegister register);
+
+    public abstract IceMachineRegister getRegisterForValue(IceValue value);
+
+    public abstract IceMachineRegister allocatePhysicalRegister(String name, IceType type);
+
+    public abstract IceMachineRegister allocateVirtualRegister(String name, IceType type);
+
+    public abstract IceMachineRegister allocateVirtualRegister(IceType type);
+
+    public abstract IceMachineRegister getReturnRegister(IceType type);
 }

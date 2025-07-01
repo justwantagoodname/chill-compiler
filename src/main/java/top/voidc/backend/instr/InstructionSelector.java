@@ -42,6 +42,10 @@ public class InstructionSelector {
         return iceFunction;
     }
 
+    public IceMachineFunction getMachineFunction() {
+        return machineFunction;
+    }
+
     /**
      * 将IceUnit中的每个函数进行执行选择
      * @return 匹配结果，如果是null代码匹配失败

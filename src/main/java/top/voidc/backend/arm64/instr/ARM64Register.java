@@ -4,8 +4,12 @@ import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
 
 public class ARM64Register extends IceMachineRegister {
-    public ARM64Register(String name, IceType type, String asmTemplate) {
-        super(name, type, asmTemplate);
+    public ARM64Register(String name, IceType type) {
+        super(name, type);
+    }
+
+    public ARM64Register(String name, IceType type, boolean isVirtualize) {
+        super(name, type, isVirtualize);
     }
 
     @Override
