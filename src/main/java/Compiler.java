@@ -68,7 +68,10 @@ public class Compiler {
             pm.runPass(ScalarReplacementOfAggregates.class);
             pm.runPass(Mem2Reg.class);
             pm.runPass(SmartChilletSimplifyCFG.class);
+            pm.runPass(ShowIR.class);
             pm.untilStable(
+                    GlobalValueNumbering.class,
+                    ShowIR.class,
                     SparseConditionalConstantPropagation.class,
                     ShowIR.class,
                     SmartChilletSimplifyCFG.class,
