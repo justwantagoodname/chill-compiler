@@ -7,7 +7,6 @@ import top.voidc.ir.ice.instruction.IceBinaryInstruction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 
 import top.voidc.ir.ice.type.IcePtrType;
-import top.voidc.ir.ice.type.IceType;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.optimizer.pass.DominatorTree;
 
@@ -15,6 +14,7 @@ import top.voidc.misc.annotation.Pass;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.LinkedList;
 
 /**
  * GVN - 全局值编号
@@ -23,6 +23,35 @@ import java.util.Hashtable;
  */
 @Pass
 public class GlobalValueNumbering implements CompilePass<IceFunction> {
+    /** 用于作用域管理的栈
+     * 由 LinkedList 实现，新入栈的元素位于第 0 个
+     */
+    private static class ExpressionTableStack {
+        LinkedList<Hashtable<Integer, IceInstruction>> stack = new LinkedList<>();
+
+        void pushScope() {
+            stack.addFirst(new Hashtable<>());
+        }
+
+        void popScope() {
+            stack.removeFirst();
+        }
+
+        void put(int hash, IceInstruction expr) {
+            stack.getFirst().put(hash, expr);
+        }
+
+        IceInstruction get(int key) {
+            for (var table : stack) {
+                if (table.containsKey(key)) {
+                    return table.get(key);
+                }
+            }
+
+            return null;
+        }
+    }
+
     private static int hashCombine(int seed, int val) {
         seed ^= val + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         return seed;
@@ -36,7 +65,7 @@ public class GlobalValueNumbering implements CompilePass<IceFunction> {
      */
     private static int getCanonicalHash(IceValue val) {
         if (val instanceof IceConstantData data) {
-            int result = 0;
+            int result;
             switch (data) {
                 case IceConstantInt i -> result = ("const int" + i.getValue()).hashCode();
                 case IceConstantBoolean b -> result = ("const bool" + b.getValue()).hashCode();
@@ -89,28 +118,43 @@ public class GlobalValueNumbering implements CompilePass<IceFunction> {
         return h;
     }
 
-    @Override
-    public boolean run(IceFunction target) {
-        DominatorTree dominatorTree = new DominatorTree(target);
-        // 哈希值到指令的映射
-        Hashtable<Integer, IceInstruction> exprTable = new Hashtable<>();
-        // 经过这次 GVN 之后可以被替换的表达式
-        ArrayList<IceInstruction> deletedExprs = new ArrayList<>();
+    private DominatorTree dominatorTree = null;
+    private ArrayList<IceInstruction> deletedExprs = null;
+    ExpressionTableStack exprTable = null;
 
-        for (IceBlock block : target.getBlocks()) {
-            for (IceInstruction instr : block) {
-                if (instr instanceof IceBinaryInstruction binary) {
-                    int key = hashBinaryExpression(binary);
+    private void visitBasicBlock(IceBlock block) {
+        exprTable.pushScope();
 
-                    if (exprTable.containsKey(key)) {
-                        binary.replaceAllUsesWith(exprTable.get(key));
-                        deletedExprs.add(binary);
-                    } else {
-                        exprTable.put(key, instr);
-                    }
+        for (IceInstruction instr : block) {
+            if (instr instanceof IceBinaryInstruction binary) {
+                int key = hashBinaryExpression(binary);
+
+                var instead = exprTable.get(key);
+                if (instead != null) {
+                    binary.replaceAllUsesWith(instead);
+                    deletedExprs.add(binary);
+                } else {
+                    exprTable.put(key, instr);
                 }
             }
         }
+
+        for (IceBlock next : dominatorTree.getDominatees(block)) {
+            visitBasicBlock(next);
+        }
+
+        exprTable.popScope();
+    }
+
+    @Override
+    public boolean run(IceFunction target) {
+        dominatorTree = new DominatorTree(target);
+        // 哈希值到指令的映射
+        exprTable = new ExpressionTableStack();
+        // 经过这次 GVN 之后可以被替换的表达式
+        deletedExprs = new ArrayList<>();
+
+        visitBasicBlock(target.getEntryBlock());
 
         for (IceInstruction instr : deletedExprs) {
             instr.destroy();
