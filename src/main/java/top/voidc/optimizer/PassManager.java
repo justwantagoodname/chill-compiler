@@ -9,6 +9,7 @@ import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
+import top.voidc.optimizer.pass.unit.Feeler;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -196,5 +197,12 @@ public class PassManager {
                     .map(this::runPass)
                     .reduce(false, (a, b) -> a || b);
         } while (flag);
+    }
+
+    public final void feeler(String name){
+        final var feeler = new Feeler();
+        feeler.setFeelerName(name);
+
+        feeler.run(context.getCurrentIR());
     }
 }
