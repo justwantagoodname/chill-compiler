@@ -7,17 +7,14 @@ import top.voidc.ir.ice.instruction.IceBinaryInstruction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 
 import top.voidc.ir.ice.type.IcePtrType;
-import top.voidc.ir.ice.type.IceType;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.optimizer.pass.DominatorTree;
 
 import top.voidc.misc.annotation.Pass;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.LinkedList;
-import java.util.Stack;
 
 /**
  * GVN - 全局值编号
@@ -68,7 +65,7 @@ public class GlobalValueNumbering implements CompilePass<IceFunction> {
      */
     private static int getCanonicalHash(IceValue val) {
         if (val instanceof IceConstantData data) {
-            int result = 0;
+            int result;
             switch (data) {
                 case IceConstantInt i -> result = ("const int" + i.getValue()).hashCode();
                 case IceConstantBoolean b -> result = ("const bool" + b.getValue()).hashCode();
