@@ -29,7 +29,7 @@ public class InstructionSelectionPass implements CompilePass<IceFunction> {
 
     @Override
     public boolean run(IceFunction target) {
-        var machineFunction = new ARM64Function(target.getName());
+        var machineFunction = new ARM64Function(target);
 
         var blocks = target.blocks();
         for (var block : blocks) {
