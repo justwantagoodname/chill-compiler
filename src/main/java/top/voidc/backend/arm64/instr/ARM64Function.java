@@ -101,7 +101,8 @@ public class ARM64Function extends IceMachineFunction {
     public IceMachineRegister allocateVirtualRegister(IceType type) {
         return switch (type.getTypeEnum()) {
             case I32 -> allocateVirtualRegister("virt_w" + integerRegCount++, IceType.I32);
-            case F32 -> allocateVirtualRegister("virt_s" + integerRegCount++, IceType.F32);
+            case F64 ->  allocateVirtualRegister("virt_x" + integerRegCount++, IceType.F64);
+            case F32 -> allocateVirtualRegister("virt_s" + floatRegCount++, IceType.F32);
             default -> throw new IllegalArgumentException("Wrong type!");
         };
     }
@@ -109,7 +110,8 @@ public class ARM64Function extends IceMachineFunction {
     @Override
     public IceMachineRegister getReturnRegister(IceType type) {
         return switch (type.getTypeEnum()) {
-            case I32 -> allocatePhysicalRegister("x0", IceType.I32);
+            case I32 -> allocatePhysicalRegister("w0", IceType.I32);
+            case I64 -> allocateVirtualRegister("x0", IceType.I64);
             case F32 -> allocatePhysicalRegister("s0", IceType.F32);
             default -> throw new IllegalArgumentException("Wrong type!");
         };
