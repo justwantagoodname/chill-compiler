@@ -27,7 +27,7 @@ public class ArithmaticInstructionPattern {
             var xReg = selector.emit(addInstr.getLhs());
             var yReg = selector.emit(addInstr.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
-            var inst = new ARM64Instruction("ADD {dst}, {x}, {y}", dstReg, xReg, yReg); // TODO: add operand
+            var inst = new ARM64Instruction("ADD {dst}, {x}, {y}", dstReg, xReg, yReg);
             selector.addEmittedInstruction(inst);
             return inst.getResultReg();
         }
@@ -50,7 +50,11 @@ public class ArithmaticInstructionPattern {
         @Override
         public IceMachineRegister emit(InstructionSelector selector, IceValue value) {
             // x * y -> dst
-            var inst = new ARM64Instruction("MUL dst, x, y");
+            var mulInstr = (IceBinaryInstruction.Mul) value;
+            var xReg = selector.emit(mulInstr.getLhs());
+            var yReg = selector.emit(mulInstr.getRhs());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var inst = new ARM64Instruction("MUL {dst}, {x}, {y}", dstReg, xReg, yReg);
             selector.addEmittedInstruction(inst);
             return inst.getResultReg();
         }
@@ -70,9 +74,39 @@ public class ArithmaticInstructionPattern {
         }
 
         @Override
+        public int getCost(InstructionSelector selector, IceValue value) {
+            var cost = 1;
+            var addInstr = (IceBinaryInstruction.Add) value;
+            if (addInstr.getLhs() instanceof IceBinaryInstruction.Mul mulNode) {
+                cost += selector.select(addInstr.getRhs()).cost();
+                cost += selector.select(mulNode.getLhs()).cost();
+                cost += selector.select(mulNode.getRhs()).cost();
+            } else {
+                var mulNode = (IceBinaryInstruction.Mul) addInstr.getRhs();
+                cost += selector.select(addInstr.getLhs()).cost();
+                cost += selector.select(mulNode.getLhs()).cost();
+                cost += selector.select(mulNode.getRhs()).cost();
+            }
+            return cost;
+        }
+
+        @Override
         public IceMachineRegister emit(InstructionSelector selector, IceValue value) {
             // x * y + z -> dst
-            var inst = new ARM64Instruction("MADD dst, x, y, z");
+            var addInstr = (IceBinaryInstruction.Add) value;
+            IceMachineRegister xReg, yReg, zReg;
+            if (addInstr.getLhs() instanceof IceBinaryInstruction.Mul mulNode) {
+                zReg = selector.emit(addInstr.getRhs());
+                xReg = selector.emit(mulNode.getLhs());
+                yReg = selector.emit(mulNode.getRhs());
+            } else {
+                var mulNode = (IceBinaryInstruction.Mul) addInstr.getRhs();
+                zReg = selector.emit(addInstr.getLhs());
+                xReg = selector.emit(mulNode.getLhs());
+                yReg = selector.emit(mulNode.getRhs());
+            }
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var inst = new ARM64Instruction("MADD {dst}, {x}, {y}, {z}", dstReg, xReg, yReg, zReg);
             selector.addEmittedInstruction(inst);
             return inst.getResultReg();
         }
@@ -80,8 +114,8 @@ public class ArithmaticInstructionPattern {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             if (value instanceof IceBinaryInstruction.Add addNode) {
-                return (addNode.getLhs() instanceof IceBinaryInstruction.Mul && addNode.getRhs() instanceof IceInstruction)
-                        || (addNode.getRhs() instanceof IceBinaryInstruction.Mul && addNode.getLhs() instanceof IceInstruction);
+                return (addNode.getLhs() instanceof IceBinaryInstruction.Mul && isReg(addNode.getRhs()))
+                        || (addNode.getRhs() instanceof IceBinaryInstruction.Mul && isReg(addNode.getLhs()));
             }
             return false;
         }
