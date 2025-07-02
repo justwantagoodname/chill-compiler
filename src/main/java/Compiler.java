@@ -1,6 +1,7 @@
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import top.voidc.backend.instr.InstructionSelectionPass;
 import top.voidc.frontend.parser.SysyLexer;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.frontend.translator.IRGenerator;
@@ -78,12 +79,12 @@ public class Compiler {
                     GlobalValueNumbering.class,
                     ShowIR.class,
                     SparseConditionalConstantPropagation.class,
-                    ShowIR.class,
-                    SmartChilletSimplifyCFG.class,
-                    ShowIR.class
+                    SmartChilletSimplifyCFG.class
             );
             pm.runPass(RenameVariable.class);
             pm.runPass(LivenessAnalysis.class);
+            pm.runPass(ShowIR.class);
+            pm.runPass(InstructionSelectionPass.class);
         });
         return passManager;
     }

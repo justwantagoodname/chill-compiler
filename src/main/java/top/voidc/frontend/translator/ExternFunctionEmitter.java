@@ -6,14 +6,12 @@ import top.voidc.ir.IceContext;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceExternFunction;
-import top.voidc.ir.ice.instruction.IceAllocaInstruction;
+import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
-import top.voidc.misc.Log;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class ExternFunctionEmitter extends FunctionEmitter {
 
@@ -51,7 +49,7 @@ public class ExternFunctionEmitter extends FunctionEmitter {
     }
 
     @Override
-    public IceValue visitFuncPrototypeParam(SysyParser.FuncPrototypeParamContext ctx) {
+    public IceFunction.IceFunctionParameter visitFuncPrototypeParam(SysyParser.FuncPrototypeParamContext ctx) {
         final var typeLiteral = ctx.primitiveType().getText();
         final var name = ctx.Ident() == null ? null : ctx.Ident().getText();
         final var arraySize = new ArrayList<Integer>();
@@ -72,6 +70,7 @@ public class ExternFunctionEmitter extends FunctionEmitter {
             throw new CompilationException("Function parameter cannot be void", ctx, context);
         }
 
-        return new IceValue(name == null ? externFunction.generateLocalValueName() : name, type);
+        return new IceFunction.IceFunctionParameter(externFunction,
+                name == null ? externFunction.generateLocalValueName() : name, type);
     }
 }

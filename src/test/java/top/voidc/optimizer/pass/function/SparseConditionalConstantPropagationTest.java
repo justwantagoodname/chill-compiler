@@ -64,8 +64,8 @@ public class SparseConditionalConstantPropagationTest {
     private static IceFunction createComplexFunction() {
         IceFunction function = new IceFunction("testFunction");
         function.setReturnType(IceType.I32);
-        IceValue a = new IceValue("a", IceType.I32);
-        IceValue b = new IceValue("b", IceType.I32);
+        var a = new IceFunction.IceFunctionParameter(function, "a", IceType.I32);
+        var b = new IceFunction.IceFunctionParameter(function, "b", IceType.I32);
         function.addParameter(a);
         function.addParameter(b);
 
@@ -132,8 +132,8 @@ public class SparseConditionalConstantPropagationTest {
     private static IceFunction createReallyComplexBranch() {
         IceFunction function = new IceFunction("testFunction");
         function.setReturnType(IceType.I32);
-        IceValue a = new IceValue("a", IceType.I32);
-        IceValue b = new IceValue("b", IceType.I32);
+        var a = new IceFunction.IceFunctionParameter(function, "a", IceType.I32);
+        var b = new IceFunction.IceFunctionParameter(function, "b", IceType.I32);
         function.addParameter(a);
         function.addParameter(b);
 
