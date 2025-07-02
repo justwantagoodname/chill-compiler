@@ -21,7 +21,7 @@ public class InstructionSelectionPass implements CompilePass<IceFunction> {
     private final IceContext context;
 
     // TODO: 改为动态注入
-    private final Collection<InstructionPattern> patternPack = new ARM64InstructionPatternPack().getPatternPack();
+    private final Collection<InstructionPattern<?>> patternPack = new ARM64InstructionPatternPack().getPatternPack();
 
     public InstructionSelectionPass(IceContext context) {
         this.context = context;
