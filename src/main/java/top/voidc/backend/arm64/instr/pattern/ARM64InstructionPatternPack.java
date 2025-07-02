@@ -11,6 +11,7 @@ public class ARM64InstructionPatternPack implements InstructionPack {
 
     static {
         patternSet.add(new ArithmaticInstructionPattern.ADDTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.ADDImm());
         patternSet.add(new ArithmaticInstructionPattern.MULTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.MADDInstruction());
         patternSet.add(new ControlInstructionPattern.RetVoid());
