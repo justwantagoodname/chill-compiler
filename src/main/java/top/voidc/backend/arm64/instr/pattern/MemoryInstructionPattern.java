@@ -1,6 +1,5 @@
 package top.voidc.backend.arm64.instr.pattern;
 
-import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.backend.instr.InstructionPattern;
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
@@ -19,17 +18,23 @@ public class MemoryInstructionPattern {
         }
 
         @Override
+        public int getCost(InstructionSelector selector, IceValue value) {
+            final var paramReg = selector.getMachineFunction().getRegisterForValue(value);
+            if (paramReg == null) {
+                // TODO: 内存参数的需要load
+                throw new UnsupportedOperationException();
+            }
+            return 0;
+        }
+
+        @Override
         public IceMachineRegister emit(InstructionSelector selector, IceValue value) {
             final var paramReg = selector.getMachineFunction().getRegisterForValue(value);
             if (paramReg == null) {
                 // TODO: 内存参数的需要load
                 throw new UnsupportedOperationException();
             }
-            final var dstReg = selector.getMachineFunction().allocateVirtualRegister(value.getType());
-            final var inst = new ARM64Instruction("MOV {dst}, {x}", dstReg, paramReg);
-
-            selector.addEmittedInstruction(inst);
-            return inst.getResultReg();
+            return paramReg;
         }
 
         @Override
