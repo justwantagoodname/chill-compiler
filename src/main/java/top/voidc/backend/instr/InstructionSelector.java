@@ -87,11 +87,6 @@ public class InstructionSelector {
             return costCache.get(value);
         }
 
-        // 常量和参数等非指令值，通常有一种“加载”模式来处理
-        if (!(value instanceof IceInstruction)) {
-            // 假设有处理常量/参数的模式
-        }
-
         var currentCost = Integer.MAX_VALUE;
         InstructionPattern currentPattern = null;
 
