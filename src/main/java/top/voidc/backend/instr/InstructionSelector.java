@@ -148,8 +148,9 @@ public class InstructionSelector {
     /**
      * 在emit内部被InstructionPattern调用，用于将生成的指令添加到最终列表中
      */
-    public void addEmittedInstruction(IceMachineInstruction instruction) {
+    public IceMachineInstruction addEmittedInstruction(IceMachineInstruction instruction) {
         this.emittedInstructions.add(instruction);
+        return instruction;
     }
 
 

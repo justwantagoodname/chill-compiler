@@ -17,6 +17,7 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ControlInstructionPattern.RetInteger());
         patternSet.add(new LoadAndStorePattern.LoadRegFuncParam());
         patternSet.add(new LoadAndStorePattern.LoadIntImmediateToReg());
+        patternSet.add(new LoadAndStorePattern.LoadIntZeroToReg());
     }
 
     @Override
