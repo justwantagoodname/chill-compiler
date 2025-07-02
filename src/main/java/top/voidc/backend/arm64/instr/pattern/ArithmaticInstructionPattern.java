@@ -8,8 +8,8 @@ import top.voidc.ir.ice.instruction.IceBinaryInstruction;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
 
+import static top.voidc.ir.machine.InstructionSelectUtil.canBeReg;
 import static top.voidc.ir.machine.InstructionSelectUtil.commutativePredicate;
-import static top.voidc.ir.machine.InstructionSelectUtil.isReg;
 
 public class ArithmaticInstructionPattern {
 
@@ -33,8 +33,8 @@ public class ArithmaticInstructionPattern {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             return value instanceof IceBinaryInstruction.Add addNode
-                    && isReg(addNode.getLhs())
-                    && isReg(addNode.getRhs());
+                    && canBeReg(selector, addNode.getLhs())
+                    && canBeReg(selector, addNode.getRhs());
         }
 
     }
@@ -59,8 +59,8 @@ public class ArithmaticInstructionPattern {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             return value instanceof IceBinaryInstruction.Mul mulNode
-                    && isReg(mulNode.getLhs())
-                    && isReg(mulNode.getRhs());
+                    && canBeReg(selector, mulNode.getLhs())
+                    && canBeReg(selector, mulNode.getRhs());
         }
     }
 
@@ -110,7 +110,7 @@ public class ArithmaticInstructionPattern {
         public boolean test(InstructionSelector selector, IceValue value) {
             if (value instanceof IceBinaryInstruction.Add addNode) {
                 return commutativePredicate(addNode,
-                        (lhs, rhs) -> lhs instanceof IceBinaryInstruction.Mul && isReg(rhs));
+                        (lhs, rhs) -> lhs instanceof IceBinaryInstruction.Mul && canBeReg(selector, rhs));
             }
             return false;
         }
