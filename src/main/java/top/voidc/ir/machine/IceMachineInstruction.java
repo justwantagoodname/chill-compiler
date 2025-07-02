@@ -95,6 +95,11 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
                     var intValue = ((IceConstantInt) operand).getValue();
                     yield "#" + (intValue & 0xFFFF);
                 }
+                case "imm12" -> {
+                    assert operand instanceof IceConstantInt;
+                    var intValue = ((IceConstantInt) operand).getValue();
+                    yield "#" + (intValue & 0xFFF);
+                }
                 case "imm8" -> {
                     assert operand instanceof IceConstantInt;
                     var intValue = ((IceConstantInt) operand).getValue();
