@@ -71,7 +71,7 @@ public class LoadAndStorePattern {
             // TODO：充分利用movz movz
             final var constValue = (int) value.getValue();
             final var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
-            if (isImm16(value)) {
+            if (!isImm16(value)) {
                 var lowBit = constValue & 0xFFFF;
                 var highBit = constValue >> 16;
                 selector.addEmittedInstruction(new ARM64Instruction("MOVZ {dst}, {imm16:x}", dstReg, IceConstantData.create(lowBit)));
