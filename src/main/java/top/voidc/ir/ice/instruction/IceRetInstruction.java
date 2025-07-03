@@ -40,4 +40,9 @@ public class IceRetInstruction extends IceInstruction {
     public String toString() {
         return getTextIR();
     }
+
+    @Override
+    public boolean isTerminal() {
+        return true;
+    }
 }
