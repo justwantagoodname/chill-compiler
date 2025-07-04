@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import top.voidc.ir.ice.constant.IceExternFunction;
 
 public class Feeler implements CompilePass<IceUnit> {
     static public Map<String, Object> detected = new HashMap<>();
@@ -55,6 +56,10 @@ public class Feeler implements CompilePass<IceUnit> {
             // 直接处理传入的target单元
             var functions = target.getFunctions();
             functions.forEach(func -> {
+                if(functions.getClass().isAssignableFrom(IceExternFunction.class)){
+                    return;
+                }
+
                 List<IceBlock> blocks = func.blocks();
                 String funcName = func.getName();
 
