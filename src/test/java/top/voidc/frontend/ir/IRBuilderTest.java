@@ -406,6 +406,33 @@ public class IRBuilderTest {
         callInstr.destroy();
     }
 
+    @Test
     public void parserPhiPostValue() {
+        var function = IceFunction.fromTextIR("""
+                define i32 @main() {
+                entry:
+                	br label %while.cond
+                while.cond:
+                	%1 = phi i32 [ 0, %entry ], [ %2, %while.body ]
+                	br i1 false, label %while.body, label %while.end
+                while.body:
+                	%2 = add i32 %1, 1
+                	br label %while.cond
+                while.end:
+                	ret i32 %1
+                }
+                """);
+
+        var condBlock = function.blocks().stream().filter(block -> block.getName().equals("while.cond"))
+                                    .findFirst().orElseThrow();
+        var firstInstr = condBlock.getFirst();
+
+        assertInstanceOf(IcePHINode.class, firstInstr);
+
+        var phiInstr = (IcePHINode) firstInstr;
+
+        assertEquals(2, phiInstr.getBranchCount());
+        assertEquals("%1 = phi i32 [ 0, %entry ], [ %2, %while.body ]", phiInstr.toString());
+
     }
 }
