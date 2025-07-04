@@ -6,6 +6,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,13 +54,18 @@ public class FunctionVisitor extends IceBaseVisitor<IceFunction> {
             }
         }
 
+        var postActions = new ArrayList<Runnable>();
+
         // 5. 第二轮：处理所有基本块的指令
         for (var blockCtx : ctx.functionBody().basicBlock()) {
             var blockName = blockCtx.NAME().getText();
             var block = (IceBlock) environment.get(blockName);
             var blockVisitor = new IceBlockVisitor(function, this.environment, block);
             blockVisitor.visit(blockCtx);
+            postActions.addAll(blockVisitor.getPostProcessActions());
         }
+
+        postActions.forEach(Runnable::run);
 
         return function;
     }

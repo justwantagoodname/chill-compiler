@@ -7,6 +7,8 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class IceBlockVisitor extends IceBaseVisitor<IceBlock> {
@@ -14,6 +16,11 @@ public class IceBlockVisitor extends IceBaseVisitor<IceBlock> {
     private final IceFunction function;
     private final Map<String, IceValue> environment;
     private IceBlock currentBlock;
+    private final List<Runnable> postProcessActions = new ArrayList<>();
+
+    public List<Runnable> getPostProcessActions() {
+        return postProcessActions;
+    }
 
     public IceBlockVisitor(IceFunction parentFunction, Map<String, IceValue> environment) {
         this.function = parentFunction;
@@ -39,17 +46,18 @@ public class IceBlockVisitor extends IceBaseVisitor<IceBlock> {
             environment.put(blockName, currentBlock);
         }
         
-        // 创建指令访问器
-        var instrVisitor = new InstructionVisitor(currentBlock, environment);
-        
         // 访问所有普通指令
         for (var instrCtx : ctx.instruction()) {
+            var instrVisitor = new InstructionVisitor(currentBlock, environment);
             var instr = instrVisitor.visit(instrCtx);
             currentBlock.addInstruction(instr);
+            if (instrVisitor.getPostAction() != null) postProcessActions.add(instrVisitor.getPostAction());
         }
         
         // 访问终止指令
+        var instrVisitor = new InstructionVisitor(currentBlock, environment);
         var termInstr = instrVisitor.visit(ctx.terminatorInstr());
+        if (instrVisitor.getPostAction() != null) postProcessActions.add(instrVisitor.getPostAction());
         currentBlock.addInstruction(termInstr);
         
         return currentBlock;
