@@ -55,7 +55,7 @@ public class SmartChilletSimplifyCFGTest {
         StringBuilder actual = new StringBuilder();
         function.getTextIR(actual);
 
-        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
+        Log.d("Before:\n" + before + "\nAfter:\n" + actual);
 
         String expected = """
                 define i32 @testFunction() {

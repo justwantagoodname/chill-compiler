@@ -27,7 +27,7 @@ functionBody
 
 // Basic blocks
 basicBlock
-    : IDENTIFIER ':' instruction* terminatorInstr
+    : NAME ':' instruction* terminatorInstr
     ;
 
 // Instructions

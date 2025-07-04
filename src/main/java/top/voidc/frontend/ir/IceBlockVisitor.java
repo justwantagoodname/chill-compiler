@@ -34,7 +34,7 @@ public class IceBlockVisitor extends IceBaseVisitor<IceBlock> {
         
         // 如果没有预创建的block，则创建新的
         if (currentBlock == null) {
-            var blockName = ctx.IDENTIFIER().getText().substring(1);
+            var blockName = ctx.NAME().getText();
             currentBlock = new IceBlock(function, blockName);
             environment.put(blockName, currentBlock);
         }
