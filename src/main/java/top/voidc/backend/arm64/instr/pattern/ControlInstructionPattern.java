@@ -6,18 +6,17 @@ import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.instruction.IceRetInstruction;
 import top.voidc.ir.ice.type.IceType;
-import top.voidc.ir.machine.IceMachineInstruction;
 import top.voidc.ir.machine.IceMachineRegister;
 
 public class ControlInstructionPattern {
-    public static class RetVoid extends InstructionPattern {
+    public static class RetVoid extends InstructionPattern<IceRetInstruction> {
 
         public RetVoid() {
             super(1);
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceValue value) {
+        public IceMachineRegister emit(InstructionSelector selector, IceRetInstruction value) {
             final var instr = new ARM64Instruction("RET");
             selector.addEmittedInstruction(instr);
             return null;
@@ -29,16 +28,15 @@ public class ControlInstructionPattern {
         }
     }
 
-    public static class RetInteger extends InstructionPattern {
+    public static class RetInteger extends InstructionPattern<IceRetInstruction> {
 
         public RetInteger() {
             super(2);
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceValue value) {
-            var retInstr = (IceRetInstruction) value;
-            var resultReg = selector.emit(retInstr.getReturnValue().orElseThrow());
+        public IceMachineRegister emit(InstructionSelector selector, IceRetInstruction value) {
+            var resultReg = selector.emit(value.getReturnValue().orElseThrow());
 
             var instr1 =
                     new ARM64Instruction("MOV {dst}, {x}", selector.getMachineFunction().getReturnRegister(IceType.I32), resultReg);

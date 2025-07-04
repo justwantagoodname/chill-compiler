@@ -1,3 +1,5 @@
-int madd(int a, int b, int c) {
-    return a * b + c;
+int madd(int a) {
+    int b = a + 4095;
+    int c = a + 4096;
+    return b + c;
 }
