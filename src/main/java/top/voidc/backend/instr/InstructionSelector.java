@@ -17,24 +17,22 @@ public class InstructionSelector {
 
     public record MatchResult(
             int cost,
-            InstructionPattern matchedPattern
+            InstructionPattern<?> matchedPattern
     ) {}
 
     private final IceFunction iceFunction;
     private final IceMachineFunction machineFunction;
-    private final Collection<InstructionPattern> patternPack;
-    private final List<IceMachineInstruction> result;
+    private final Collection<InstructionPattern<?>> patternPack;
     private final Map<IceValue, MatchResult> costCache = new HashMap<>();
     private final IceBlock block;
 
     private final Map<IceValue, IceMachineRegister> valueToVRegMap = new HashMap<>();
     private final List<IceMachineInstruction> emittedInstructions = new ArrayList<>();
 
-    public InstructionSelector(IceFunction function, IceMachineFunction machineFunction, IceBlock block, Collection<InstructionPattern> patternPack) {
+    public InstructionSelector(IceFunction function, IceMachineFunction machineFunction, IceBlock block, Collection<InstructionPattern<?>> patternPack) {
         this.patternPack = patternPack;
         this.iceFunction = function;
         this.machineFunction = machineFunction;
-        this.result = new ArrayList<>();
         this.block = block;
     }
 
@@ -88,12 +86,12 @@ public class InstructionSelector {
         }
 
         var currentCost = Integer.MAX_VALUE;
-        InstructionPattern currentPattern = null;
+        InstructionPattern<?> currentPattern = null;
 
         for (var pattern : patternPack) {
             if (pattern.test(this, value)) {
                 // 计算代价
-                var cost = pattern.getCost(this, value);
+                var cost = pattern.getCostForValue(this, value);
                 if (cost < currentCost) {
                     currentCost = cost;
                     currentPattern = pattern;
@@ -137,7 +135,7 @@ public class InstructionSelector {
         // 为当前指令的输出结果创建一个新的虚拟寄存器
         // 使用模式的emit方法来生成指令
         // emit方法内部会递归调用 selector.emit(operand) 来获取操作数寄存器
-        final var resultReg = match.matchedPattern().emit(this, value);
+        final var resultReg = match.matchedPattern().emitForValue(this, value);
 
         // 缓存结果，将IR值和它的虚拟寄存器关联起来
         if (resultReg != null) {
@@ -150,8 +148,9 @@ public class InstructionSelector {
     /**
      * 在emit内部被InstructionPattern调用，用于将生成的指令添加到最终列表中
      */
-    public void addEmittedInstruction(IceMachineInstruction instruction) {
+    public IceMachineInstruction addEmittedInstruction(IceMachineInstruction instruction) {
         this.emittedInstructions.add(instruction);
+        return instruction;
     }
 
 

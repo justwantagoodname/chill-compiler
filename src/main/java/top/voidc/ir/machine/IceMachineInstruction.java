@@ -2,6 +2,7 @@ package top.voidc.ir.machine;
 
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantData;
+import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IceType;
 
@@ -88,7 +89,24 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
             }
             
             IceValue operand = getOperand(pos);
-            String operandText = operand.getReferenceName();
+            String operandText = switch (entry.getValue().prefix()) {
+                case "imm16" -> {
+                    assert operand instanceof IceConstantInt;
+                    var intValue = ((IceConstantInt) operand).getValue();
+                    yield "#" + (intValue & 0xFFFF);
+                }
+                case "imm12" -> {
+                    assert operand instanceof IceConstantInt;
+                    var intValue = ((IceConstantInt) operand).getValue();
+                    yield "#" + (intValue & 0xFFF);
+                }
+                case "imm8" -> {
+                    assert operand instanceof IceConstantInt;
+                    var intValue = ((IceConstantInt) operand).getValue();
+                    yield "#" + (intValue & 0xFF);
+                }
+                default -> operand.getReferenceName();
+            };
             
             result = result.replace(namedOperand.placeholder(), operandText);
         }
