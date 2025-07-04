@@ -50,3 +50,4 @@ testcases/**/*.exe
 *.a
 *.o
 *.o
+/temp
