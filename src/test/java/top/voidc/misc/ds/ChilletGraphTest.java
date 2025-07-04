@@ -12,9 +12,9 @@ public class ChilletGraphTest {
         g.createNewNode("B");
         g.createNewNode("C");
 
-        g.connectNode("A", "B");
-        g.connectNode("A", "C");
-        g.connectNode("B", "C");
+        g.addEdge("A", "B");
+        g.addEdge("A", "C");
+        g.addEdge("B", "C");
 
         var solution = g.getColors(3);
 

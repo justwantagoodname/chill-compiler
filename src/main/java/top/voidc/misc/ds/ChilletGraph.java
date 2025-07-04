@@ -5,6 +5,11 @@ import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Random;
 
+/**
+ * TODO: 需要更严格地验证实现细节
+ * 疾旋鼬图，支持限制颜色数的最小冲突染色
+ * @param <T> 图上节点保存的数据类型
+ */
 public class ChilletGraph<T> {
     private class Node {
         int color = 0;
@@ -38,7 +43,12 @@ public class ChilletGraph<T> {
         nodes.remove(name);
     }
 
-    public void connectNode(T u, T v) {
+    /**
+     * 添加一条 u 和 v 之间的 双向边
+     * @param u 节点 1
+     * @param v 节点 2
+     */
+    public void addEdge(T u, T v) {
         if (!nodes.containsKey(u)) {
             throw new RuntimeException("Node " + u + " does not exist");
         }
