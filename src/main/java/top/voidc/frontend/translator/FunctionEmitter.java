@@ -119,7 +119,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
             throw new CompilationException("Function parameter cannot be void", ctx, context);
         }
 
-        final var parameter = new IceValue(name, type); // 实际的参数
+        final var parameter = new IceFunction.IceFunctionParameter(context.getCurrentFunction(), name, type); // 实际的参数
 
         context.getCurrentFunction().addParameter(parameter);
 

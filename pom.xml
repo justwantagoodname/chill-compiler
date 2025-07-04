@@ -94,7 +94,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <argLine>-Xss8M -Ddebug=true</argLine>
+                    <argLine>-Xss8M -Ddebug=true -Xmx2G</argLine>
                 </configuration>
             </plugin>
             <plugin>

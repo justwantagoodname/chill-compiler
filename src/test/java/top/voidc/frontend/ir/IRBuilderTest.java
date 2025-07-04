@@ -50,7 +50,7 @@ public class IRBuilderTest {
         // 测试空函数
         var emptyFunc = IceFunction.fromTextIR("""
             define void @empty() {
-                %entry:
+                entry:
                     ret void
             }
             """);
@@ -65,7 +65,7 @@ public class IRBuilderTest {
         // 测试带参数的函数
         var addFunc = IceFunction.fromTextIR("""
             define i32 @add(i32 %a, i32 %b) {
-                %entry:
+                entry:
                     %sum = add i32 %a, %b
                     ret i32 %sum
             }
@@ -92,12 +92,12 @@ public class IRBuilderTest {
         // 测试多基本块函数
         var maxFunc = IceFunction.fromTextIR("""
             define i32 @max(i32 %a, i32 %b) {
-                %entry:
+                entry:
                     %cond = icmp sgt i32 %a, %b
                     br i1 %cond, label %then, label %else
-                %then:
+                then:
                     ret i32 %a
-                %else:
+                else:
                     ret i32 %b
             }
             """);
@@ -111,7 +111,7 @@ public class IRBuilderTest {
         var env = new HashMap<String, IceValue>();
         var funcWithEnv = IceFunction.fromTextIR("""
             define i32 @test(i32 %x) {
-                %entry:
+                entry:
                     ret i32 %x
             }
             """, env);
@@ -128,7 +128,7 @@ public class IRBuilderTest {
         
         // 测试带单条指令的块
         var blockWithInstr = IceBlock.fromTextIR("""
-            %block1:
+            block1:
                 %1 = alloca i32
                 ret void
             """, func);
@@ -140,7 +140,7 @@ public class IRBuilderTest {
         // 测试带多条指令和跳转的块
         var nextBlock = new IceBlock(func, "next");
         var blockWithBranch = IceBlock.fromTextIR("""
-            %block2:
+            block2:
                 %ptr = alloca i32
                 store i32 42, i32* %ptr
                 %val = load i32, i32* %ptr
@@ -156,7 +156,7 @@ public class IRBuilderTest {
         var thenBlock = new IceBlock(func, "then");
         var elseBlock = new IceBlock(func, "else"); 
         var blockWithCond = IceBlock.fromTextIR("""
-            %block3:
+            block3:
                 %cond = icmp slt i32 %a, %b
                 br i1 %cond, label %then, label %else
             """, func, env(
@@ -404,5 +404,35 @@ public class IRBuilderTest {
         alloc1.destroy();
         load1.destroy();
         callInstr.destroy();
+    }
+
+    @Test
+    public void parserPhiPostValue() {
+        var function = IceFunction.fromTextIR("""
+                define i32 @main() {
+                entry:
+                	br label %while.cond
+                while.cond:
+                	%1 = phi i32 [ 0, %entry ], [ %2, %while.body ]
+                	br i1 false, label %while.body, label %while.end
+                while.body:
+                	%2 = add i32 %1, 1
+                	br label %while.cond
+                while.end:
+                	ret i32 %1
+                }
+                """);
+
+        var condBlock = function.blocks().stream().filter(block -> block.getName().equals("while.cond"))
+                                    .findFirst().orElseThrow();
+        var firstInstr = condBlock.getFirst();
+
+        assertInstanceOf(IcePHINode.class, firstInstr);
+
+        var phiInstr = (IcePHINode) firstInstr;
+
+        assertEquals(2, phiInstr.getBranchCount());
+        assertEquals("%1 = phi i32 [ 0, %entry ], [ %2, %while.body ]", phiInstr.toString());
+
     }
 }

@@ -409,7 +409,7 @@ public class IceParser extends Parser {
 			setState(107);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==IDENTIFIER) {
+			while (_la==NAME) {
 				{
 				{
 				setState(104);
@@ -437,7 +437,7 @@ public class IceParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class BasicBlockContext extends ParserRuleContext {
-		public TerminalNode IDENTIFIER() { return getToken(IceParser.IDENTIFIER, 0); }
+		public TerminalNode NAME() { return getToken(IceParser.NAME, 0); }
 		public TerminatorInstrContext terminatorInstr() {
 			return getRuleContext(TerminatorInstrContext.class,0);
 		}
@@ -466,7 +466,7 @@ public class IceParser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(112);
-			match(IDENTIFIER);
+			match(NAME);
 			setState(113);
 			match(T__9);
 			setState(117);
@@ -2305,7 +2305,7 @@ public class IceParser extends Parser {
 		"\u0000ih\u0001\u0000\u0000\u0000jm\u0001\u0000\u0000\u0000ki\u0001\u0000"+
 		"\u0000\u0000kl\u0001\u0000\u0000\u0000ln\u0001\u0000\u0000\u0000mk\u0001"+
 		"\u0000\u0000\u0000no\u0005\t\u0000\u0000o\t\u0001\u0000\u0000\u0000pq"+
-		"\u0005J\u0000\u0000qu\u0005\n\u0000\u0000rt\u0003\f\u0006\u0000sr\u0001"+
+		"\u0005I\u0000\u0000qu\u0005\n\u0000\u0000rt\u0003\f\u0006\u0000sr\u0001"+
 		"\u0000\u0000\u0000tw\u0001\u0000\u0000\u0000us\u0001\u0000\u0000\u0000"+
 		"uv\u0001\u0000\u0000\u0000vx\u0001\u0000\u0000\u0000wu\u0001\u0000\u0000"+
 		"\u0000xy\u0003\u000e\u0007\u0000y\u000b\u0001\u0000\u0000\u0000z\u0084"+

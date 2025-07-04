@@ -55,7 +55,7 @@ public class SmartChilletSimplifyCFGTest {
         StringBuilder actual = new StringBuilder();
         function.getTextIR(actual);
 
-        Log.d("Before:\n" + before.toString() + "\nAfter:\n" + actual.toString());
+        Log.d("Before:\n" + before + "\nAfter:\n" + actual);
 
         String expected = """
                 define i32 @testFunction() {
@@ -69,7 +69,7 @@ public class SmartChilletSimplifyCFGTest {
     private static IceFunction createUnusedParameter() {
         IceFunction function = new IceFunction("testFunction");
         function.setReturnType(IceType.VOID);
-        IceValue a = new IceValue("a", IceType.I32);
+        var a = new IceFunction.IceFunctionParameter(function, "a", IceType.I32);
         function.addParameter(a);
 
         IceBlock entry = function.getEntryBlock();
