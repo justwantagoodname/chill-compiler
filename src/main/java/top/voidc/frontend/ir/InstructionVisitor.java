@@ -19,6 +19,11 @@ public class InstructionVisitor extends IceBaseVisitor<IceInstruction> {
     private final IceBlock block;
     private final Map<String, IceValue> environment;
     private final TypeVisitor typeVisitor;
+    private Runnable postAction;
+
+    public Runnable getPostAction() {
+        return postAction;
+    }
 
     private void putValue(String name, IceValue value) {
         String storeName = name;
@@ -252,16 +257,18 @@ public class InstructionVisitor extends IceBaseVisitor<IceInstruction> {
         IceType type = typeVisitor.visit(ctx.type());
         IcePHINode phiNode = new IcePHINode(block, getPureName(resultReg), type);
 
-        for (int i = 0; i < ctx.value().size(); i++) {
-            IceValue value = getValue(ctx.value(i));
-            String label = ctx.IDENTIFIER(i + 1).getText(); // Labels start from the second IDENTIFIER
-            // Log.should(value.getType().equals(type), "PHI node incoming value type mismatch");
+        postAction = () -> {
+            for (int i = 0; i < ctx.value().size(); i++) {
+                IceValue value = getValue(ctx.value(i));
+                String label = ctx.IDENTIFIER(i + 1).getText(); // Labels start from the second IDENTIFIER
+                // Log.should(value.getType().equals(type), "PHI node incoming value type mismatch");
 
-            // Need to resolve label to predecessor block
-            var predBlock = lookupValue(label);
-            Log.should(predBlock instanceof IceBlock, "Predicate " + label + " not found");
-            phiNode.addBranch((IceBlock) predBlock, value);
-        }
+                // Need to resolve label to predecessor block
+                var predBlock = lookupValue(label);
+                Log.should(predBlock instanceof IceBlock, "Predicate " + label + " not found");
+                phiNode.addBranch((IceBlock) predBlock, value);
+            }
+        };
 
         putValue(resultReg, phiNode);
         return phiNode;

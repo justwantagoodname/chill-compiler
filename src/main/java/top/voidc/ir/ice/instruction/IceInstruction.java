@@ -59,7 +59,7 @@ public abstract class IceInstruction extends IceUser {
     }
 
     public boolean isTerminal() {
-        return this instanceof IceBranchInstruction || this instanceof IceRetInstruction || this instanceof IceUnreachableInstruction;
+        return false;
     }
 
     @Override

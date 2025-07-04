@@ -9,13 +9,13 @@ public class LivenessAnalysisTest {
     public void testAnalysis() {
         final var target = IceFunction.fromTextIR("""
                 define void @testFunction() {
-                    %entry:
+                    entry:
                         %0 = add i32 1, 2
                         br label %B1
-                    %B1:
+                    B1:
                         %1 = add i32 2, 3
                         br label %B2
-                    %B2:
+                    B2:
                         %2 = add i32 3, %0
                         ret void
                 }

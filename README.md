@@ -9,15 +9,21 @@
 ### Stage 1: Lexer & Parser
 - [x] 使用 ANTLR 生成 Lexer、Parser
 - [x] 分析得到等价的类 LLVM IR 表示 (Ice IR)
+
 ### Stage 2: LLVM
 - [x] 使用 Ice IR 表示生成文本级别的 LLVM IR
 - [x] 使用 LLVM API 或者 LLC 生成可执行文件进行测试
+
 ### Stage 3: Optimization
 - [x] 进行 SSA 转换
 - [x] 进行常量传播
 - [x] 进行死代码消除
-- [ ] 寄存器分配
+- [ ] 公共表达式消除
+
 ### Stage 4: Code Generation
+- [ ] 指令选择
+- [ ] 寄存器分配
+- [ ] 指令重排
 - [ ] 生成目标代码 (GNU ARM RISC-V汇编)
 
 ### Stage 5: Explore
