@@ -31,17 +31,17 @@ class DominatorTreeTest {
         // b5 -> b6
         function = IceFunction.fromTextIR("""
                 define void @f() {
-                %entry:
+                entry:
                 	br label %b2
-                %b2:
+                b2:
                     br i1 true, label %b3, label %b4
-                %b3:
+                b3:
                     br label %b5
-                %b4:
+                b4:
                     br label %b5
-                %b5:
+                b5:
                     br label %b6
-                %b6:
+                b6:
                     ret void
                 }
                """);
@@ -81,17 +81,17 @@ class DominatorTreeTest {
         // b4 -> b5
         function = IceFunction.fromTextIR("""
                 define void @testFunction() {
-                %entry:
+                entry:
                     br i1 true, label %b1, label %b2
-                %b1:
+                b1:
                     br i1 true, label %b3, label %b4
-                %b2:
+                b2:
                     br label %b5
-                %b3:
+                b3:
                     br label %b4
-                %b4:
+                b4:
                     br label %b5
-                %b5:
+                b5:
                     ret void
                 }
                """);
