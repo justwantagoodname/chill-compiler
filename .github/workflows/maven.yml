@@ -12,7 +12,9 @@ jobs:
 
     env:
       MAVEN_OPTS: "-Xss8M -Xmx8G"
-      TESTCASE_DIR: "testcases/functional;testcases/h_functional;testcases/performance;testcases/h_performance"
+      ENABLE_SSH: "true"
+      SSH_HOST: "runner.voidc.top"
+      TESTCASE_DIR: "testcases/custom;testcases/functional;testcases/h_functional"
 
     steps:
       - name: Checkout code
@@ -30,13 +32,37 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          restore-keys: ${{ runner.os }}-maven-
 
       - name: Install LLVM and Build Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential llvm clang
+          sudo apt-get install -y build-essential llvm clang openssh-server
+
+      - name: Setup SSH Server
+        run: |
+          # Create base directory
+          mkdir -p $HOME/chill-e2e
+          echo "Created SSH base directory: $HOME/chill-e2e"
+          
+          # Configure SSH server to only listen on localhost
+          sudo sed -i 's/#ListenAddress 0.0.0.0/ListenAddress 127.0.0.1/' /etc/ssh/sshd_config
+          
+          # Generate SSH key for the runner
+          ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
+          
+          # Configure SSH authentication
+          mkdir -p ~/.ssh
+          cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys
+          chmod 600 ~/.ssh/authorized_keys
+          chmod 700 ~/.ssh
+          
+          # Update environment info
+          echo "SSH_USERNAME=$USER" >> $GITHUB_ENV
+          echo "SSH_BASE_DIR=$HOME/chill-e2e" >> $GITHUB_ENV
+          
+          # Restart SSH service
+          sudo systemctl restart ssh
 
       - name: Install Dependencies and Build
         run: |
