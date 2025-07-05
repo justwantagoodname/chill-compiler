@@ -192,4 +192,121 @@ public class ArithmaticInstructionPattern {
             return false;
         }
     }
+
+    /**
+     * 寄存器减法模式：`x - y -> dst`
+     */
+    public static class SUBTwoReg extends InstructionPattern<IceBinaryInstruction.Sub> {
+
+        public SUBTwoReg() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Sub value) {
+            var xReg = selector.emit(value.getLhs());
+            var yReg = selector.emit(value.getRhs());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var inst = new ARM64Instruction("SUB {dst}, {x}, {y}", dstReg, xReg, yReg);
+            selector.addEmittedInstruction(inst);
+            return inst.getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceBinaryInstruction.Sub subNode
+                    && canBeReg(selector, subNode.getLhs())
+                    && canBeReg(selector, subNode.getRhs());
+        }
+    }
+
+    /**
+     * 寄存器减立即数模式：`x - imm12 -> dst`
+     */
+    public static class SUBImm extends InstructionPattern<IceBinaryInstruction.Sub> {
+
+        public SUBImm() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Sub value) {
+            var xReg = selector.emit(value.getLhs());
+            var imm = (IceConstantInt) value.getRhs();
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var inst = new ARM64Instruction("SUB {dst}, {x}, {imm12:y}", dstReg, xReg, imm);
+            selector.addEmittedInstruction(inst);
+            return inst.getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceBinaryInstruction.Sub subNode
+                    && canBeReg(selector, subNode.getLhs())
+                    && isImm12(subNode.getRhs());
+        }
+    }
+
+    /**
+     * 立即数减寄存器模式：`imm12 - x -> dst`
+     * 使用反向减法指令（ARM64没有直接支持，需加载立即数到临时寄存器）
+     */
+    public static class ImmSUBAlias extends InstructionPattern<IceBinaryInstruction.Sub> {
+
+        public ImmSUBAlias() {
+            super(2);
+        }
+
+        @Override
+        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Sub value) {
+            var imm = (IceConstantInt) value.getLhs();
+            var xReg = selector.emit(value.getRhs());
+
+            // 加载立即数到临时寄存器
+            var tempReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var movInst = new ARM64Instruction("MOV {temp}, {imm}", tempReg, imm);
+            selector.addEmittedInstruction(movInst);
+
+            // 执行减法
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var subInst = new ARM64Instruction("SUB {dst}, {temp}, {x}", dstReg, tempReg, xReg);
+            selector.addEmittedInstruction(subInst);
+            return subInst.getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceBinaryInstruction.Sub subNode
+                    && isImm12(subNode.getLhs())
+                    && canBeReg(selector, subNode.getRhs());
+        }
+    }
+
+    /**
+     * 除法模式：`x / y -> dst`
+     */
+    public static class SDIVTwoReg extends InstructionPattern<IceBinaryInstruction.Div> {
+
+        public SDIVTwoReg() {
+            super(3);
+        }
+
+        @Override
+        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Div value) {
+            var xReg = selector.emit(value.getLhs());
+            var yReg = selector.emit(value.getRhs());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var inst = new ARM64Instruction("SDIV {dst}, {x}, {y}", dstReg, xReg, yReg);
+            selector.addEmittedInstruction(inst);
+            return inst.getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceBinaryInstruction.Div divNode
+                    && canBeReg(selector, divNode.getLhs())
+                    && canBeReg(selector, divNode.getRhs());
+        }
+    }
+
 }

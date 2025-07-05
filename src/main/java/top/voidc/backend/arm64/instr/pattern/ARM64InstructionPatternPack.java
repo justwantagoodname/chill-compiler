@@ -22,6 +22,16 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new LoadAndStorePattern.LoadRegFuncParam());
         patternSet.add(new LoadAndStorePattern.LoadIntImmediateToReg());
         patternSet.add(new LoadAndStorePattern.LoadIntZeroToReg());
+
+        patternSet.add(new ArithmaticInstructionPattern.SUBTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.SUBImm());
+        patternSet.add(new ArithmaticInstructionPattern.ImmSUBAlias());
+        patternSet.add(new ArithmaticInstructionPattern.SDIVTwoReg());
+        patternSet.add(new BitwisestructionPattern.LSLInstruction());
+        patternSet.add(new BitwisestructionPattern.ASRInstruction());
+        patternSet.add(new BitwisestructionPattern.ANDInstruction());
+        patternSet.add(new BitwisestructionPattern.ORRInstruction());
+        patternSet.add(new BitwisestructionPattern.EORInstruction());
     }
 
     @Override
