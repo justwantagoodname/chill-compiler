@@ -27,8 +27,8 @@ public class StreamTools {
      * @return 合并后的 Stream
      */
     public static <T1, T2, R> Stream<R> zip(Stream<T1> s1, Stream<T2> s2, BiFunction<T1, T2, R> zipper) {
-        List<T1> l1 = s1.collect(Collectors.toList());
-        List<T2> l2 = s2.collect(Collectors.toList());
+        List<T1> l1 = s1.toList();
+        List<T2> l2 = s2.toList();
         int size = Math.min(l1.size(), l2.size());
 
         return IntStream.range(0, size)

@@ -1,44 +1,53 @@
 package top.voidc.backend.instr;
 
-import top.voidc.backend.arm64.instr.ARM64Function;
 import top.voidc.backend.arm64.instr.pattern.ARM64InstructionPatternPack;
-import top.voidc.ir.IceContext;
-import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.IceUnit;
+import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
 
 import java.util.Collection;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.List;
 
 /**
  * 对函数中的每一个基本块进行指令选择
  * 然后替换掉原有指令
  */
 @Pass(group = {"O0", "needfix"})
-public class InstructionSelectionPass implements CompilePass<IceFunction> {
-    private final IceContext context;
-
+public class InstructionSelectionPass implements CompilePass<IceUnit> {
     // TODO: 改为动态注入
-    private final Collection<InstructionPattern<?>> patternPack = new ARM64InstructionPatternPack().getPatternPack();
+    private final InstructionPack instructionPack = new ARM64InstructionPatternPack();
+    private final Collection<InstructionPattern<?>> patternPack = instructionPack.getPatternPack();
 
-    public InstructionSelectionPass(IceContext context) {
-        this.context = context;
-    }
+    public InstructionSelectionPass() {}
 
     @Override
-    public boolean run(IceFunction target) {
-        var machineFunction = new ARM64Function(target);
+    public boolean run(IceUnit unit) {
+        for (var target : List.copyOf(unit.getFunctions())) {
+            if (target instanceof IceExternFunction) continue; // 跳过外部函数
 
-        var blocks = target.blocks();
-        for (var block : blocks) {
-            var selector = new InstructionSelector(target, machineFunction, block, this.patternPack);
-            if (!selector.doSelection()) {
-                throw new RuntimeException("Error in selection");
+            var machineFunction = instructionPack.createMachineFunction(target);
+            var blocks = target.blocks();
+
+            for (var block : blocks) {
+                var selector = new InstructionSelector(target, machineFunction, block, this.patternPack);
+                if (!selector.doSelection()) {
+                    throw new RuntimeException("Error in selection");
+                }
+                var selectedInstructions = selector.getResult();
+                var machineBlock = machineFunction.getMachineBlock(block.getName());
+                selectedInstructions.forEach(instruction -> instruction.setParent(machineBlock));
+                selectedInstructions.forEach(machineBlock::addInstruction);
+//            Log.d("Block: " + block.getName() + " selected instructions: \n" + selector.getResult().stream().map(Objects::toString).collect(Collectors.joining("\n")));
             }
-            Log.d("Block: " + block.getName() + " selected instructions: \n" + selector.getResult().stream().map(Objects::toString).collect(Collectors.joining("\n")));
+
+            target.replaceAllUsesWith(machineFunction);
+            assert target.getUsers().isEmpty();
+
+            unit.removeFunction(target);
+            unit.addFunction(machineFunction);
         }
-        return false;
+        return true;
     }
 }

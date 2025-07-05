@@ -1,7 +1,10 @@
 package top.voidc.backend.arm64.instr.pattern;
 
+import top.voidc.backend.arm64.instr.ARM64Function;
 import top.voidc.backend.instr.InstructionPack;
 import top.voidc.backend.instr.InstructionPattern;
+import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.machine.IceMachineFunction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,5 +40,10 @@ public class ARM64InstructionPatternPack implements InstructionPack {
     @Override
     public List<InstructionPattern<?>> getPatternPack() {
         return patternSet;
+    }
+
+    @Override
+    public IceMachineFunction createMachineFunction(IceFunction iceFunction) {
+        return new ARM64Function(iceFunction);
     }
 }

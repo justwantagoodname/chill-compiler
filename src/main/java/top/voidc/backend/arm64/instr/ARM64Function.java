@@ -1,20 +1,24 @@
 package top.voidc.backend.arm64.instr;
 
+import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.ir.machine.IceMachineBlock;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineRegister;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ARM64Function extends IceMachineFunction {
 
     public ARM64Function(IceFunction function) {
         super(function.getName());
+        setReturnType(function.getReturnType());
         initParameters(function);
+        initMachineBlocks(function);
+        setEntryBlock(getMachineBlock("entry"));
     }
 
     /**
@@ -56,12 +60,24 @@ public class ARM64Function extends IceMachineFunction {
 
     }
 
+    private void initMachineBlocks(IceFunction function) {
+        AtomicInteger blockCount = new AtomicInteger();
+        function.blocks()
+                .forEach(block -> {
+                    var machineBlock = new IceMachineBlock(this, ".L" + blockCount);
+                    blockCount.getAndIncrement();
+                    machineBlocks.put(block.getName(), machineBlock);
+                });
+    }
+
     // IceValue和存放虚拟寄存器的关系
     private final Map<IceValue, IceMachineRegister> valueToRegMap = new HashMap<>();
 
     private final Map<String, IceMachineRegister> physicalRegisters = new HashMap<>();
 
     private final Map<String, IceMachineRegister> virtualRegisters = new HashMap<>();
+
+    private final Map<String, IceBlock> machineBlocks = new HashMap<>();
 
     @Override
     public void bindVirtualRegisterToValue(IceValue value, IceMachineRegister register) {
@@ -80,8 +96,8 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     @Override
-    public IceMachineRegister getRegisterForValue(IceValue value) {
-        return valueToRegMap.get(value);
+    public Optional<IceMachineRegister> getRegisterForValue(IceValue value) {
+        return Optional.ofNullable(valueToRegMap.get(value));
     }
 
     @Override
@@ -115,6 +131,18 @@ public class ARM64Function extends IceMachineFunction {
             case F32 -> allocatePhysicalRegister("s0", IceType.F32);
             default -> throw new IllegalArgumentException("Wrong type!");
         };
+    }
+
+    @Override
+    public IceBlock getMachineBlock(String name) {
+        var block = machineBlocks.get(name);
+        if (block == null) throw new IllegalArgumentException("Block not found: " + name);
+        return block;
+    }
+
+    @Override
+    public Collection<IceBlock> getMachineBlocks() {
+        return machineBlocks.values();
     }
 
     @Override
