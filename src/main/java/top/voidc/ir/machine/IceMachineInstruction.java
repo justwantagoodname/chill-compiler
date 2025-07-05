@@ -105,6 +105,7 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
                     var intValue = ((IceConstantInt) operand).getValue();
                     yield "#" + (intValue & 0xFF);
                 }
+                case "label" -> operand.getName();
                 default -> operand.getReferenceName();
             };
             
@@ -115,7 +116,7 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
     }
 
     public String getOpcode() {
-        return renderTemplate.split("\\w+")[0].trim().toUpperCase();
+        return renderTemplate.split("\\s+")[0].trim().toUpperCase();
     }
 
     public IceMachineRegister getResultReg() {

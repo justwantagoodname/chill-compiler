@@ -3,6 +3,8 @@ package top.voidc.backend.arm64.instr;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.machine.IceMachineInstruction;
 
+import java.util.Set;
+
 public class ARM64Instruction extends IceMachineInstruction {
     public ARM64Instruction(String renderTemplate) {
         super(renderTemplate);
@@ -25,5 +27,10 @@ public class ARM64Instruction extends IceMachineInstruction {
     @Override
     public int getBitSize() {
         return 64;
+    }
+
+    @Override
+    public boolean isTerminal() {
+        return Set.of("RET", "B").contains(getOpcode());
     }
 }

@@ -26,22 +26,16 @@ public class LoadAndStorePattern {
 
         @Override
         public int getCost(InstructionSelector selector, IceFunction.IceFunctionParameter value) {
-            final var paramReg = selector.getMachineFunction().getRegisterForValue(value);
-            if (paramReg == null) {
-                // TODO: 内存参数的需要load
-                throw new UnsupportedOperationException();
-            }
+            final var paramReg = selector.getMachineFunction().getRegisterForValue(value)
+                    .orElseThrow(UnsupportedOperationException::new); // TODO: 内存参数的需要load
             return 0;
         }
 
         @Override
         public IceMachineRegister emit(InstructionSelector selector, IceFunction.IceFunctionParameter value) {
-            final var paramReg = selector.getMachineFunction().getRegisterForValue(value);
-            if (paramReg == null) {
-                // TODO: 内存参数的需要load
-                throw new UnsupportedOperationException();
-            }
-            return paramReg;
+            // TODO: 内存参数的需要load
+            return selector.getMachineFunction().getRegisterForValue(value)
+                    .orElseThrow(UnsupportedOperationException::new);
         }
 
         @Override
@@ -58,7 +52,6 @@ public class LoadAndStorePattern {
 
         @Override
         public int getCost(InstructionSelector selector, IceConstantInt value) {
-            final var constValue = (int) value.getValue();
             if (isImm16(value)) {
                 return 2;
             } else {

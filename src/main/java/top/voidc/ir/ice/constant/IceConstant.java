@@ -16,11 +16,6 @@ public class IceConstant extends IceUser {
     }
 
     @Override
-    public String toString() {
-        return getReferenceName();
-    }
-
-    @Override
     public void getTextIR(StringBuilder builder) {
         builder.append(getReferenceName());
     }
