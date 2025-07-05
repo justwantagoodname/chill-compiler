@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     env:
-      MAVEN_OPTS: "-Xss8M"
+      MAVEN_OPTS: "-Xss8M -Xmx8G"
       TESTCASE_DIR: "testcases/functional;testcases/h_functional;testcases/performance;testcases/h_performance"
 
     steps:
