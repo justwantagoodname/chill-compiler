@@ -42,6 +42,12 @@ public class IceUnit extends IceValue {
         functions.add(function);
     }
 
+    public void removeFunction(IceFunction function) {
+        if (!functions.remove(function)) {
+            throw new RuntimeException("Function not found: " + function.getName());
+        }
+    }
+
     public int generateGlobalVariableCount() {
         return globalVariableCount++;
     }
