@@ -48,6 +48,5 @@ testcases/**/*.ll
 testcases/**/*.exe
 *.o
 *.a
-*.o
-*.o
 /temp
+/config/*
