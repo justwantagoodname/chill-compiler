@@ -64,4 +64,8 @@ public class IceBranchInstruction extends IceInstruction {
         return (IceBlock) getOperand(0);
     }
 
+    @Override
+    public boolean isTerminal() {
+        return true;
+    }
 }

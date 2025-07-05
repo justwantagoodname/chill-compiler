@@ -7,4 +7,9 @@ public class IceUnreachableInstruction extends IceInstruction {
     public IceUnreachableInstruction(IceBlock parent) {
         super(parent, null, IceType.VOID);
     }
+
+    @Override
+    public boolean isTerminal() {
+        return true;
+    }
 }

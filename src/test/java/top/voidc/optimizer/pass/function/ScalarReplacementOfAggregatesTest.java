@@ -15,13 +15,12 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// 禁用一下，后面打算修了再修复
-@Disabled
+@Disabled("禁用一下，后面打算SORA修了再修复")
 public class ScalarReplacementOfAggregatesTest {
     private static IceFunction createSimpleFunctionWithOneArray() {
         return IceFunction.fromTextIR("""
                 define void @testFunction() {
-                %entry:
+                entry:
                     %a = alloca i32
                     %b = alloca [10 x i32]
                     %c = alloca float
@@ -67,12 +66,12 @@ public class ScalarReplacementOfAggregatesTest {
     private static IceFunction createFunctionWithOnlyConstantIndicies() {
         return IceFunction.fromTextIR("""
             define i32 @testFunction() {
-            %entry:
+            entry:
                 %arr = alloca [10 x i32]
                 %getPtr = getelementptr [10 x i32], [10 x i32]* %arr, i32 0, i32 3
                 store i32 42, i32* %getPtr
                 br label %exit
-            %exit:
+            exit:
                 %getPtr2 = getelementptr [10 x i32], [10 x i32]* %arr, i32 0, i32 3
                 %x = load i32, i32* %getPtr2
                 ret i32 %x

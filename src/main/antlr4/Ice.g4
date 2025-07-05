@@ -27,7 +27,7 @@ functionBody
 
 // Basic blocks
 basicBlock
-    : IDENTIFIER ':' instruction* terminatorInstr
+    : NAME ':' instruction* terminatorInstr
     ;
 
 // Instructions
@@ -202,7 +202,7 @@ pointer
     | GLOBAL_IDENTIFIER
     ;
 
-NAME: [a-zA-Z_][a-zA-Z_0-9]*;
+NAME: [a-zA-Z_][a-zA-Z_0-9.]*;
 IDENTIFIER : '%' (NAME|NUMBER);
 GLOBAL_IDENTIFIER : '@' NAME;
 NUMBER : ('+'|'-')?[0-9]+;

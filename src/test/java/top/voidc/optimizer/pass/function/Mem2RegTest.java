@@ -53,17 +53,17 @@ public class Mem2RegTest {
     public static IceFunction createThreeBlocksFunction() {
         return IceFunction.fromTextIR("""
             define void @testFunction() {
-            %entry:
+            entry:
                 %a = alloca i32
                 br i1 true, label %block2, label %block3
-            %block2:
+            block2:
                 store i32 2, i32* %a
                 br label %merge
-            %block3:
+            block3:
                 %add = add i32 1, 2
                 store i32 %add, i32* %a
                 br label %merge
-            %merge:
+            merge:
                 ret void
             }
             """);
@@ -85,34 +85,34 @@ public class Mem2RegTest {
     private static IceFunction createComplexPhiFunction() {
         return IceFunction.fromTextIR("""
             define i32 @example(i32 %x, i32 %y) {
-            %entry:
+            entry:
                 %z_ptr = alloca i32
                 %i_ptr = alloca i32
                 %cmp = icmp sgt i32 %x, 0
                 br i1 %cmp, label %then, label %else
-            %then:
+            then:
                 %add = add i32 %x, %y
                 store i32 %add, i32* %z_ptr
                 br label %ifend
-            %else:
+            else:
                 %sub = sub i32 %x, %y
                 store i32 %sub, i32* %z_ptr
                 br label %ifend
-            %ifend:
+            ifend:
                 store i32 0, i32* %i_ptr
                 br label %loop
-            %loop:
+            loop:
                 %i_val = load i32, i32* %i_ptr
                 %cond = icmp slt i32 %i_val, 5
                 br i1 %cond, label %loop_body, label %after_loop
-            %loop_body:
+            loop_body:
                 %z_val = load i32, i32* %z_ptr
                 %z_new = add i32 %z_val, %i_val
                 store i32 %z_new, i32* %z_ptr
                 %i_next = add i32 %i_val, 1
                 store i32 %i_next, i32* %i_ptr
                 br label %loop
-            %after_loop:
+            after_loop:
                 %final_z = load i32, i32* %z_ptr
                 ret i32 %final_z
             }
@@ -166,10 +166,10 @@ public class Mem2RegTest {
     private static IceFunction createFunctionRetValueNeverInitialized() {
         return IceFunction.fromTextIR("""
             define i32 @testFunction() {
-            %entry:
+            entry:
                 %a = alloca i32
                 br label %exit
-            %exit:
+            exit:
                 %val = load i32, i32* %a
                 ret i32 %val
             }
