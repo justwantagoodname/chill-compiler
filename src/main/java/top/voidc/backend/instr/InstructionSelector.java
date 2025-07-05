@@ -25,8 +25,6 @@ public class InstructionSelector {
     private final Collection<InstructionPattern<?>> patternPack;
     private final Map<IceValue, MatchResult> costCache = new HashMap<>();
     private final IceBlock block;
-
-    private final Map<IceValue, IceMachineRegister> valueToVRegMap = new HashMap<>();
     private final List<IceMachineInstruction> emittedInstructions = new ArrayList<>();
 
     public InstructionSelector(IceFunction function, IceMachineFunction machineFunction, IceBlock block, Collection<InstructionPattern<?>> patternPack) {
@@ -117,32 +115,30 @@ public class InstructionSelector {
      */
     public IceMachineRegister emit(IceValue value) {
         // 如果这个值已经计算过并存放在某个虚拟寄存器中，直接返回该寄存器
-        if (valueToVRegMap.containsKey(value)) {
-            return valueToVRegMap.get(value);
-        }
-
-        // 从cache中获取为该值选择的最佳模式
-        MatchResult match = costCache.get(value);
-        if (match == null) {
-//            // 这通常发生在值不是指令的情况下，比如常量或函数参数
-//            // 我们需要一个特殊的模式来将它们加载到虚拟寄存器
-//            match = select(value); // 确保它已被匹配
-//            if(match == null) {
+        return machineFunction.getRegisterForValue(value).orElseGet(() -> {
+            MatchResult match = costCache.get(value);
+            // 从cache中获取为该值选择的最佳模式
+            if (match == null) {
+                // 这说明当前此模式没有匹配过这很明显是有问题的
                 throw new IllegalStateException("Emit Error! Value was not selected: " + value);
-//            }
-        }
+            }
 
-        // 为当前指令的输出结果创建一个新的虚拟寄存器
-        // 使用模式的emit方法来生成指令
-        // emit方法内部会递归调用 selector.emit(operand) 来获取操作数寄存器
-        final var resultReg = match.matchedPattern().emitForValue(this, value);
+            // 使用模式的emit方法来生成指令
+            // emit方法内部会递归调用 selector.emit(operand) 来获取操作数寄存器
+            final var resultReg = match.matchedPattern().emitForValue(this, value);
 
-        // 缓存结果，将IR值和它的虚拟寄存器关联起来
-        if (resultReg != null) {
-            valueToVRegMap.put(value, resultReg);
-        }
-
-        return resultReg;
+            // 将IR值和它的虚拟寄存器关联起来
+            if (resultReg != null) {
+                if (resultReg.isVirtualize()) {
+                    // 如果是虚拟寄存器，绑定到虚拟寄存器
+                    machineFunction.bindVirtualRegisterToValue(value, resultReg);
+                } else {
+                    // 如果是物理寄存器，直接绑定
+                    machineFunction.bindPhysicalRegisterToValue(value, resultReg);
+                }
+            }
+            return resultReg;
+        });
     }
 
     /**
