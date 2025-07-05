@@ -1,0 +1,148 @@
+package top.voidc.backend.arm64.instr.pattern;
+
+import top.voidc.backend.arm64.instr.ARM64Instruction;
+import top.voidc.backend.instr.InstructionPattern;
+import top.voidc.backend.instr.InstructionSelector;
+import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceConstantInt;
+import top.voidc.ir.ice.instruction.IceBranchInstruction;
+import top.voidc.ir.ice.instruction.IceCmpInstruction;
+import top.voidc.ir.machine.IceMachineRegister;
+
+import static top.voidc.ir.machine.InstructionSelectUtil.canBeReg;
+import static top.voidc.ir.machine.InstructionSelectUtil.isImm12;
+
+/**
+ * 条件判断指令模式匹配模块 - 支持比较、测试、条件分支和条件选择
+ */
+public class ConditionPatterns {
+
+    /**
+     * 寄存器比较模式（CMP指令）
+     * 用于设置条件标志：`cmp x, y`
+     */
+    public static class CMPReg extends InstructionPattern<IceCmpInstruction> {
+
+        public CMPReg() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister emit(InstructionSelector selector, IceCmpInstruction value) {
+            // CMP指令不产生结果寄存器，但设置标志寄存器
+            var xReg = selector.emit(value.getLhs());
+            var yReg = selector.emit(value.getRhs());
+
+            // 根据比较类型选择有符号/无符号比较
+            String mnemonic = "CMP";
+            var inst = new ARM64Instruction(mnemonic + " {x}, {y}", null, xReg, yReg);
+            selector.addEmittedInstruction(inst);
+
+            // 返回null表示不分配结果寄存器
+            return null;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceCmpInstruction cmp
+                    && canBeReg(selector, cmp.getLhs())
+                    && canBeReg(selector, cmp.getRhs());
+        }
+    }
+
+    /**
+     * 寄存器与立即数比较模式
+     * `cmp x, #imm`
+     */
+    public static class CMPImm extends InstructionPattern<IceCmpInstruction> {
+
+        public CMPImm() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister emit(InstructionSelector selector, IceCmpInstruction value) {
+            var xReg = selector.emit(value.getLhs());
+            var imm = (IceConstantInt) value.getRhs();
+            var inst = new ARM64Instruction("CMP {x}, {imm12:y}", null, xReg, imm);
+            selector.addEmittedInstruction(inst);
+            return null;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceCmpInstruction cmp
+                    && canBeReg(selector, cmp.getLhs())
+                    && isImm12(cmp.getRhs());
+        }
+    }
+
+    /**
+     * 条件分支模式
+     * 根据标志寄存器状态跳转：`b.{cond} target`
+     */
+    public static class CondBranch extends InstructionPattern<IceBranchInstruction> {
+
+        public CondBranch() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister emit(InstructionSelector selector, IceBranchInstruction value) {
+            // 首先处理条件操作（比较或测试）
+            selector.emit(value.getCondition());
+
+            // 映射IR条件到ARM64条件码
+            String condCode = mapCondition(value.getCondition());
+
+            // 获取目标基本块标签
+            String targetLabel = value.getTargetBlock().getName();
+
+            // 创建条件分支指令
+            var inst = new ARM64Instruction("B." + condCode + " " + targetLabel, null);
+            selector.addEmittedInstruction(inst);
+            return null;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceBranchInstruction branch
+                    && branch.isConditional()
+                    && branch.getCondition() != null;
+        }
+
+        /**
+         * 映射IR条件运算符到ARM64条件码
+         */
+        private String mapCondition(IceValue cond) {
+            if (cond instanceof IceCmpInstruction.Icmp cmp) {
+                return switch (cmp.getCmpType()) {
+                    case EQ -> "EQ";
+                    case NE -> "NE";
+                    case SLT -> "LT";
+                    case SLE -> "LE";
+                    case SGT -> "GT";
+                    case SGE -> "GE";
+                };
+            } else if(cond instanceof IceCmpInstruction.Fcmp cmp) {
+                return switch (cmp.getCmpType()) {
+                    case OEQ -> "EQ";
+                    case ONE -> "NE";
+                    case OLT -> "LT";
+                    case OLE -> "LE";
+                    case OGT -> "GT";
+                    case OGE -> "GE";
+                };
+            }
+            throw new IllegalArgumentException("Unsupported condition type");
+        }
+    }
+
+
+    /*
+      TODO
+      与零比较优化模式
+      将`cmp x, 0`优化为`cbz/cbnz`指令
+     */
+
+}
