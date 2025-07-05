@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * 本地的 Clang IR 测试样例运行器
  * 需要保证本地安装了 Clang 17 以上和 GNU Make 工具
@@ -163,12 +165,12 @@ public class LocalClangRunner implements TestcaseRunner {
     }
 
     public static void compareOutput(TestResult result) throws IOException {
-        List<String> expectedLines = Files.readAllLines(result.getTestcase().out().toPath());
-        List<String> actualLines = Files.readAllLines(result.getActualOutput().toPath());
-
-        if (!expectedLines.equals(actualLines)) {
-            throw new AssertionError("Output mismatch for testcase: " + result.getTestcase().name());
-        }
+        final var expectedLines = Files.readString(result.getTestcase().out().toPath())
+                .replace("\r\n", "\n").replace("\r", "\n").stripTrailing();
+        final var actualLines = Files.readString(result.getActualOutput().toPath())
+                .replace("\r\n", "\n").replace("\r", "\n").stripTrailing();
+        assertEquals(expectedLines, actualLines,
+                "输出和预期不符合: " + result.getTestcase().name());
     }
 
     @Override
