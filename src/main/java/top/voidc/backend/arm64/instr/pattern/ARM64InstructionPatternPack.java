@@ -25,13 +25,16 @@ public class ARM64InstructionPatternPack implements InstructionPack {
 
         patternSet.add(new ArithmaticInstructionPattern.SUBTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.SUBImm());
-        patternSet.add(new ArithmaticInstructionPattern.ImmSUBAlias());
         patternSet.add(new ArithmaticInstructionPattern.SDIVTwoReg());
         patternSet.add(new BitwisestructionPattern.LSLInstruction());
         patternSet.add(new BitwisestructionPattern.ASRInstruction());
         patternSet.add(new BitwisestructionPattern.ANDInstruction());
         patternSet.add(new BitwisestructionPattern.ORRInstruction());
         patternSet.add(new BitwisestructionPattern.EORInstruction());
+
+        patternSet.add(new ConditionPatterns.CMPReg());
+        patternSet.add(new ConditionPatterns.CMPImm());
+        patternSet.add(new ConditionPatterns.CondBranch());
     }
 
     @Override
