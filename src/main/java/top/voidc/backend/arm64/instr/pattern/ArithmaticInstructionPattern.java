@@ -138,9 +138,8 @@ public class ArithmaticInstructionPattern {
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
-            var inst = new ARM64Instruction("MUL {dst}, {x}, {y}", dstReg, xReg, yReg);
-            selector.addEmittedInstruction(inst);
-            return inst.getResultReg();
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("MUL {dst}, {x}, {y}", dstReg, xReg, yReg)).getResultReg();
         }
 
         @Override
@@ -148,6 +147,50 @@ public class ArithmaticInstructionPattern {
             return value instanceof IceBinaryInstruction.Mul mulNode
                     && canBeReg(selector, mulNode.getLhs())
                     && canBeReg(selector, mulNode.getRhs());
+        }
+    }
+
+    public static class MULImm extends InstructionPattern<IceBinaryInstruction.Mul> {
+
+        public MULImm() {
+            super(1);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceBinaryInstruction.Mul value) {
+            return getIntrinsicCost() + commutativeApply(value,
+                    (lhs, rhs) -> canBeReg(selector, lhs) && isConstInt(rhs),
+                    (IceValue lhs, IceConstantInt _) -> selector.select(lhs).cost());
+        }
+
+        @Override
+        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Mul value) {
+            return commutativeApply(value,
+                    (lhs, rhs) -> canBeReg(selector, lhs) && isConstInt(rhs),
+                    (IceValue lhs, IceConstantInt rhs) -> {
+                        if (isImmediateNeedLSL(rhs)) {
+                            // 如果立即数需要左移12位，则使用 ADD {dst}, {x}, {imm12:y} 的形式
+                            return selector.addEmittedInstruction(
+                                            new ARM64Instruction("MUL {dst}, {x}, {imm12:y} lsl #12",
+                                                    selector.getMachineFunction().allocateVirtualRegister(IceType.I32), selector.emit(lhs), rhs))
+                                    .getResultReg();
+                        } else {
+                            return selector.addEmittedInstruction(
+                                            new ARM64Instruction("MUL {dst}, {x}, {imm12:y}",
+                                                    selector.getMachineFunction().allocateVirtualRegister(IceType.I32), selector.emit(lhs), rhs))
+                                    .getResultReg();
+                        }
+                    });
+
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceBinaryInstruction.Mul mul &&
+                    commutativeTest(mul,
+                            // 确保 lhs 不会被 wzr 替换因为 MUL dst, wzr, imm12 是非法的
+                            (lhs, rhs) -> canBeReg(selector, lhs) && !(lhs.equals(IceConstantData.create(0)))
+                                    && rhs instanceof IceConstantInt intConst && isValidAddImmediate(intConst));
         }
     }
 
