@@ -15,6 +15,7 @@ import java.util.ArrayList;
 public class IcePHINode extends IceInstruction {
     public record IcePHIBranch(IceBlock block, IceValue value) {}
 
+    private boolean isEliminated = false; // 是否已经被消除还原成复制指令
     private IceValue valueToBeMerged;
 
     public IcePHINode(IceBlock parent, String name, IceType type) {
@@ -168,6 +169,9 @@ public class IcePHINode extends IceInstruction {
             IceValue value = branches.get(i).value();
             builder.append("[ ").append(value.getReferenceName(false)).append(", ").append(branch.getReferenceName(false)).append(" ]");
         }
+        if (isEliminated()) {
+            builder.append(" ; removed");
+        }
     }
 
     @Override
@@ -182,5 +186,17 @@ public class IcePHINode extends IceInstruction {
         } else {
             super.replaceOperand(oldOperand, newOperand);
         }
+    }
+
+    public void setEliminated(boolean eliminated) {
+        isEliminated = eliminated;
+    }
+
+    /**
+     * 是否已经被消除还原成复制指令
+     * @return true if eliminated, false otherwise
+     */
+    public boolean isEliminated() {
+        return isEliminated;
     }
 }
