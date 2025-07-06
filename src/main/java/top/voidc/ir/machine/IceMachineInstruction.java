@@ -70,7 +70,7 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
 
     @Override
     public void addOperand(IceValue operand) {
-        assert operand instanceof IceConstantData || operand instanceof IceMachineRegister;
+        assert operand instanceof IceConstantData || operand instanceof IceMachineRegister || operand instanceof IceMachineBlock;
         super.addOperand(operand);
     }
 
