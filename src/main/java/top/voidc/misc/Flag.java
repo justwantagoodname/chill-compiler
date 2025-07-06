@@ -61,6 +61,7 @@ public class Flag {
         options.put(option.getName(), option);
     }
 
+    @SuppressWarnings("unchecked")
     public static void init(String[] args) {
         Flag flagInstance = getInstance();
         flagInstance.reset();
@@ -91,6 +92,7 @@ public class Flag {
         }
     }
 
+    @SuppressWarnings("unchecked")
     static public <T> T get(String key) {
         Option<?> option = getInstance().options.get(key);
         if (option == null) {

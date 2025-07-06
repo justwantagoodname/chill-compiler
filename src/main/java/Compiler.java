@@ -1,7 +1,9 @@
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import top.voidc.backend.arm64.instr.pattern.ARM64InstructionPatternPack;
 import top.voidc.backend.instr.InstructionSelectionPass;
+import top.voidc.backend.instr.SSADestruction;
 import top.voidc.frontend.parser.SysyLexer;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.frontend.translator.IRGenerator;
@@ -51,8 +53,13 @@ public class Compiler {
         parseSource(context);
         generator.generateIR();
 
+        // 编译到ARM指令
+        context.addPassResult(new ARM64InstructionPatternPack());
+
         // TODO: 后续添加O0 O1的组
         passManager.addDisableGroup("needfix");
+        // 在完成前先禁用后端相关的Pass
+        passManager.addDisableGroup("backend");
         passManager.runAll();
 
         emitLLVM();
@@ -85,6 +92,7 @@ public class Compiler {
             pm.runPass(LivenessAnalysis.class);
             pm.runPass(ShowIR.class);
             pm.runPass(RenameVariable.class);
+            pm.runPass(SSADestruction.class);
             pm.runPass(InstructionSelectionPass.class);
         });
         return passManager;

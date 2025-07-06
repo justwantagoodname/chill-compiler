@@ -14,13 +14,15 @@ import java.util.List;
  * 对函数中的每一个基本块进行指令选择
  * 然后替换掉原有指令
  */
-@Pass(group = {"O0", "needfix"})
+@Pass(group = {"O0", "backend"})
 public class InstructionSelectionPass implements CompilePass<IceUnit> {
-    // TODO: 改为动态注入
-    private final InstructionPack instructionPack = new ARM64InstructionPatternPack();
-    private final Collection<InstructionPattern<?>> patternPack = instructionPack.getPatternPack();
+    private final InstructionPack instructionPack;
+    private final Collection<InstructionPattern<?>> patternPack;
 
-    public InstructionSelectionPass() {}
+    public InstructionSelectionPass(InstructionPack instructionPack) {
+        this.instructionPack = instructionPack;
+        this.patternPack = instructionPack.getPatternPack();
+    }
 
     @Override
     public boolean run(IceUnit unit) {
