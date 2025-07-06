@@ -50,6 +50,7 @@ public class InstructionSelector {
         for (var instruction : block) {
             if (instruction instanceof IcePHINode) {
                 // TODO: 需要特殊处理
+                throw new IllegalStateException("必须先进行SSA消除才能开始指令选择");
             }
             if (select(instruction) == null) return false;
         }
