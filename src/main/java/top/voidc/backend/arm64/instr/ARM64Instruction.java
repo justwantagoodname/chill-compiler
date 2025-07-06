@@ -31,6 +31,7 @@ public class ARM64Instruction extends IceMachineInstruction {
 
     @Override
     public boolean isTerminal() {
+        if (getOpcode().startsWith("B.")) return true;
         return Set.of("RET", "B").contains(getOpcode());
     }
 }
