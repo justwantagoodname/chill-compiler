@@ -7,11 +7,12 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.instruction.IceCopyInstruction;
+import top.voidc.ir.ice.instruction.IcePHINode;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
 
-import static top.voidc.ir.machine.InstructionSelectUtil.isConstInt;
-import static top.voidc.ir.machine.InstructionSelectUtil.isImm16;
+import static top.voidc.ir.machine.InstructionSelectUtil.*;
 
 public class LoadAndStorePattern {
     public static class LoadRegFuncParam extends InstructionPattern<IceFunction.IceFunctionParameter> {
@@ -101,6 +102,79 @@ public class LoadAndStorePattern {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             return value instanceof IceConstantInt val && val.equals(IceConstantData.create(0));
+        }
+    }
+
+    public static class CopyInst extends InstructionPattern<IceCopyInstruction> {
+        public CopyInst() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister emit(InstructionSelector selector, IceCopyInstruction value) {
+            var srcReg = selector.emit(value.getSource());
+            assert value.getDestination() instanceof IcePHINode;// 一般目标是PHINode
+            // 目标寄存器一般是PHINode，为了防止没有被选择过，先选择一下
+            if (selector.select(value.getDestination()) == null) {
+                throw new IllegalStateException("phi指令应该可以被选择");
+            }
+            var dstReg = selector.emit(value.getDestination());
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("MOV {dst}, {src}", dstReg, srcReg)).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceCopyInstruction copy && canBeReg(selector, copy.getSource());
+        }
+    }
+
+    public static class CopyImm extends InstructionPattern<IceCopyInstruction> {
+        public CopyImm() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister emit(InstructionSelector selector, IceCopyInstruction value) {
+            assert value.getDestination() instanceof IcePHINode;// 一般目标是PHINode
+            // 目标寄存器一般是PHINode，为了防止没有被选择过，先选择一下
+            if (selector.select(value.getDestination()) == null) {
+                throw new IllegalStateException("phi指令应该可以被选择");
+            }
+            var dstReg = selector.emit(value.getDestination());
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("MOV {dst}, {imm12:src}", dstReg, value.getSource())).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceCopyInstruction copy && isImm12(copy.getSource());
+        }
+    }
+
+    /**
+     * PHI指令只是一个占位符，它不生成任何实际的指令仅仅分配一个虚拟寄存器
+     */
+    public static class DummyPHI extends InstructionPattern<IcePHINode> {
+
+        public DummyPHI() {
+            super(0);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IcePHINode value) {
+            return getIntrinsicCost();
+        }
+
+        @Override
+        public IceMachineRegister emit(InstructionSelector selector, IcePHINode value) {
+            // 什么指令也不生成就是生成一个虚拟寄存器
+            return selector.getMachineFunction().allocateVirtualRegister(value.getType());
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IcePHINode phiNode && phiNode.isEliminated();
         }
     }
 }
