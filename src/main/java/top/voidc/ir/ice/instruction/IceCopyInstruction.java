@@ -27,8 +27,8 @@ public class IceCopyInstruction extends IceInstruction {
     @Override
     public void getTextIR(StringBuilder builder) {
         builder.append("copy ")
-                .append(getOperand(0).getReferenceName())
+                .append(getSource().getReferenceName())
                 .append(" to ")
-                .append(getOperand(1).getReferenceName());
+                .append(getDestination().getReferenceName());
     }
 }
