@@ -66,7 +66,7 @@ public class ArithmaticInstructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Add value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Add value) {
             // x + y = dst
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
@@ -97,7 +97,7 @@ public class ArithmaticInstructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Add value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Add value) {
             return commutativeApply(value,
                     (lhs, rhs) -> canBeReg(selector, lhs) && isConstInt(rhs),
                     (IceValue lhs, IceConstantInt rhs) -> {
@@ -109,12 +109,11 @@ public class ArithmaticInstructionPattern {
                                     .getResultReg();
                         } else {
                             return selector.addEmittedInstruction(
-                                            new ARM64Instruction("ADD {dst}, {x}, {imm12:y}",
-                                                    selector.getMachineFunction().allocateVirtualRegister(IceType.I32), selector.emit(lhs), rhs))
+                                    new ARM64Instruction("ADD {dst}, {x}, {imm12:y}",
+                                            selector.getMachineFunction().allocateVirtualRegister(IceType.I32), selector.emit(lhs), rhs))
                                     .getResultReg();
                         }
                     });
-
         }
 
         @Override
@@ -134,7 +133,7 @@ public class ArithmaticInstructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Mul value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Mul value) {
             // x * y -> dst
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
@@ -165,20 +164,20 @@ public class ArithmaticInstructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Mul value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Mul value) {
             return commutativeApply(value,
                     (lhs, rhs) -> canBeReg(selector, lhs) && isConstInt(rhs),
                     (IceValue lhs, IceConstantInt rhs) -> {
                         if (isImmediateNeedLSL(rhs)) {
                             // 如果立即数需要左移12位，则使用 ADD {dst}, {x}, {imm12:y} 的形式
                             return selector.addEmittedInstruction(
-                                            new ARM64Instruction("MUL {dst}, {x}, {imm12:y} lsl #12",
-                                                    selector.getMachineFunction().allocateVirtualRegister(IceType.I32), selector.emit(lhs), rhs))
+                                    new ARM64Instruction("MUL {dst}, {x}, {imm12:y} lsl #12",
+                                            selector.getMachineFunction().allocateVirtualRegister(IceType.I32), selector.emit(lhs), rhs))
                                     .getResultReg();
                         } else {
                             return selector.addEmittedInstruction(
-                                            new ARM64Instruction("MUL {dst}, {x}, {imm12:y}",
-                                                    selector.getMachineFunction().allocateVirtualRegister(IceType.I32), selector.emit(lhs), rhs))
+                                    new ARM64Instruction("MUL {dst}, {x}, {imm12:y}",
+                                            selector.getMachineFunction().allocateVirtualRegister(IceType.I32), selector.emit(lhs), rhs))
                                     .getResultReg();
                         }
                     });
@@ -206,25 +205,25 @@ public class ArithmaticInstructionPattern {
             return getIntrinsicCost() + commutativeApply(value,
                     (lhs, rhs) -> lhs instanceof IceBinaryInstruction.Mul && canBeReg(selector, rhs),
                     (IceBinaryInstruction.Mul mul, IceValue other) -> selector.select(other).cost()
-                             + selector.select(mul.getLhs()).cost()
-                             + selector.select(mul.getRhs()).cost());
+                            + selector.select(mul.getLhs()).cost()
+                            + selector.select(mul.getRhs()).cost());
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Add value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Add value) {
             // x * y + z -> dst
             return commutativeApply(value,
-                (lhs, rhs) -> lhs instanceof IceBinaryInstruction.Mul && canBeReg(selector, rhs),
-                (IceBinaryInstruction.Mul mul, IceValue other) -> {
-                    IceMachineRegister xReg = selector.emit(mul.getLhs()),
-                            yReg = selector.emit(mul.getRhs()),
-                            zReg = selector.emit(other),
-                            dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+                    (lhs, rhs) -> lhs instanceof IceBinaryInstruction.Mul && canBeReg(selector, rhs),
+                    (IceBinaryInstruction.Mul mul, IceValue other) -> {
+                        IceMachineRegister.RegisterView xReg = selector.emit(mul.getLhs()),
+                                yReg = selector.emit(mul.getRhs()),
+                                zReg = selector.emit(other);
+                        var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
 
-                    return selector.addEmittedInstruction(
-                            new ARM64Instruction("MADD {dst}, {x}, {y}, {z}", dstReg, xReg, yReg, zReg)
-                    ).getResultReg();
-                });
+                        return selector.addEmittedInstruction(
+                                new ARM64Instruction("MADD {dst}, {x}, {y}, {z}", dstReg, xReg, yReg, zReg)
+                        ).getResultReg();
+                    });
         }
 
         @Override
@@ -247,13 +246,12 @@ public class ArithmaticInstructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Sub value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Sub value) {
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             var inst = new ARM64Instruction("SUB {dst}, {x}, {y}", dstReg, xReg, yReg);
-            selector.addEmittedInstruction(inst);
-            return inst.getResultReg();
+            return selector.addEmittedInstruction(inst).getResultReg();
         }
 
         @Override
@@ -274,13 +272,12 @@ public class ArithmaticInstructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Sub value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Sub value) {
             var xReg = selector.emit(value.getLhs());
             var imm = (IceConstantInt) value.getRhs();
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             var inst = new ARM64Instruction("SUB {dst}, {x}, {imm12:y}", dstReg, xReg, imm);
-            selector.addEmittedInstruction(inst);
-            return inst.getResultReg();
+            return selector.addEmittedInstruction(inst).getResultReg();
         }
 
         @Override
@@ -301,13 +298,12 @@ public class ArithmaticInstructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Div value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Div value) {
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             var inst = new ARM64Instruction("SDIV {dst}, {x}, {y}", dstReg, xReg, yReg);
-            selector.addEmittedInstruction(inst);
-            return inst.getResultReg();
+            return selector.addEmittedInstruction(inst).getResultReg();
         }
 
         @Override
@@ -325,7 +321,7 @@ public class ArithmaticInstructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceNegInstruction value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceNegInstruction value) {
             return selector.addEmittedInstruction(new ARM64Instruction("NEG {dst}, {x}",
                     selector.getMachineFunction().allocateVirtualRegister(IceType.I32),
                     selector.emit(value.getOperand()))).getResultReg();
@@ -336,5 +332,4 @@ public class ArithmaticInstructionPattern {
             return value instanceof IceNegInstruction;
         }
     }
-
 }

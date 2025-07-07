@@ -17,7 +17,7 @@ public class ControlInstructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceRetInstruction value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceRetInstruction value) {
             selector.addEmittedInstruction(new ARM64Instruction("RET"));
             return null;
         }
@@ -35,7 +35,7 @@ public class ControlInstructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceRetInstruction value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceRetInstruction value) {
             var resultReg = selector.emit(value.getReturnValue().orElseThrow());
             selector.addEmittedInstruction(
                     new ARM64Instruction("MOV {dst}, {x}", selector.getMachineFunction().getReturnRegister(IceType.I32), resultReg));
@@ -62,7 +62,7 @@ public class ControlInstructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBranchInstruction value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBranchInstruction value) {
             var targetBlock = selector.getMachineFunction().getMachineBlock(value.getTargetBlock().getName());
             selector.addEmittedInstruction(new ARM64Instruction("B {label:target}", targetBlock));
             return null;

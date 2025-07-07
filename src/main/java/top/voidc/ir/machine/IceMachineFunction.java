@@ -15,19 +15,27 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
         super(name);
     }
 
-    public abstract void bindVirtualRegisterToValue(IceValue value, IceMachineRegister register);
+    public abstract void bindVirtualRegisterToValue(IceValue value, IceMachineRegister.RegisterView register);
 
-    public abstract void bindPhysicalRegisterToValue(IceValue value, IceMachineRegister register);
+    public abstract void bindPhysicalRegisterToValue(IceValue value, IceMachineRegister.RegisterView register);
 
-    public abstract Optional<IceMachineRegister> getRegisterForValue(IceValue value);
+    public abstract Optional<IceMachineRegister.RegisterView> getRegisterForValue(IceValue value);
 
-    public abstract IceMachineRegister allocatePhysicalRegister(String name, IceType type);
+    /**
+     * 给 MachineFunction 分配物理寄存器单元
+     */
+    protected abstract IceMachineRegister allocatePhysicalRegister(String name, IceType type);
 
-    public abstract IceMachineRegister allocateVirtualRegister(String name, IceType type);
+    /**
+     * 给 MachineFunction 分配虚拟寄存器单元
+     */
+    protected abstract IceMachineRegister allocateVirtualRegister(String name, IceType type);
 
-    public abstract IceMachineRegister allocateVirtualRegister(IceType type);
+    public abstract IceMachineRegister.RegisterView allocateVirtualRegister(IceType type);
 
-    public abstract IceMachineRegister getReturnRegister(IceType type);
+    public abstract IceMachineRegister.RegisterView getReturnRegister(IceType type);
+
+    public abstract IceMachineRegister.RegisterView getZeroRegister(IceType type);
 
     /**
      * 获取实际汇编中的基本块入口

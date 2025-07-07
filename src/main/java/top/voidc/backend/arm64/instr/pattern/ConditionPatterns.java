@@ -28,11 +28,11 @@ public class ConditionPatterns {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceCmpInstruction.Icmp value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCmpInstruction.Icmp value) {
             // CMP指令不产生结果寄存器，但设置标志寄存器
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
-            var inst = new ARM64Instruction( "CMP {x}, {y}", xReg, yReg);
+            var inst = new ARM64Instruction("CMP {x}, {y}", xReg, yReg);
             selector.addEmittedInstruction(inst);
 
             // 返回null表示不分配结果寄存器
@@ -58,7 +58,7 @@ public class ConditionPatterns {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceCmpInstruction.Icmp value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCmpInstruction.Icmp value) {
             var xReg = selector.emit(value.getLhs());
             var imm = (IceConstantInt) value.getRhs();
             var inst = new ARM64Instruction("CMP {x}, {imm12:y}", xReg, imm);
@@ -90,7 +90,7 @@ public class ConditionPatterns {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBranchInstruction value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBranchInstruction value) {
             // 首先处理条件操作（比较或测试）
             selector.emit(value.getCondition());
 
@@ -143,7 +143,6 @@ public class ConditionPatterns {
             throw new IllegalArgumentException("Unsupported condition type");
         }
     }
-
 
     /*
       TODO

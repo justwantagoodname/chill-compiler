@@ -70,7 +70,7 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
 
     @Override
     public void addOperand(IceValue operand) {
-        assert operand instanceof IceConstantData || operand instanceof IceMachineRegister || operand instanceof IceMachineBlock;
+        assert operand instanceof IceConstantData || operand instanceof IceMachineRegister.RegisterView || operand instanceof IceMachineBlock;
         super.addOperand(operand);
     }
 
@@ -119,9 +119,9 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
         return renderTemplate.split("\\s+")[0].trim().toUpperCase();
     }
 
-    public IceMachineRegister getResultReg() {
+    public IceMachineRegister.RegisterView getResultReg() {
         var position = namedOperandPosition.get("dst");
         if (position == null) return null;
-        return (IceMachineRegister) getOperand(position.position());
+        return (IceMachineRegister.RegisterView) getOperand(position.position());
     }
 }

@@ -81,20 +81,16 @@ public class Compiler {
             pm.runPass(ScalarReplacementOfAggregates.class);
             pm.runPass(Mem2Reg.class);
             pm.runPass(SmartChilletSimplifyCFG.class);
-            pm.runPass(ShowIR.class);
             pm.untilStable(
                     GlobalValueNumbering.class,
-                    ShowIR.class,
                     SparseConditionalConstantPropagation.class,
                     SmartChilletSimplifyCFG.class
             );
             pm.runPass(RenameVariable.class);
-            pm.runPass(LivenessAnalysis.class);
-            pm.runPass(ShowIR.class);
-            pm.runPass(RenameVariable.class);
             pm.runPass(SSADestruction.class);
             pm.runPass(ShowIR.class);
             pm.runPass(InstructionSelectionPass.class);
+            pm.runPass(LivenessAnalysis.class);
         });
         return passManager;
     }
