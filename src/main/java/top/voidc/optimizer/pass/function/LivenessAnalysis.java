@@ -52,7 +52,7 @@ public class LivenessAnalysis implements CompilePass<IceFunction> {
      */
     private BitSet getDef(Map<IceValue, Integer> valueId, IceBlock block) {
         final var def = new BitSet(valueId.size());
-        for (var instruction : block.instructions()) {
+        for (var instruction : block) {
             // 对于全局变量不加入分析
             if (!(instruction instanceof IceStoreInstruction)) {
                 if (!instruction.getType().isVoid()) {
@@ -74,7 +74,7 @@ public class LivenessAnalysis implements CompilePass<IceFunction> {
     private BitSet getUse(Map<IceValue, Integer> valueId, BitSet def, IceBlock block) {
         final var use = new BitSet(valueId.size());
 
-        for (var instruction : block.getInstructions()) {
+        for (var instruction : block) {
             switch (instruction) {
                 case IceBranchInstruction branch -> {
                     if (branch.isConditional()
@@ -122,7 +122,7 @@ public class LivenessAnalysis implements CompilePass<IceFunction> {
         final var blocks = target.getBlocks();
 
         for (var block : blocks) {
-            for (var instruction : block.instructions()) {
+            for (var instruction : block) {
                 if (instruction.getType().isVoid()) {
                     continue;
                 }
@@ -142,7 +142,7 @@ public class LivenessAnalysis implements CompilePass<IceFunction> {
             final var in = new BitSet(idValue.size());
             final var out = new BitSet(idValue.size());
             blockInfo.put(block, new LivenessData(use, def, in, out));
-            sum += block.instructions().size();
+            sum += block.size();
         }
         Log.d("变量总数: " + sum + "blocks: " + blocks.size());
 

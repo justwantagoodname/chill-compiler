@@ -21,6 +21,22 @@ public class ARM64Function extends IceMachineFunction {
         setEntryBlock(getMachineBlock("entry"));
     }
 
+    // IceValue 和存放寄存器(视图)的关系
+    private final Map<IceValue, IceMachineRegister.RegisterView> valueToRegMap = new HashMap<>();
+
+    // 所有分配出去的物理寄存器
+    private final Map<String, IceMachineRegister> physicalRegisters = new HashMap<>();
+
+    // 所有分配出去的虚拟寄存器
+    private final Map<String, IceMachineRegister> virtualRegisters = new HashMap<>();
+
+    // 所有机器指令块
+    private final Map<String, IceBlock> machineBlocks = new HashMap<>();
+
+    private final IceMachineRegister zeroRegister = allocatePhysicalRegister("zr", IceType.I64);
+
+    private final IceMachineRegister returnRegister = allocatePhysicalRegister("0", IceType.I64);
+
     /**
      * 根据 AAPCS64 生成函数参数
      */
@@ -33,8 +49,8 @@ public class ARM64Function extends IceMachineFunction {
             switch (parameter.getType().getTypeEnum()) {
                 case ARRAY, PTR -> {
                     if (intParamReg.get() < 8) {
-                        var xReg = allocatePhysicalRegister("x" + intParamReg.get(), IceType.F64);
-                        bindPhysicalRegisterToValue(parameter, xReg);
+                        var reg = allocatePhysicalRegister(String.valueOf(intParamReg.get()), IceType.I64);
+                        bindPhysicalRegisterToValue(parameter, reg.createView(IceType.I64));
                         intParamReg.getAndIncrement();
                     } else {
                         // TODO: emit一个store在prologue里面
@@ -42,16 +58,16 @@ public class ARM64Function extends IceMachineFunction {
                 }
                 case I32 -> {
                     if (intParamReg.get() < 8) {
-                        var wReg = allocatePhysicalRegister("w" + intParamReg.get(), IceType.I64);
-                        bindPhysicalRegisterToValue(parameter, wReg);
+                        var reg = allocatePhysicalRegister(String.valueOf(intParamReg.get()), IceType.I64);
+                        bindPhysicalRegisterToValue(parameter, reg.createView(IceType.I32));
                         intParamReg.getAndIncrement();
                     }
 
                 }
                 case F32 -> {
                     if (floatParamReg.get() < 8) {
-                        var vReg = allocatePhysicalRegister("s" + floatParamReg.get(), IceType.F32);
-                        bindPhysicalRegisterToValue(parameter, vReg);
+                        var reg = allocatePhysicalRegister(String.valueOf(floatParamReg.get()), IceType.F32);
+                        bindPhysicalRegisterToValue(parameter, reg.createView(IceType.F32));
                         floatParamReg.getAndIncrement();
                     }
                 }
@@ -70,43 +86,34 @@ public class ARM64Function extends IceMachineFunction {
                 });
     }
 
-    // IceValue和存放虚拟寄存器的关系
-    private final Map<IceValue, IceMachineRegister> valueToRegMap = new HashMap<>();
-
-    private final Map<String, IceMachineRegister> physicalRegisters = new HashMap<>();
-
-    private final Map<String, IceMachineRegister> virtualRegisters = new HashMap<>();
-
-    private final Map<String, IceBlock> machineBlocks = new HashMap<>();
-
     @Override
-    public void bindVirtualRegisterToValue(IceValue value, IceMachineRegister register) {
-        if (!virtualRegisters.containsKey(register.getName())) {
+    public void bindVirtualRegisterToValue(IceValue value, IceMachineRegister.RegisterView view) {
+        if (!virtualRegisters.containsKey(view.getRegister().getName())) {
             throw new IllegalArgumentException("Wrong use!");
         }
-        valueToRegMap.put(value, register);
+        valueToRegMap.put(value, view);
     }
 
     @Override
-    public void bindPhysicalRegisterToValue(IceValue value, IceMachineRegister register) {
-        if (!physicalRegisters.containsKey(register.getName())) {
+    public void bindPhysicalRegisterToValue(IceValue value, IceMachineRegister.RegisterView view) {
+        if (!physicalRegisters.containsKey(view.getRegister().getName())) {
             throw new IllegalArgumentException("Wrong use!");
         }
-        valueToRegMap.put(value, register);
+        valueToRegMap.put(value, view);
     }
 
     @Override
-    public Optional<IceMachineRegister> getRegisterForValue(IceValue value) {
+    public Optional<IceMachineRegister.RegisterView> getRegisterForValue(IceValue value) {
         return Optional.ofNullable(valueToRegMap.get(value));
     }
 
     @Override
-    public IceMachineRegister allocatePhysicalRegister(String name, IceType type) {
+    protected IceMachineRegister allocatePhysicalRegister(String name, IceType type) {
         return physicalRegisters.computeIfAbsent(name, _ -> new ARM64Register(name, type, false));
     }
 
     @Override
-    public IceMachineRegister allocateVirtualRegister(String name, IceType type) {
+    protected IceMachineRegister allocateVirtualRegister(String name, IceType type) {
         return virtualRegisters.computeIfAbsent(name, _ -> new ARM64Register(name, type));
     }
 
@@ -114,26 +121,23 @@ public class ARM64Function extends IceMachineFunction {
     private float floatRegCount = 0;
 
     @Override
-    public IceMachineRegister allocateVirtualRegister(IceType type) {
-        var newReg = switch (type.getTypeEnum()) {
-            case I32 -> allocateVirtualRegister("virt_w" + integerRegCount++, IceType.I32);
-            case F64 ->  allocateVirtualRegister("virt_x" + integerRegCount++, IceType.F64);
-            case F32 -> allocateVirtualRegister("virt_s" + floatRegCount++, IceType.F32);
+    public IceMachineRegister.RegisterView allocateVirtualRegister(IceType type) {
+        return switch (type.getTypeEnum()) {
+            case I32, I64 -> allocateVirtualRegister(String.valueOf(integerRegCount++), IceType.I64).createView(type);
             default -> throw new IllegalArgumentException("Wrong type!");
         };
-        virtualRegisters.put(newReg.getName(), newReg);
-        return newReg;
     }
 
     @Override
-    public IceMachineRegister getReturnRegister(IceType type) {
-        // TODO: Fix this. 需要返回固定的内存地址
-        return switch (type.getTypeEnum()) {
-            case I32 -> allocatePhysicalRegister("w0", IceType.I32);
-            case I64 -> allocateVirtualRegister("x0", IceType.I64);
-            case F32 -> allocatePhysicalRegister("s0", IceType.F32);
-            default -> throw new IllegalArgumentException("Wrong type!");
-        };
+    public IceMachineRegister.RegisterView getReturnRegister(IceType type) {
+        // TODO: Fix this. 需要返回固定的内存地址，根据浮点类型返回对应寄存器
+        return returnRegister.createView(type);
+    }
+
+    @Override
+    public IceMachineRegister.RegisterView getZeroRegister(IceType type) {
+        // TODO: 根据浮点类型返回对应的零寄存器
+        return zeroRegister.createView(type);
     }
 
     @Override

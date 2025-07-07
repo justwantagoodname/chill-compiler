@@ -110,7 +110,7 @@ public class InstructionSelector {
      * @param value 要生成指令的节点
      * @return 指令结果存放的寄存器，如果无结果指令，那么返回null
      */
-    public IceMachineRegister emit(IceValue value) {
+    public IceMachineRegister.RegisterView emit(IceValue value) {
         // 如果这个值已经计算过并存放在某个虚拟寄存器中，直接返回该寄存器
         return machineFunction.getRegisterForValue(value).orElseGet(() -> {
             MatchResult match = costCache.get(value);
@@ -126,7 +126,7 @@ public class InstructionSelector {
 
             // 将IR值和它的虚拟寄存器关联起来
             if (resultReg != null) {
-                if (resultReg.isVirtualize()) {
+                if (resultReg.getRegister().isVirtualize()) {
                     // 如果是虚拟寄存器，绑定到虚拟寄存器
                     machineFunction.bindVirtualRegisterToValue(value, resultReg);
                 } else {
