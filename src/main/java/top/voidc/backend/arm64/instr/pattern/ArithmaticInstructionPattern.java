@@ -7,6 +7,7 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceBinaryInstruction;
+import top.voidc.ir.ice.instruction.IceNegInstruction;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
 
@@ -314,6 +315,25 @@ public class ArithmaticInstructionPattern {
             return value instanceof IceBinaryInstruction.Div divNode
                     && canBeReg(selector, divNode.getLhs())
                     && canBeReg(selector, divNode.getRhs());
+        }
+    }
+
+    public static class NEGReg extends InstructionPattern<IceNegInstruction> {
+
+        public NEGReg() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister emit(InstructionSelector selector, IceNegInstruction value) {
+            return selector.addEmittedInstruction(new ARM64Instruction("NEG {dst}, {x}",
+                    selector.getMachineFunction().allocateVirtualRegister(IceType.I32),
+                    selector.emit(value.getOperand()))).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceNegInstruction;
         }
     }
 
