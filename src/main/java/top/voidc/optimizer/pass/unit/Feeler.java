@@ -56,7 +56,7 @@ public class Feeler implements CompilePass<IceUnit> {
             // 直接处理传入的target单元
             var functions = target.getFunctions();
             functions.forEach(func -> {
-                if(functions.getClass().isAssignableFrom(IceExternFunction.class)){
+                if(func instanceof IceExternFunction){
                     return;
                 }
 
