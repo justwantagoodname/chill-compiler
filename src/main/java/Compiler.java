@@ -59,7 +59,7 @@ public class Compiler {
         // TODO: 后续添加O0 O1的组
         passManager.addDisableGroup("needfix");
         // 在完成前先禁用后端相关的Pass
-        passManager.addDisableGroup("backend");
+//        passManager.addDisableGroup("backend");
         passManager.runAll();
 
         emitLLVM();
@@ -93,6 +93,7 @@ public class Compiler {
             pm.runPass(ShowIR.class);
             pm.runPass(RenameVariable.class);
             pm.runPass(SSADestruction.class);
+            pm.runPass(ShowIR.class);
             pm.runPass(InstructionSelectionPass.class);
         });
         return passManager;

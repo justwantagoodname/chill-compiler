@@ -32,10 +32,10 @@ public class SSADestructionTest {
                 	%0 = icmp sgt i32 %x, 0
                 	br i1 %0, label %if.then, label %if.else
                 if.else:
-                	copy i32 %1 to i32 2
+                	copy i32 2 to i32 %1
                 	br label %if.end
                 if.then:
-                	copy i32 %1 to i32 1
+                	copy i32 1 to i32 %1
                 	br label %if.end
                 if.end:
                 	%1 = phi i32 [ 2, %if.else ], [ 1, %if.then ] ; removed
@@ -69,10 +69,10 @@ public class SSADestructionTest {
                 	%0 = icmp sgt i32 %x, 0
                 	br i1 %0, label %if.then, label %L0
                 L0:
-                	copy i32 %1 to i32 0
+                	copy i32 0 to i32 %1
                 	br label %if.end
                 if.then:
-                	copy i32 %1 to i32 1
+                	copy i32 1 to i32 %1
                 	br label %if.end
                 if.end:
                 	%1 = phi i32 [ 0, %L0 ], [ 1, %if.then ] ; removed

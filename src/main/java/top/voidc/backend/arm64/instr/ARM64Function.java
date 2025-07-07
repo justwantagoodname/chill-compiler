@@ -115,16 +115,19 @@ public class ARM64Function extends IceMachineFunction {
 
     @Override
     public IceMachineRegister allocateVirtualRegister(IceType type) {
-        return switch (type.getTypeEnum()) {
+        var newReg = switch (type.getTypeEnum()) {
             case I32 -> allocateVirtualRegister("virt_w" + integerRegCount++, IceType.I32);
             case F64 ->  allocateVirtualRegister("virt_x" + integerRegCount++, IceType.F64);
             case F32 -> allocateVirtualRegister("virt_s" + floatRegCount++, IceType.F32);
             default -> throw new IllegalArgumentException("Wrong type!");
         };
+        virtualRegisters.put(newReg.getName(), newReg);
+        return newReg;
     }
 
     @Override
     public IceMachineRegister getReturnRegister(IceType type) {
+        // TODO: Fix this. 需要返回固定的内存地址
         return switch (type.getTypeEnum()) {
             case I32 -> allocatePhysicalRegister("w0", IceType.I32);
             case I64 -> allocateVirtualRegister("x0", IceType.I64);
