@@ -1,3 +1,9 @@
-int madd(int a) {
-    return 1;
+int foo(int x) {
+    int ret = 0;
+    if (x > 0) {
+        ret = 1;
+    } else {
+        ret = 2;
+    }
+    return ret;
 }

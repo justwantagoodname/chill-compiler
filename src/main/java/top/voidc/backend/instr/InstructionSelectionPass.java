@@ -41,7 +41,6 @@ public class InstructionSelectionPass implements CompilePass<IceUnit> {
                 var machineBlock = machineFunction.getMachineBlock(block.getName());
                 selectedInstructions.forEach(instruction -> instruction.setParent(machineBlock));
                 selectedInstructions.forEach(machineBlock::addInstruction);
-//            Log.d("Block: " + block.getName() + " selected instructions: \n" + selector.getResult().stream().map(Objects::toString).collect(Collectors.joining("\n")));
             }
 
             target.replaceAllUsesWith(machineFunction);
