@@ -60,11 +60,12 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
             }
         }
 
+        context.getSymbolTable().createScope(functionName + "::body");
         // 处理函数体
         final var funcEndBlock = ctx.block().accept(new CFGEmitter(context, context.getCurrentFunction().getEntryBlock()));
 
         if (!funcEndBlock.equals(context.getCurrentFunction().getExitBlock())
-                && (funcEndBlock.getSuccessors().isEmpty() || funcEndBlock.getInstructions().isEmpty())) {
+                && (funcEndBlock.getSuccessors().isEmpty() || funcEndBlock.isEmpty())) {
             // 不是终止块/空块/没有后继，说明没写return
             if (functionName.equals("main")) {
                 // main 函数需要返回 0
@@ -73,7 +74,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
                     && funcEndBlock.getSuccessors().isEmpty()) {
                 // 如果函数返回值是void并且没有后继，直接插入返回
                 funcEndBlock.addInstruction(new IceRetInstruction(funcEndBlock));
-            } else if (funcEndBlock.getInstructions().isEmpty()
+            } else if (funcEndBlock.isEmpty()
                     && funcEndBlock.getSuccessors().isEmpty()) {
                 // 是空块并且没有后继 插入 unreachable 后面自动丢弃了
                 Log.w("在 " + funcEndBlock.getName() + " 函数 " + functionName + " 声明了返回值类型，但没有返回值");
@@ -82,6 +83,7 @@ public class FunctionEmitter extends SysyBaseVisitor<IceValue> {
                 throw new IllegalStateException();
             }
         }
+        context.getSymbolTable().exitScope();
 
         Log.should(context.getSymbolTable().getCurrentScopeName().equals(functionName + "::scope"),
                   "符号表没有被正确还原到顶级作用域");
