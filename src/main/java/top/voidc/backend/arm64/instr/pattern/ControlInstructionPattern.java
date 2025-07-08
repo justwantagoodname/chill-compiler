@@ -46,6 +46,7 @@ public class ControlInstructionPattern {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             return value instanceof IceRetInstruction ret
+                    && !ret.isReturnVoid()
                     && ret.getReturnValue().isPresent()
                     && ret.getReturnValue().get().getType().isInteger();
         }

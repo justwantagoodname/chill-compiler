@@ -37,6 +37,8 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
 
     public abstract IceMachineRegister.RegisterView getZeroRegister(IceType type);
 
+    public abstract Set<IceMachineRegister> getAllRegisters();
+
     /**
      * 获取实际汇编中的基本块入口
      * @param name 原函数中的基本块名称

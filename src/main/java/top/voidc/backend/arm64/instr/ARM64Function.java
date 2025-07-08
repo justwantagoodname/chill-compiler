@@ -141,6 +141,14 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     @Override
+    public Set<IceMachineRegister> getAllRegisters() {
+        var allRegisters = new HashSet<IceMachineRegister>();
+        allRegisters.addAll(physicalRegisters.values());
+        allRegisters.addAll(virtualRegisters.values());
+        return Set.copyOf(allRegisters); // 返回一个不可修改的集合
+    }
+
+    @Override
     public IceBlock getMachineBlock(String name) {
         var block = machineBlocks.get(name);
         if (block == null) throw new IllegalArgumentException("Block not found: " + name);
