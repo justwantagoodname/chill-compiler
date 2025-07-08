@@ -8,6 +8,7 @@ import top.voidc.ir.ice.type.IceType;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -123,5 +124,16 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
         var position = namedOperandPosition.get("dst");
         if (position == null) return null;
         return (IceMachineRegister.RegisterView) getOperand(position.position());
+    }
+
+    /**
+     * 获取指令的所有输入操作数
+     * @return 获取
+     */
+    public List<IceValue> getSourceOperands() {
+        return namedOperandPosition.entrySet().stream()
+                .filter(entry -> !entry.getKey().equals("dst"))
+                .map(entry -> getOperand(entry.getValue().position()))
+                .toList();
     }
 }

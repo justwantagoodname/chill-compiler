@@ -6,6 +6,7 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.ir.ice.constant.IceFunction;
 
+import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
@@ -26,6 +27,7 @@ public class PassManager {
     private final Set<String> disabledGroup = new HashSet<>();
 
     private enum PassType {
+        MACHINE_FUNCTION,
         FUNCTION,
         UNIT
     }
@@ -110,6 +112,8 @@ public class PassManager {
             return PassType.FUNCTION;
         } else if (parameterType.equals(IceUnit.class)) {
             return PassType.UNIT;
+        } else if (parameterType.equals(IceMachineFunction.class)) {
+            return PassType.MACHINE_FUNCTION;
         } else {
             throw new IllegalArgumentException("Pass " + clazz.getName() + " 的目标类型" + parameterType + "不支持");
         }
@@ -173,6 +177,20 @@ public class PassManager {
                             .map(function -> {
                                 @SuppressWarnings("unchecked") final var targetPass = (CompilePass<IceFunction>) pass;
                                 return targetPass.run(function);
+                            }).reduce(false, (a, b) -> {
+                                // Note：必须要使用 reduce 来合并结果，anyMatch 和 allMatch 都会短路
+                                return a || b;
+                            });
+                }
+                case MACHINE_FUNCTION -> {
+                    final var functionStream = parallel ? context.getCurrentIR().getFunctions().parallelStream()
+                            : context.getCurrentIR().getFunctions().stream();
+                    yield functionStream
+                            .filter(function -> !(function instanceof IceExternFunction))
+                            .map(function -> {
+                                @SuppressWarnings("unchecked") final var targetPass = (CompilePass<IceMachineFunction>) pass;
+                                assert function instanceof IceMachineFunction;
+                                return targetPass.run((IceMachineFunction) function);
                             }).reduce(false, (a, b) -> {
                                 // Note：必须要使用 reduce 来合并结果，anyMatch 和 allMatch 都会短路
                                 return a || b;

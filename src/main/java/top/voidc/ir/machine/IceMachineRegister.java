@@ -59,7 +59,7 @@ public abstract class IceMachineRegister extends IceUser implements IceArchitect
 
     @Override
     public String getReferenceName(boolean withType) {
-        return "regslot" + getType() + getName();
+        return (isVirtualize() ? "virt_" : "") + "regslot_" + createView(getType()).getReferenceName();
     }
 
     @Override
