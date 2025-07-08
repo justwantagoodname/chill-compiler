@@ -1,3 +1,6 @@
-int foo(int x) {
-    return -x;
+int foo(int a) {
+    int b = 1;
+    int a = b;
+
+    return a;
 }
