@@ -5,6 +5,7 @@ import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 
 import java.util.Arrays;
 import java.util.HashMap;

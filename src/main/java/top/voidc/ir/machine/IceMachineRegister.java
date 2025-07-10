@@ -3,6 +3,7 @@ package top.voidc.ir.machine;
 import top.voidc.ir.IceUser;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 
 /**
  * 机器寄存器抽象，在寄存器分配后变为真实的物理寄存器

@@ -4,16 +4,21 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 
 import java.util.*;
 
 /**
  *
  */
-public abstract class IceMachineFunction extends IceFunction implements IceArchitectureSpecification {
+public abstract class   IceMachineFunction extends IceFunction implements IceArchitectureSpecification {
     public IceMachineFunction(String name) {
         super(name);
     }
+
+    public abstract List<IceStackSlot> getStackFrame();
+
+    public abstract IceStackSlot allocateStackSlot(IceType type);
 
     public abstract void bindVirtualRegisterToValue(IceValue value, IceMachineRegister.RegisterView register);
 
@@ -22,9 +27,9 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
     public abstract Optional<IceMachineRegister.RegisterView> getRegisterForValue(IceValue value);
 
     /**
-     * 给 MachineFunction 分配物理寄存器单元
+     * 给 MachineFunction 分配物理寄存器单元，仅供寄存器分配器使用
      */
-    protected abstract IceMachineRegister allocatePhysicalRegister(String name, IceType type);
+    public abstract IceMachineRegister allocatePhysicalRegister(String name, IceType type);
 
     /**
      * 给 MachineFunction 分配虚拟寄存器单元
@@ -45,8 +50,6 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
      * @return 对应的机器指令块
      */
     public abstract IceBlock getMachineBlock(String name);
-
-    public abstract Collection<IceBlock> getMachineBlocks();
 
     @Override
     public String getReferenceName(boolean withType) {

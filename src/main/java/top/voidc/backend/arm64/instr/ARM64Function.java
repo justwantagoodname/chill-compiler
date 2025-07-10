@@ -7,6 +7,7 @@ import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineBlock;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineRegister;
+import top.voidc.ir.machine.IceStackSlot;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,6 +37,8 @@ public class ARM64Function extends IceMachineFunction {
     private final IceMachineRegister zeroRegister = allocatePhysicalRegister("zr", IceType.I64);
 
     private final IceMachineRegister returnRegister = allocatePhysicalRegister("0", IceType.I64);
+
+    private final List<IceStackSlot> stackFrame = new ArrayList<>();
 
     /**
      * 根据 AAPCS64 生成函数参数
@@ -87,6 +90,18 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     @Override
+    public List<IceStackSlot> getStackFrame() {
+        return stackFrame;
+    }
+
+    @Override
+    public IceStackSlot allocateStackSlot(IceType type) {
+        var slot = new IceStackSlot(this, type);
+        stackFrame.add(slot);
+        return slot;
+    }
+
+    @Override
     public void bindVirtualRegisterToValue(IceValue value, IceMachineRegister.RegisterView view) {
         if (!virtualRegisters.containsKey(view.getRegister().getName())) {
             throw new IllegalArgumentException("Wrong use!");
@@ -108,7 +123,7 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     @Override
-    protected IceMachineRegister allocatePhysicalRegister(String name, IceType type) {
+    public IceMachineRegister allocatePhysicalRegister(String name, IceType type) {
         return physicalRegisters.computeIfAbsent(name, _ -> new ARM64Register(name, type, false));
     }
 
@@ -153,11 +168,6 @@ public class ARM64Function extends IceMachineFunction {
         var block = machineBlocks.get(name);
         if (block == null) throw new IllegalArgumentException("Block not found: " + name);
         return block;
-    }
-
-    @Override
-    public Collection<IceBlock> getMachineBlocks() {
-        return machineBlocks.values();
     }
 
     @Override
