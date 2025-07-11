@@ -72,7 +72,10 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
 
     @Override
     public void addOperand(IceValue operand) {
-        assert operand instanceof IceConstantData || operand instanceof IceMachineRegister.RegisterView || operand instanceof IceMachineBlock;
+        assert operand instanceof IceConstantData
+                || operand instanceof IceMachineRegister.RegisterView
+                || operand instanceof IceMachineBlock
+                || operand instanceof IceStackSlot;
         super.addOperand(operand);
     }
 
@@ -106,6 +109,10 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
                     assert operand instanceof IceConstantInt;
                     var intValue = ((IceConstantInt) operand).getValue();
                     yield "#" + (intValue & 0xFF);
+                }
+                case "local" -> {
+                    assert operand instanceof IceStackSlot;
+                    yield "[sp, " + ((IceStackSlot) operand).getOffset() + "]"; // TODO 平台加载
                 }
                 case "label" -> operand.getName();
                 default -> operand.getReferenceName();
