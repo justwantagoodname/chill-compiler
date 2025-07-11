@@ -1,7 +1,10 @@
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import top.voidc.backend.AlignFramePass;
+import top.voidc.backend.LinearScanAllocator;
 import top.voidc.backend.LivenessAnalysis;
+import top.voidc.backend.SillyChilletAllocateRegister;
 import top.voidc.backend.arm64.instr.pattern.ARM64InstructionPatternPack;
 import top.voidc.backend.instr.InstructionSelectionPass;
 import top.voidc.backend.instr.SSADestruction;
@@ -89,9 +92,11 @@ public class Compiler {
             );
             pm.runPass(RenameVariable.class);
             pm.runPass(SSADestruction.class);
-            pm.runPass(ShowIR.class);
             pm.runPass(InstructionSelectionPass.class);
             pm.runPass(LivenessAnalysis.class);
+            pm.runPass(ShowIR.class);
+            pm.runPass(SillyChilletAllocateRegister.class);
+            pm.runPass(AlignFramePass.class);
         });
         return passManager;
     }
