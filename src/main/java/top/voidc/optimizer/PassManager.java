@@ -72,7 +72,10 @@ public class PassManager {
                         .or(() -> {
                             if (param.isAnnotationPresent(Qualifier.class)) {
                                 String qualifierName = param.getAnnotation(Qualifier.class).value();
-                                return Optional.ofNullable(context.getPassResult(qualifierName));
+                                var arg = context.getPassResult(qualifierName);
+                                if (arg != null && paramType.isAssignableFrom(arg.getClass())) {
+                                    return Optional.of(arg);
+                                }
                             }
                             return Optional.empty();
                         }).or(() ->

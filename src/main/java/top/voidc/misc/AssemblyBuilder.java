@@ -3,7 +3,7 @@ package top.voidc.misc;
 import java.io.*;
 
 public class AssemblyBuilder {
-    private BufferedWriter output;
+    private final BufferedWriter output;
 
     public AssemblyBuilder(String filename) throws IOException {
         if ("-".equals(filename)) {
@@ -18,13 +18,13 @@ public class AssemblyBuilder {
         return this;
     }
 
-    public AssemblyBuilder writeLine() throws IOException {
-        return writeLine("\n");
+    public AssemblyBuilder writeLine(String str) throws IOException {
+        output.write(str);
+        output.write("\n");
+        return this;
     }
 
-    public AssemblyBuilder writeLine(String format, Object... args) throws IOException {
-        String line = String.format(format, args);
-        output.write(line);
+    public AssemblyBuilder writeLine() throws IOException {
         output.write("\n");
         return this;
     }

@@ -112,7 +112,7 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
                 }
                 case "local" -> {
                     assert operand instanceof IceStackSlot;
-                    yield "[sp, " + ((IceStackSlot) operand).getOffset() + "]"; // TODO 平台加载
+                    yield "[sp, #" + ((IceStackSlot) operand).getOffset() + "]"; // TODO 平台加载
                 }
                 case "label" -> operand.getName();
                 default -> operand.getReferenceName();

@@ -8,6 +8,7 @@ import top.voidc.ir.machine.IceMachineBlock;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
+import top.voidc.misc.Tool;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -172,7 +173,7 @@ public class ARM64Function extends IceMachineFunction {
 
     @Override
     public String getArchitecture() {
-        return "aarch64";
+        return "armv8-a";
     }
 
     @Override
@@ -183,5 +184,15 @@ public class ARM64Function extends IceMachineFunction {
     @Override
     public int getBitSize() {
         return 64;
+    }
+
+    @Override
+    public void getTextIR(StringBuilder builder) {
+        // === 生成描述函数的伪指令 ===
+        builder.append("\t.global ").append(getName()).append("\n")
+                .append("\t.type ").append(getName()).append(", %function\n")
+                .append("\t.align ").append(Tool.log2(getAlignment())).append("\n")
+                .append(getName()).append(":\n");
+        blocks().forEach(block -> block.getTextIR(builder));
     }
 }

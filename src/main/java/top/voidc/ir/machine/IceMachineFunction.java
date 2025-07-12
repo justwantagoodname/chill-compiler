@@ -11,7 +11,7 @@ import java.util.*;
 /**
  *
  */
-public abstract class   IceMachineFunction extends IceFunction implements IceArchitectureSpecification {
+public abstract class IceMachineFunction extends IceFunction implements IceArchitectureSpecification {
     public IceMachineFunction(String name) {
         super(name);
     }

@@ -26,7 +26,7 @@ public class ARM64Register extends IceMachineRegister {
 
     @Override
     public String getArchitecture() {
-        return "aarch64";
+        return "armv8-a";
     }
 
     @Override
