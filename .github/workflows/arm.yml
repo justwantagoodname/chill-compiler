@@ -13,7 +13,11 @@ jobs:
     env:
       MAVEN_OPTS: "-Xss8M -Xmx8G"
       ENABLE_SSH: "true"
-      SSH_HOST: "127.0.0.1"
+      SSH_BASE_DIR: ${{ vars.RPI_BASEDIR }}
+      SSH_HOST: ${{ vars.RPI_HOST }}
+      SSH_PORT: ${{ vars.RPI_PORT }}
+      SSH_USERNAME: ${{ vars.RPI_USERNAME }}
+      SSH_PASSWORD: ${{ secrets.RPI_PASSWORD }}
       TESTCASE_DIR: "testcases/custom;testcases/functional;testcases/h_functional"
 
     steps:
@@ -46,41 +50,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential llvm clang openssh-server
 
-      - name: Setup SSH Server
-        run: |
-          # Create base directory
-          mkdir -p $HOME/chill-e2e
-          echo "Created SSH base directory: $HOME/chill-e2e"
-          
-          # Configure SSH server to only listen on localhost
-          sudo sed -i 's/#ListenAddress 0.0.0.0/ListenAddress 127.0.0.1/' /etc/ssh/sshd_config
-          
-          # Generate SSH key for the runner
-          ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ""
-          
-          # Configure SSH authentication
-          mkdir -p ~/.ssh
-          cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-          chmod 600 ~/.ssh/authorized_keys
-          chmod 700 ~/.ssh
-          
-          # Update environment info
-          echo "SSH_USERNAME=$USER" >> $GITHUB_ENV
-          echo "SSH_BASE_DIR=$HOME/chill-e2e" >> $GITHUB_ENV
-          
-          # Restart SSH service
-          sudo systemctl restart ssh
-
       - name: Install Dependencies and Build
         run: |
           mvn clean install -DskipTests -B
+      
 
-      - name: Run IR Tests
+      - name: Run ARM Tests
         run: |
-          timeout 20m mvn clean test -Dchill.ci=true -Dchill.runner=SSHIRRunner
+          timeout 20m mvn clean test -Dchill.ci=true -Dchill.runner=SSHARM64ASMRunner
 
       - name: Upload JUnit test reports
-        if: always() 
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: junit-reports
