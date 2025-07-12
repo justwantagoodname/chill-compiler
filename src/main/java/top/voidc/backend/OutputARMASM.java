@@ -46,6 +46,7 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
 
             assemblyBuilder.writeRaw(func.getTextIR());
         }
+        assemblyBuilder.writeLine(); // 添加一个空行防止 gcc 报警告
         assemblyBuilder.close();
     }
 
