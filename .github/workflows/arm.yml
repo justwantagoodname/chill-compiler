@@ -1,4 +1,4 @@
-name: Functional Test
+name: ARM Functional Test
 
 on:
   push:
