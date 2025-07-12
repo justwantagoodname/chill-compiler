@@ -21,21 +21,18 @@ public class ConditionPatterns {
      * 寄存器比较模式（CMP指令）
      * 用于设置条件标志：`cmp x, y`
      */
-    public static class CMPReg extends InstructionPattern<IceCmpInstruction> {
+    public static class CMPReg extends InstructionPattern<IceCmpInstruction.Icmp> {
 
         public CMPReg() {
             super(1);
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceCmpInstruction value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCmpInstruction.Icmp value) {
             // CMP指令不产生结果寄存器，但设置标志寄存器
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
-
-            // 根据比较类型选择有符号/无符号比较
-            String mnemonic = "CMP";
-            var inst = new ARM64Instruction(mnemonic + " {x}, {y}", null, xReg, yReg);
+            var inst = new ARM64Instruction("CMP {x}, {y}", xReg, yReg);
             selector.addEmittedInstruction(inst);
 
             // 返回null表示不分配结果寄存器
@@ -54,17 +51,17 @@ public class ConditionPatterns {
      * 寄存器与立即数比较模式
      * `cmp x, #imm`
      */
-    public static class CMPImm extends InstructionPattern<IceCmpInstruction> {
+    public static class CMPImm extends InstructionPattern<IceCmpInstruction.Icmp> {
 
         public CMPImm() {
             super(1);
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceCmpInstruction value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCmpInstruction.Icmp value) {
             var xReg = selector.emit(value.getLhs());
             var imm = (IceConstantInt) value.getRhs();
-            var inst = new ARM64Instruction("CMP {x}, {imm12:y}", null, xReg, imm);
+            var inst = new ARM64Instruction("CMP {x}, {imm12:y}", xReg, imm);
             selector.addEmittedInstruction(inst);
             return null;
         }
@@ -88,7 +85,12 @@ public class ConditionPatterns {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBranchInstruction value) {
+        public int getCost(InstructionSelector selector, IceBranchInstruction value) {
+            return getIntrinsicCost() + selector.select(value.getCondition()).cost();
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBranchInstruction value) {
             // 首先处理条件操作（比较或测试）
             selector.emit(value.getCondition());
 
@@ -96,11 +98,15 @@ public class ConditionPatterns {
             String condCode = mapCondition(value.getCondition());
 
             // 获取目标基本块标签
-            String targetLabel = value.getTargetBlock().getName();
+            var trueLabel = selector.getMachineFunction().getMachineBlock(value.getTrueBlock().getName());
+            var falseLabel = selector.getMachineFunction().getMachineBlock(value.getFalseBlock().getName());
 
             // 创建条件分支指令
-            var inst = new ARM64Instruction("B." + condCode + " " + targetLabel, null);
-            selector.addEmittedInstruction(inst);
+            selector.addEmittedInstruction(
+                    new ARM64Instruction("B." + condCode + " {label:target}", trueLabel));
+            selector.addEmittedInstruction(
+                    new ARM64Instruction("B {label:target}", falseLabel));
+
             return null;
         }
 
@@ -137,7 +143,6 @@ public class ConditionPatterns {
             throw new IllegalArgumentException("Unsupported condition type");
         }
     }
-
 
     /*
       TODO

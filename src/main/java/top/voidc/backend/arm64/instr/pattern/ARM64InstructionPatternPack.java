@@ -16,16 +16,24 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ArithmaticInstructionPattern.ADDTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.ADDImm());
         patternSet.add(new ArithmaticInstructionPattern.MULTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.MULImm());
         patternSet.add(new ArithmaticInstructionPattern.MADDInstruction());
-        patternSet.add(new ControlInstructionPattern.RetVoid());
-        patternSet.add(new ControlInstructionPattern.RetInteger());
-        patternSet.add(new LoadAndStorePattern.LoadRegFuncParam());
-        patternSet.add(new LoadAndStorePattern.LoadIntImmediateToReg());
-        patternSet.add(new LoadAndStorePattern.LoadIntZeroToReg());
-
         patternSet.add(new ArithmaticInstructionPattern.SUBTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.SUBImm());
         patternSet.add(new ArithmaticInstructionPattern.SDIVTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.NEGReg());
+
+        patternSet.add(new ControlInstructionPattern.BranchUnconditional());
+        patternSet.add(new ControlInstructionPattern.RetVoid());
+        patternSet.add(new ControlInstructionPattern.RetInteger());
+
+        patternSet.add(new LoadAndStorePattern.LoadRegFuncParam());
+        patternSet.add(new LoadAndStorePattern.LoadIntImmediateToReg());
+        patternSet.add(new LoadAndStorePattern.LoadIntZeroToReg());
+        patternSet.add(new LoadAndStorePattern.CopyImm());
+        patternSet.add(new LoadAndStorePattern.CopyInst());
+        patternSet.add(new LoadAndStorePattern.DummyPHI());
+
         patternSet.add(new BitwisestructionPattern.LSLInstruction());
         patternSet.add(new BitwisestructionPattern.ASRInstruction());
         patternSet.add(new BitwisestructionPattern.ANDInstruction());

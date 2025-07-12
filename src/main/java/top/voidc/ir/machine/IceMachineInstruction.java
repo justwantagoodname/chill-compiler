@@ -5,9 +5,11 @@ import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,7 +72,10 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
 
     @Override
     public void addOperand(IceValue operand) {
-        assert operand instanceof IceConstantData || operand instanceof IceMachineRegister;
+        assert operand instanceof IceConstantData
+                || operand instanceof IceMachineRegister.RegisterView
+                || operand instanceof IceMachineBlock
+                || operand instanceof IceStackSlot;
         super.addOperand(operand);
     }
 
@@ -105,6 +110,10 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
                     var intValue = ((IceConstantInt) operand).getValue();
                     yield "#" + (intValue & 0xFF);
                 }
+                case "local" -> {
+                    assert operand instanceof IceStackSlot;
+                    yield "[sp, #" + ((IceStackSlot) operand).getOffset() + "]"; // TODO 平台加载
+                }
                 case "label" -> operand.getName();
                 default -> operand.getReferenceName();
             };
@@ -119,9 +128,20 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
         return renderTemplate.split("\\s+")[0].trim().toUpperCase();
     }
 
-    public IceMachineRegister getResultReg() {
+    public IceMachineRegister.RegisterView getResultReg() {
         var position = namedOperandPosition.get("dst");
         if (position == null) return null;
-        return (IceMachineRegister) getOperand(position.position());
+        return (IceMachineRegister.RegisterView) getOperand(position.position());
+    }
+
+    /**
+     * 获取指令的所有输入操作数
+     * @return 获取
+     */
+    public List<IceValue> getSourceOperands() {
+        return namedOperandPosition.entrySet().stream()
+                .filter(entry -> !entry.getKey().equals("dst"))
+                .map(entry -> getOperand(entry.getValue().position()))
+                .toList();
     }
 }

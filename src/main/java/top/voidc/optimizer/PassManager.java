@@ -6,8 +6,10 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.ir.ice.constant.IceFunction;
 
+import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
+import top.voidc.misc.annotation.Qualifier;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.optimizer.pass.unit.Feeler;
 
@@ -26,6 +28,7 @@ public class PassManager {
     private final Set<String> disabledGroup = new HashSet<>();
 
     private enum PassType {
+        MACHINE_FUNCTION,
         FUNCTION,
         UNIT
     }
@@ -59,14 +62,27 @@ public class PassManager {
         Constructor<?>[] constructors = clazz.getConstructors(); // 只获取 public 构造器
 
         for (Constructor<?> constructor : constructors) {
-            var paramTypes = constructor.getParameterTypes();
+            var params = constructor.getParameters();
             List<Object> args = new ArrayList<>();
 
             boolean allMatched = true;
-            for (Class<?> paramType : paramTypes) {
-                Optional<Object> matched = context.getPassResults().stream()
-                        .filter(obj -> paramType.isAssignableFrom(obj.getClass()))
-                        .findFirst();
+            for (var param : params) {
+                var paramType = param.getType();
+                var matched = Optional.empty()
+                        .or(() -> {
+                            if (param.isAnnotationPresent(Qualifier.class)) {
+                                String qualifierName = param.getAnnotation(Qualifier.class).value();
+                                var arg = context.getPassResult(qualifierName);
+                                if (arg != null && paramType.isAssignableFrom(arg.getClass())) {
+                                    return Optional.of(arg);
+                                }
+                            }
+                            return Optional.empty();
+                        }).or(() ->
+                            context.getPassResults().stream()
+                                    .filter(obj -> paramType.isAssignableFrom(obj.getClass()))
+                                    .findFirst()
+                        );
 
                 if (matched.isPresent()) {
                     Object value = matched.get();
@@ -110,6 +126,8 @@ public class PassManager {
             return PassType.FUNCTION;
         } else if (parameterType.equals(IceUnit.class)) {
             return PassType.UNIT;
+        } else if (parameterType.equals(IceMachineFunction.class)) {
+            return PassType.MACHINE_FUNCTION;
         } else {
             throw new IllegalArgumentException("Pass " + clazz.getName() + " 的目标类型" + parameterType + "不支持");
         }
@@ -173,6 +191,20 @@ public class PassManager {
                             .map(function -> {
                                 @SuppressWarnings("unchecked") final var targetPass = (CompilePass<IceFunction>) pass;
                                 return targetPass.run(function);
+                            }).reduce(false, (a, b) -> {
+                                // Note：必须要使用 reduce 来合并结果，anyMatch 和 allMatch 都会短路
+                                return a || b;
+                            });
+                }
+                case MACHINE_FUNCTION -> {
+                    final var functionStream = parallel ? context.getCurrentIR().getFunctions().parallelStream()
+                            : context.getCurrentIR().getFunctions().stream();
+                    yield functionStream
+                            .filter(function -> !(function instanceof IceExternFunction))
+                            .map(function -> {
+                                @SuppressWarnings("unchecked") final var targetPass = (CompilePass<IceMachineFunction>) pass;
+                                assert function instanceof IceMachineFunction;
+                                return targetPass.run((IceMachineFunction) function);
                             }).reduce(false, (a, b) -> {
                                 // Note：必须要使用 reduce 来合并结果，anyMatch 和 allMatch 都会短路
                                 return a || b;

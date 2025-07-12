@@ -6,7 +6,7 @@ import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
 
 // Debug 用途就是打印 IR
-@Pass(enable = false)
+@Pass(enable = true)
 public class ShowIR implements CompilePass<IceUnit> {
     @Override
     public String getName() {
@@ -15,6 +15,10 @@ public class ShowIR implements CompilePass<IceUnit> {
 
     @Override
     public boolean run(IceUnit target) {
+        if (System.getProperty("chill.ci") != null && System.getProperty("chill.ci").equals("true")) {
+            // CI 环境下不打印 IR
+            return false;
+        }
         Log.d("\n" + target.getTextIR());
         return false;
     }

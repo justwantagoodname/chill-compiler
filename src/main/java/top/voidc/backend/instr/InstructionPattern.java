@@ -31,7 +31,7 @@ public abstract class InstructionPattern <T extends IceValue> {
      * 选择实际的指令
      * @return 结果所在寄存器
      */
-    public abstract IceMachineRegister emit(InstructionSelector selector, T value);
+    public abstract IceMachineRegister.RegisterView emit(InstructionSelector selector, T value);
 
     public abstract boolean test(InstructionSelector selector, IceValue value);
 
@@ -40,7 +40,7 @@ public abstract class InstructionPattern <T extends IceValue> {
         return this.getCost(selector, target);
     }
 
-    public final IceMachineRegister emitForValue(InstructionSelector selector, IceValue value) {
+    public final IceMachineRegister.RegisterView emitForValue(InstructionSelector selector, IceValue value) {
         @SuppressWarnings("unchecked") final var target = (T) value;
         return this.emit(selector, target);
     }
