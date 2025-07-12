@@ -1,7 +1,6 @@
 package top.voidc.backend;
 
 import top.voidc.backend.arm64.instr.ARM64Instruction;
-import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.*;
@@ -11,13 +10,12 @@ import top.voidc.optimizer.pass.CompilePass;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 /**
  * 笨蛋疾旋鼬寄存器分配器
  * 蠢鼬脑容量不够只能给所有变量全部溢出到栈上
  */
-@Pass
+@Pass(group = {"O0", "backend"})
 public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
 
     @Override
@@ -104,7 +102,7 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
 
     @Override
     public String getArchitecture() {
-        return "aarch64";
+        return "armv8-a";
     }
 
     @Override

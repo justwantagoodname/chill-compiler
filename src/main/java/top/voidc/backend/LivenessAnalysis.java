@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * out[B] = ∪ in[S]    // S 为 B 的所有后继块
  * in[B]  = use[B] ∪ (out[B] - def[B])
  */
-@Pass(group = {"O0", "backend"})
+@Pass(group = {"O0", "backend"}, parallel = true)
 public class LivenessAnalysis implements CompilePass<IceMachineFunction> {
     private final LivenessResult livenessResult;
 
