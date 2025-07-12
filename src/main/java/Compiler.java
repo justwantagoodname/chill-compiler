@@ -62,8 +62,13 @@ public class Compiler {
 
         // TODO: 后续添加O0 O1的组
         passManager.addDisableGroup("needfix");
-        // 在完成前先禁用后端相关的Pass
-//        passManager.addDisableGroup("backend");
+        String disableGroups = Flag.get("-fdisable-group");
+        if (disableGroups != null && !disableGroups.isBlank()) {
+            for (String group : disableGroups.split(",")) {
+                passManager.addDisableGroup(group.trim());
+            }
+        }
+
         passManager.runAll();
     }
 

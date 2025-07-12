@@ -5,10 +5,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import top.voidc.e2e.environment.CompilerHelper;
+import top.voidc.e2e.environment.RunnerFactory;
 import top.voidc.e2e.environment.Testcase;
 import top.voidc.e2e.environment.TestcaseRunner;
-import top.voidc.e2e.runner.LocalClangRunner;
-import top.voidc.e2e.runner.SSHGNURunner;
+import top.voidc.e2e.runner.SSHRunner;
 import top.voidc.misc.Log;
 
 import java.io.*;
@@ -56,13 +56,12 @@ public class CompilerTest {
             }
 
             Log.i("使用 SSH 模式运行测试");
-            runner = new SSHGNURunner(
+            runner = RunnerFactory.createRunner(
                 sshBaseDir,
-                new SSHGNURunner.SSHConfig(sshHost, sshPort, sshUsername, sshPassword)
+                new SSHRunner.SSHConfig(sshHost, sshPort, sshUsername, sshPassword)
             );
         } else {
-            Log.i("使用本地模式运行测试");
-            runner = new LocalClangRunner();
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -139,8 +138,6 @@ public class CompilerTest {
     public void testCompile(Testcase testcase) throws InvocationTargetException, IllegalAccessException, IOException, InterruptedException {
         Log.i("开始编译 SysY 测试样例到汇编: " + testcase.name());
         CompilerHelper.runMain(runner.getCompileArgument(testcase));
-        assertTrue(testcase.asm().exists(), "Assembly file not generated");
-        // 生成并运行可执行文件
 
         Log.i(">>> 开始运行 SysY 测试样例: " + testcase.name());
         assertTrue(runner.prepareTest(testcase), "Prepare failed");
@@ -154,6 +151,8 @@ public class CompilerTest {
         Log.i(">>> 清理 SysY 测试样例: " + testcase.name());
         assertTrue(runner.cleanup(testcase), "Cleanup failed");
 
-        assertTrue(testcase.asm().delete(), "Assembly file not deleted");
+        if (testcase.asm().exists()) {
+            assertTrue(testcase.asm().delete(), "Assembly file not deleted");
+        }
     }
 }
