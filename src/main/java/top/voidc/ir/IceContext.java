@@ -24,6 +24,7 @@ public class IceContext {
     private IceFunction currentFunction;
 
     private final Set<Object> passResults = new HashSet<>();
+    private final Map<String, Object> nameToPassResult = new ConcurrentHashMap<>();
 
     public record IceIfLabel(IceBlock trueLabel, IceBlock falseLabel) {
     }
@@ -102,6 +103,15 @@ public class IceContext {
 
     public void addPassResult(Object result) {
         passResults.add(result);
+    }
+
+    public void addPassResult(String name, Object result) {
+        passResults.add(result);
+        nameToPassResult.put(name, result);
+    }
+
+    public Object getPassResult(String name) {
+        return nameToPassResult.get(name);
     }
 
     public Set<Object> getPassResults() {

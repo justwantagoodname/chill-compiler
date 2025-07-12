@@ -9,6 +9,7 @@ import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
+import top.voidc.misc.annotation.Qualifier;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.optimizer.pass.unit.Feeler;
 
@@ -61,14 +62,24 @@ public class PassManager {
         Constructor<?>[] constructors = clazz.getConstructors(); // 只获取 public 构造器
 
         for (Constructor<?> constructor : constructors) {
-            var paramTypes = constructor.getParameterTypes();
+            var params = constructor.getParameters();
             List<Object> args = new ArrayList<>();
 
             boolean allMatched = true;
-            for (Class<?> paramType : paramTypes) {
-                Optional<Object> matched = context.getPassResults().stream()
-                        .filter(obj -> paramType.isAssignableFrom(obj.getClass()))
-                        .findFirst();
+            for (var param : params) {
+                var paramType = param.getType();
+                var matched = Optional.empty()
+                        .or(() -> {
+                            if (param.isAnnotationPresent(Qualifier.class)) {
+                                String qualifierName = param.getAnnotation(Qualifier.class).value();
+                                return Optional.ofNullable(context.getPassResult(qualifierName));
+                            }
+                            return Optional.empty();
+                        }).or(() ->
+                            context.getPassResults().stream()
+                                    .filter(obj -> paramType.isAssignableFrom(obj.getClass()))
+                                    .findFirst()
+                        );
 
                 if (matched.isPresent()) {
                     Object value = matched.get();
