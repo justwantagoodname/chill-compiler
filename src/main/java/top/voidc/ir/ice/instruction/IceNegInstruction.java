@@ -21,6 +21,10 @@ public class IceNegInstruction extends IceInstruction {
         addOperand(operand);
     }
 
+    public IceValue getOperand() {
+        return getOperand(0);
+    }
+
     @Override
     public void getTextIR(StringBuilder builder) {
         builder.append("%").append(getName()).append(" = ");

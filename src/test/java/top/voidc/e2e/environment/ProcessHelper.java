@@ -57,4 +57,27 @@ public class ProcessHelper {
 
         return new ExecuteResult(exitCode, readStream(process.getInputStream()), readStream(process.getErrorStream()));
     }
+
+    public static void appendCode(int code, File file) throws IOException {
+        boolean endsWithNewline = true;
+
+        // 判断最后一个字符是否是 '\n'
+        if (file.exists() && file.length() > 0) {
+            try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+                raf.seek(file.length() - 1);
+                int lastByte = raf.read();
+                endsWithNewline = (lastByte == '\n');
+            }
+        }
+
+        // 追加写入 code（带换行）
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, true))) {
+            if (!endsWithNewline) {
+                writer.newLine();
+            }
+            writer.write(Integer.toString(code));
+            writer.newLine(); // 保持追加后仍是换行结尾
+        }
+    }
+
 }

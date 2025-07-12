@@ -68,7 +68,9 @@ public class Flag {
         flagInstance.registerOption(new Option<>("source", String.class, null));
         flagInstance.registerOption(new Option<>("-o", String.class, "a.out"));
         flagInstance.registerOption(new Option<>("-S", Boolean.class, false));
+        flagInstance.registerOption(new Option<>("-emit-ir", Boolean.class, false));
         flagInstance.registerOption(new Option<>("-fenable-ptr-type", Boolean.class, false));
+        flagInstance.registerOption(new Option<>("-fdisable-group", String.class, ""));
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].startsWith("-")) {

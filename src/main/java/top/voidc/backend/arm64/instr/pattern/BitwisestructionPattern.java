@@ -23,7 +23,7 @@ public class BitwisestructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Shl value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Shl value) {
             var xReg = selector.emit(value.getLhs());
             var yVal = value.getRhs();
 
@@ -32,15 +32,13 @@ public class BitwisestructionPattern {
                 var imm = (IceConstantInt) yVal;
                 var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
                 var inst = new ARM64Instruction("LSL {dst}, {x}, {shift:y}", dstReg, xReg, imm);
-                selector.addEmittedInstruction(inst);
-                return inst.getResultReg();
+                return selector.addEmittedInstruction(inst).getResultReg();
             } else {
                 // 寄存器移位
                 var yReg = selector.emit(yVal);
                 var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
                 var inst = new ARM64Instruction("LSL {dst}, {x}, {y}", dstReg, xReg, yReg);
-                selector.addEmittedInstruction(inst);
-                return inst.getResultReg();
+                return selector.addEmittedInstruction(inst).getResultReg();
             }
         }
 
@@ -68,7 +66,7 @@ public class BitwisestructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Shr value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Shr value) {
             var xReg = selector.emit(value.getLhs());
             var yVal = value.getRhs();
 
@@ -76,14 +74,12 @@ public class BitwisestructionPattern {
                 var imm = (IceConstantInt) yVal;
                 var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
                 var inst = new ARM64Instruction("ASR {dst}, {x}, {shift:y}", dstReg, xReg, imm);
-                selector.addEmittedInstruction(inst);
-                return inst.getResultReg();
+                return selector.addEmittedInstruction(inst).getResultReg();
             } else {
                 var yReg = selector.emit(yVal);
                 var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
                 var inst = new ARM64Instruction("ASR {dst}, {x}, {y}", dstReg, xReg, yReg);
-                selector.addEmittedInstruction(inst);
-                return inst.getResultReg();
+                return selector.addEmittedInstruction(inst).getResultReg();
             }
         }
 
@@ -111,13 +107,12 @@ public class BitwisestructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.And value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.And value) {
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             var inst = new ARM64Instruction("AND {dst}, {x}, {y}", dstReg, xReg, yReg);
-            selector.addEmittedInstruction(inst);
-            return inst.getResultReg();
+            return selector.addEmittedInstruction(inst).getResultReg();
         }
 
         @Override
@@ -138,13 +133,12 @@ public class BitwisestructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Or value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Or value) {
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             var inst = new ARM64Instruction("ORR {dst}, {x}, {y}", dstReg, xReg, yReg);
-            selector.addEmittedInstruction(inst);
-            return inst.getResultReg();
+            return selector.addEmittedInstruction(inst).getResultReg();
         }
 
         @Override
@@ -165,13 +159,12 @@ public class BitwisestructionPattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceBinaryInstruction.Xor value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Xor value) {
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             var inst = new ARM64Instruction("EOR {dst}, {x}, {y}", dstReg, xReg, yReg);
-            selector.addEmittedInstruction(inst);
-            return inst.getResultReg();
+            return selector.addEmittedInstruction(inst).getResultReg();
         }
 
         @Override

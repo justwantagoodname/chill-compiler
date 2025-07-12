@@ -4,6 +4,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 
 import java.util.*;
 
@@ -15,19 +16,33 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
         super(name);
     }
 
-    public abstract void bindVirtualRegisterToValue(IceValue value, IceMachineRegister register);
+    public abstract List<IceStackSlot> getStackFrame();
 
-    public abstract void bindPhysicalRegisterToValue(IceValue value, IceMachineRegister register);
+    public abstract IceStackSlot allocateStackSlot(IceType type);
 
-    public abstract Optional<IceMachineRegister> getRegisterForValue(IceValue value);
+    public abstract void bindVirtualRegisterToValue(IceValue value, IceMachineRegister.RegisterView register);
 
+    public abstract void bindPhysicalRegisterToValue(IceValue value, IceMachineRegister.RegisterView register);
+
+    public abstract Optional<IceMachineRegister.RegisterView> getRegisterForValue(IceValue value);
+
+    /**
+     * 给 MachineFunction 分配物理寄存器单元，仅供寄存器分配器使用
+     */
     public abstract IceMachineRegister allocatePhysicalRegister(String name, IceType type);
 
-    public abstract IceMachineRegister allocateVirtualRegister(String name, IceType type);
+    /**
+     * 给 MachineFunction 分配虚拟寄存器单元
+     */
+    protected abstract IceMachineRegister allocateVirtualRegister(String name, IceType type);
 
-    public abstract IceMachineRegister allocateVirtualRegister(IceType type);
+    public abstract IceMachineRegister.RegisterView allocateVirtualRegister(IceType type);
 
-    public abstract IceMachineRegister getReturnRegister(IceType type);
+    public abstract IceMachineRegister.RegisterView getReturnRegister(IceType type);
+
+    public abstract IceMachineRegister.RegisterView getZeroRegister(IceType type);
+
+    public abstract Set<IceMachineRegister> getAllRegisters();
 
     /**
      * 获取实际汇编中的基本块入口
@@ -35,8 +50,6 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
      * @return 对应的机器指令块
      */
     public abstract IceBlock getMachineBlock(String name);
-
-    public abstract Collection<IceBlock> getMachineBlocks();
 
     @Override
     public String getReferenceName(boolean withType) {
