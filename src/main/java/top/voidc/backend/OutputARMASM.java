@@ -44,9 +44,9 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
             if (func instanceof IceExternFunction) continue;
             assert func instanceof IceMachineFunction;
 
-            assemblyBuilder.writeRaw(func.getTextIR());
+            assemblyBuilder.writeRaw(func.getTextIR())
+                    .writeLine();
         }
-        assemblyBuilder.writeLine(); // 添加一个空行防止 gcc 报警告
         assemblyBuilder.close();
     }
 

@@ -1,6 +1,7 @@
 package top.voidc.ir.ice.constant;
 
 import top.voidc.frontend.ir.ConstantVisitor;
+import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 
 /**
@@ -10,7 +11,7 @@ import top.voidc.ir.ice.type.IceType;
  * 所有字面常量的基类，提供常量数据的基本操作和运算接口
  * 包括类型转换、算术运算、比较运算和逻辑运算
  */
-public abstract class IceConstantData extends IceConstant {
+public abstract class IceConstantData extends IceConstant implements IceMachineValue {
     public IceConstantData(IceType type) {
         super(null, type);
     }

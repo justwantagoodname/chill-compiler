@@ -3,6 +3,7 @@ package top.voidc.backend.arm64.instr;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineBlock;
 import top.voidc.ir.machine.IceMachineFunction;
@@ -24,7 +25,7 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     // IceValue 和存放寄存器(视图)的关系
-    private final Map<IceValue, IceMachineRegister.RegisterView> valueToRegMap = new HashMap<>();
+    private final Map<IceValue, IceMachineValue> valueToMachineValue = new HashMap<>();
 
     // 所有分配出去的物理寄存器
     private final Map<String, IceMachineRegister> physicalRegisters = new HashMap<>();
@@ -33,7 +34,7 @@ public class ARM64Function extends IceMachineFunction {
     private final Map<String, IceMachineRegister> virtualRegisters = new HashMap<>();
 
     // 所有机器指令块
-    private final Map<String, IceBlock> machineBlocks = new HashMap<>();
+    private final Map<String, IceMachineBlock> machineBlocks = new HashMap<>();
 
     private final IceMachineRegister zeroRegister = allocatePhysicalRegister("zr", IceType.I64);
 
@@ -103,11 +104,16 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     @Override
+    public void bindMachineValueToValue(IceValue value, IceMachineValue machineValue) {
+
+    }
+
+    @Override
     public void bindVirtualRegisterToValue(IceValue value, IceMachineRegister.RegisterView view) {
         if (!virtualRegisters.containsKey(view.getRegister().getName())) {
             throw new IllegalArgumentException("Wrong use!");
         }
-        valueToRegMap.put(value, view);
+        valueToMachineValue.put(value, view);
     }
 
     @Override
@@ -115,12 +121,12 @@ public class ARM64Function extends IceMachineFunction {
         if (!physicalRegisters.containsKey(view.getRegister().getName())) {
             throw new IllegalArgumentException("Wrong use!");
         }
-        valueToRegMap.put(value, view);
+        valueToMachineValue.put(value, view);
     }
 
     @Override
-    public Optional<IceMachineRegister.RegisterView> getRegisterForValue(IceValue value) {
-        return Optional.ofNullable(valueToRegMap.get(value));
+    public Optional<IceMachineValue> getRegisterForValue(IceValue value) {
+        return Optional.ofNullable(valueToMachineValue.get(value));
     }
 
     @Override
@@ -165,7 +171,7 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     @Override
-    public IceBlock getMachineBlock(String name) {
+    public IceMachineBlock getMachineBlock(String name) {
         var block = machineBlocks.get(name);
         if (block == null) throw new IllegalArgumentException("Block not found: " + name);
         return block;
@@ -193,6 +199,9 @@ public class ARM64Function extends IceMachineFunction {
                 .append("\t.type ").append(getName()).append(", %function\n")
                 .append("\t.align ").append(Tool.log2(getAlignment())).append("\n")
                 .append(getName()).append(":\n");
-        blocks().forEach(block -> block.getTextIR(builder));
+        blocks().forEach(block -> {
+            block.getTextIR(builder);
+            builder.append("\n");
+        });
     }
 }

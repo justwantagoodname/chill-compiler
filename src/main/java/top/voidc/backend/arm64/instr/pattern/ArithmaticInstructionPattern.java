@@ -71,7 +71,9 @@ public class ArithmaticInstructionPattern {
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
-            return selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {x}, {y}", dstReg, xReg, yReg)).getResultReg();
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("ADD {dst}, {x}, {y}", dstReg, xReg, yReg)
+            ).getResultReg();
         }
 
         @Override
@@ -215,9 +217,9 @@ public class ArithmaticInstructionPattern {
             return commutativeApply(value,
                     (lhs, rhs) -> lhs instanceof IceBinaryInstruction.Mul && canBeReg(selector, rhs),
                     (IceBinaryInstruction.Mul mul, IceValue other) -> {
-                        IceMachineRegister.RegisterView xReg = selector.emit(mul.getLhs()),
-                                yReg = selector.emit(mul.getRhs()),
-                                zReg = selector.emit(other);
+                        IceMachineRegister.RegisterView xReg = (IceMachineRegister.RegisterView) selector.emit(mul.getLhs()),
+                                yReg = (IceMachineRegister.RegisterView) selector.emit(mul.getRhs()),
+                                zReg = (IceMachineRegister.RegisterView) selector.emit(other);
                         var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
 
                         return selector.addEmittedInstruction(

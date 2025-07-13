@@ -1,9 +1,9 @@
 package top.voidc.ir.machine;
 
 import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceInstruction;
+import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 
@@ -32,10 +32,10 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
         parserNamedOperandPosMap();
     }
 
-    public IceMachineInstruction(String renderTemplate, IceValue... values) {
+    public IceMachineInstruction(String renderTemplate, IceMachineValue... values) {
         super(null, null, IceType.VOID);
         this.renderTemplate = renderTemplate;
-        Arrays.stream(values).forEachOrdered(this::addOperand);
+        Arrays.stream(values).map(machineValue -> (IceValue) machineValue).forEachOrdered(this::addOperand);
         parserNamedOperandPosMap();
     }
 
@@ -72,10 +72,7 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
 
     @Override
     public void addOperand(IceValue operand) {
-        assert operand instanceof IceConstantData
-                || operand instanceof IceMachineRegister.RegisterView
-                || operand instanceof IceMachineBlock
-                || operand instanceof IceStackSlot;
+        assert operand instanceof IceMachineValue;
         super.addOperand(operand);
     }
 

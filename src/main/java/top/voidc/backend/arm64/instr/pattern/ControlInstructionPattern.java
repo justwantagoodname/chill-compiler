@@ -17,6 +17,11 @@ public class ControlInstructionPattern {
         }
 
         @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceRetInstruction value) {
             selector.addEmittedInstruction(new ARM64Instruction("RET"));
             return null;
@@ -32,6 +37,11 @@ public class ControlInstructionPattern {
 
         public RetInteger() {
             super(2);
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
         }
 
         @Override
@@ -55,6 +65,11 @@ public class ControlInstructionPattern {
     public static class BranchUnconditional extends InstructionPattern<IceBranchInstruction> {
         public BranchUnconditional() {
             super(1);
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
         }
 
         @Override

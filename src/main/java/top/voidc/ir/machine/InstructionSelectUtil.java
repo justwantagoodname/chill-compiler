@@ -34,7 +34,8 @@ public class InstructionSelectUtil {
         try {
             // 如果指令选择器能够为该值选择一个模式，则认为它可以是寄存器
             var matchResult = selector.select(value);
-            return matchResult != null;
+            var emittedType = matchResult.matchedPattern().getEmittedType();
+            return emittedType != null && emittedType.isAssignableFrom(IceMachineRegister.RegisterView.class);
         } catch (Exception e) {
             // 如果选择失败，则不能作为寄存器使用
             return false;

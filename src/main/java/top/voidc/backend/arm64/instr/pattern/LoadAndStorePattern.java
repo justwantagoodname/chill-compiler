@@ -16,7 +16,6 @@ import static top.voidc.ir.machine.InstructionSelectUtil.*;
 
 public class LoadAndStorePattern {
     public static class LoadRegFuncParam extends InstructionPattern<IceFunction.IceFunctionParameter> {
-
         /**
          * 匹配函数参数 然后从物理寄存器移动到虚拟寄存器
          */
@@ -35,9 +34,8 @@ public class LoadAndStorePattern {
         @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceFunction.IceFunctionParameter value) {
             // TODO: 内存参数的需要load
-            var regView = selector.getMachineFunction().getRegisterForValue(value)
+            return (IceMachineRegister.RegisterView) selector.getMachineFunction().getRegisterForValue(value)
                     .orElseThrow(UnsupportedOperationException::new);
-            return regView;
         }
 
         @Override
@@ -143,8 +141,9 @@ public class LoadAndStorePattern {
                 throw new IllegalStateException("phi指令应该可以被选择");
             }
             var dstReg = selector.emit(value.getDestination());
+            var srcReg = selector.emit(value.getSource());
             return selector.addEmittedInstruction(
-                    new ARM64Instruction("MOV {dst}, {imm12:src}", dstReg, value.getSource())).getResultReg();
+                    new ARM64Instruction("MOV {dst}, {imm12:src}", dstReg, srcReg)).getResultReg();
         }
 
         @Override

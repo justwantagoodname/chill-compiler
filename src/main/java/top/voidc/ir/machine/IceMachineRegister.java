@@ -2,6 +2,7 @@ package top.voidc.ir.machine;
 
 import top.voidc.ir.IceUser;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 
@@ -10,7 +11,7 @@ import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
  * 默认为虚拟寄存器
  */
 public abstract class IceMachineRegister extends IceUser implements IceArchitectureSpecification {
-    public static class RegisterView extends IceValue {
+    public static class RegisterView extends IceValue implements IceMachineValue {
         private final IceMachineRegister register;
 
         public RegisterView(IceMachineRegister register, String name, IceType type) {

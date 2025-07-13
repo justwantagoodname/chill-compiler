@@ -3,6 +3,7 @@ package top.voidc.ir.machine;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 
@@ -20,11 +21,13 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
 
     public abstract IceStackSlot allocateStackSlot(IceType type);
 
+    public abstract void bindMachineValueToValue(IceValue value, IceMachineValue machineValue);
+
     public abstract void bindVirtualRegisterToValue(IceValue value, IceMachineRegister.RegisterView register);
 
     public abstract void bindPhysicalRegisterToValue(IceValue value, IceMachineRegister.RegisterView register);
 
-    public abstract Optional<IceMachineRegister.RegisterView> getRegisterForValue(IceValue value);
+    public abstract Optional<IceMachineValue> getRegisterForValue(IceValue value);
 
     /**
      * 给 MachineFunction 分配物理寄存器单元，仅供寄存器分配器使用
@@ -49,7 +52,7 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
      * @param name 原函数中的基本块名称
      * @return 对应的机器指令块
      */
-    public abstract IceBlock getMachineBlock(String name);
+    public abstract IceMachineBlock getMachineBlock(String name);
 
     @Override
     public String getReferenceName(boolean withType) {
