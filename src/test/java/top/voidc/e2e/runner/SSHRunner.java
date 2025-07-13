@@ -15,19 +15,20 @@ import java.util.Map;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 通过SSH在远程开发板上进行测试
  * 需要GNU GCC和GNU Make工具
  * 现阶段进行LLVM IR测试需要Clang 17以上版本
  */
-public class SSHGNURunner implements TestcaseRunner {
+public abstract class SSHRunner implements TestcaseRunner {
 
-    private static String workingDirectory = "";
+    protected String workingDirectory;
 
     public record SSHConfig(String host, int port, String username, String password) {}
 
-    private static class TestResult {
+    protected class TestResult {
         public Testcase getTestcase() {
             return testcase;
         }
@@ -83,14 +84,14 @@ public class SSHGNURunner implements TestcaseRunner {
         }
     }
 
-    private final Map<String, TestResult> testResultMap = new HashMap<>();
+    protected final Map<String, TestResult> testResultMap = new HashMap<>();
 
-    private final JSch jSch;
-    private final SSHConfig sshConfig;
-    private Session session;
-    private ChannelSftp sftp;
+    protected final JSch jSch;
+    protected final SSHConfig sshConfig;
+    protected Session session;
+    protected ChannelSftp sftp;
 
-    public SSHGNURunner(String baseDir, SSHConfig sshConfig) {
+    public SSHRunner(String baseDir, SSHConfig sshConfig) {
         this.jSch = new JSch();
         this.sshConfig = sshConfig;
         workingDirectory = baseDir;
@@ -110,7 +111,7 @@ public class SSHGNURunner implements TestcaseRunner {
         }
     }
 
-    private void uploadFile(File local, String remotePath) throws JSchException, SftpException {
+    protected void uploadFile(File local, String remotePath) throws SftpException {
         sftp.put(local.getAbsolutePath(), remotePath);
     }
 
@@ -121,7 +122,7 @@ public class SSHGNURunner implements TestcaseRunner {
      * @param localFile     本地目标文件（可以指定具体路径和文件名）
      * @throws SftpException 如果下载过程中发生错误
      */
-    public void downloadFile(String remotePath, File localFile)
+    protected void downloadFile(String remotePath, File localFile)
             throws SftpException {
         sftp.get(remotePath, localFile.getAbsolutePath());
     }
@@ -132,10 +133,9 @@ public class SSHGNURunner implements TestcaseRunner {
      * @param localDirPath   本地目录路径，例如 "/home/user/build"
      * @param remoteDirPath  远程目录路径，例如 "/home/pi/build"
      * @throws SftpException 如果文件传输过程中出现错误
-     * @throws IOException   如果本地文件无法读取
      */
-    private void uploadDirectoryFlat(String localDirPath, String remoteDirPath)
-            throws SftpException, IOException, JSchException {
+    protected void uploadDirectoryFlat(String localDirPath, String remoteDirPath)
+            throws SftpException {
 
         File localDir = new File(localDirPath);
         if (!localDir.exists() || !localDir.isDirectory()) {
@@ -159,10 +159,10 @@ public class SSHGNURunner implements TestcaseRunner {
         }
     }
 
-    private ProcessHelper.ExecuteResult executeCommand(String command) throws JSchException, IOException {
+    protected ProcessHelper.ExecuteResult executeCommand(String command) throws JSchException, IOException {
         final var channel = (ChannelExec) session.openChannel("exec");
 
-        Log.i("执行 " + command);
+        Log.d("执行 " + command);
         channel.setCommand(command);
         final var stdout = channel.getInputStream();
         final var stderr = channel.getErrStream();
@@ -185,11 +185,11 @@ public class SSHGNURunner implements TestcaseRunner {
         return new ProcessHelper.ExecuteResult(exitStatus, output, error);
     }
 
-    private ProcessHelper.ExecuteResult executeCommand(String... command) throws JSchException, IOException {
+    protected ProcessHelper.ExecuteResult executeCommand(String... command) throws JSchException, IOException {
         return executeCommand(String.join(" ", command));
     }
 
-    private void compileLibsysy() throws IOException, JSchException, SftpException {
+    protected void compileLibsysy() throws IOException, JSchException, SftpException {
 
 
         final var libsysyDir = new File("testcases/libsysy");
@@ -211,14 +211,12 @@ public class SSHGNURunner implements TestcaseRunner {
             throw new RuntimeException("Libsysy compilation failed: make exit code = " + buildResult.exitCode());
         }
 
-        if (!remoteFileExists(remoteLibsysy)) {
-            throw new AssertionError("Libsysy doesn't exist");
-        }
+        assertTrue(remoteFileExists(remoteLibsysy), "Libsysy compilation failed, libsysy.a not found");
 
         Log.i("Libsysy compiled successfully: " + remoteLibsysy);
     }
 
-    private static void compareOutput(TestResult result) throws IOException {
+    protected static void compareOutput(TestResult result) throws IOException {
         final var expectedLines = Files.readString(result.getTestcase().out().toPath())
                 .replace("\r\n", "\n").replace("\r", "\n").stripTrailing();
         final var actualLines = Files.readString(result.getActualOutput().toPath())
@@ -298,78 +296,7 @@ public class SSHGNURunner implements TestcaseRunner {
     }
 
     @Override
-    public List<String> getCompileArgument(Testcase test) {
-        return List.of("-o", test.asm().getAbsolutePath(), test.src().getAbsolutePath(), "-S", "-fenable-ptr-type");
-    }
-
-    /**
-     * 上传文件到远程服务器
-     * @param test 测试样例
-     * @return 是否上传成功
-     */
-    @Override
-    public boolean prepareTest(Testcase test) {
-        final var result = new TestResult(test);
-        testResultMap.put(test.name(), result);
-
-        if (test.in() != null && test.in().exists() && !remoteFileExists(result.getRemoteInputPath())) {
-            try {
-                uploadFile(test.in(), result.getRemoteInputPath());
-            } catch (Exception e) {
-                e.printStackTrace();
-                return false;
-            }
-        }
-
-        // TODO: 换成ASM
-        Log.i("上传汇编代码 " + test.asm().getName());
-
-//        assert test.asm().exists();
-        assert result.getIrOutput().exists();
-
-        try {
-//            uploadFile(test.asm(), result.getRemoteAsmPath());
-            uploadFile(result.getIrOutput(), result.getRemoteIrPath());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public boolean compileTest(Testcase test) throws IOException, InterruptedException {
-        final var testResult = testResultMap.get(test.name());
-
-        final var remoteLibsysyDir = workingDirectory + "/libsysy";
-        // TODO: 换成 gcc 编译汇编
-        try {
-            final var clangResult = executeCommand("clang", "-x", "ir", "-S", "-fno-integrated-as",
-                    "-o", testResult.getRemoteAsmPath(), testResult.getRemoteIrPath());
-
-            if (!clangResult.isSuccess()) {
-                Log.e("IR verification failed:\n===LLVM OUTPUT===\n" + clangResult.stderr() + "\n===LLVM END===\n");
-                Log.e("Compilation failed: clang exit code = " + clangResult.exitCode());
-                return false;
-            }
-
-            final var gccResult = executeCommand("gcc", "-o", testResult.getRemoteExecutablePath(),
-                    testResult.getRemoteAsmPath(), "-L" + remoteLibsysyDir, "-lsysy", "-lstdc++");
-            if (!gccResult.isSuccess()) {
-                Log.e("GCC compilation failed:\n===GCC OUTPUT===\n" + gccResult.stderr() + "\n===GCC END===\n");
-                Log.e("Compilation failed: gcc exit code = " + gccResult.exitCode());
-                return false;
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public boolean runTest(Testcase test) throws IOException, InterruptedException {
+    public boolean runTest(Testcase test) {
         final var testResult = testResultMap.get(test.name());
         final var redirectInput = testResult.getRemoteInputPath() == null ? "" : "< " + testResult.getRemoteInputPath();
         try {
@@ -383,10 +310,10 @@ public class SSHGNURunner implements TestcaseRunner {
                 downloadFile(testResult.getRemoteActualOutputPath(), testResult.getActualOutput());
             } else {
                 final var createRes = testResult.getActualOutput().createNewFile();
-                assert createRes;
+                assertTrue(createRes);
             }
 
-            LocalClangRunner.appendCode(executeResult.exitCode(), testResult.getActualOutput());
+            ProcessHelper.appendCode(executeResult.exitCode(), testResult.getActualOutput());
             compareOutput(testResult);
 
         } catch (Exception e) {
@@ -394,31 +321,6 @@ public class SSHGNURunner implements TestcaseRunner {
             return false;
         }
 
-        return true;
-    }
-
-    @Override
-    public boolean cleanup(Testcase test) throws IOException, InterruptedException {
-        final var testResult = testResultMap.get(test.name());
-
-        testResult.getActualOutput().delete();
-        testResult.getIrOutput().delete();
-
-        final var targetList = List.of(
-                testResult.getRemoteIrPath(),
-                testResult.getRemoteAsmPath(),
-                testResult.getRemoteActualOutputPath(),
-                testResult.getRemoteExecutablePath());
-
-        for (var target : targetList) {
-            try {
-                sftp.rm(target);
-            } catch (SftpException e) {
-                if (e.id == 2) continue; // File not exist
-                e.printStackTrace();
-                return false;
-            }
-        }
         return true;
     }
 }

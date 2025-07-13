@@ -16,7 +16,7 @@ public class ARM64Instruction extends IceMachineInstruction {
 
     @Override
     public String getArchitecture() {
-        return "aarch64";
+        return "armv8-a";
     }
 
     @Override

@@ -33,10 +33,11 @@ public class LoadAndStorePattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceFunction.IceFunctionParameter value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceFunction.IceFunctionParameter value) {
             // TODO: 内存参数的需要load
-            return selector.getMachineFunction().getRegisterForValue(value)
+            var regView = selector.getMachineFunction().getRegisterForValue(value)
                     .orElseThrow(UnsupportedOperationException::new);
+            return regView;
         }
 
         @Override
@@ -61,21 +62,21 @@ public class LoadAndStorePattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceConstantInt value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConstantInt value) {
             // TODO：充分利用movz movz
             final var constValue = (int) value.getValue();
-            final var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            final var dstRegView = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             if (!isImm16(value)) {
                 var lowBit = constValue & 0xFFFF;
                 var highBit = constValue >> 16;
-                selector.addEmittedInstruction(new ARM64Instruction("MOVZ {dst}, {imm16:x}", dstReg, IceConstantData.create(lowBit)));
-                selector.addEmittedInstruction(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #16", dstReg, IceConstantData.create(highBit)));
-                return dstReg;
+                selector.addEmittedInstruction(new ARM64Instruction("MOVZ {dst}, {imm16:x}", dstRegView, IceConstantData.create(lowBit)));
+                selector.addEmittedInstruction(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #16", dstRegView, IceConstantData.create(highBit)));
+                return dstRegView;
             } else {
-                final var mov = new ARM64Instruction("MOVZ {dst}, {imm16:x}", dstReg, value);
+                final var mov = new ARM64Instruction("MOVZ {dst}, {imm16:x}", dstRegView, value);
                 selector.addEmittedInstruction(mov);
             }
-            return dstReg;
+            return dstRegView;
         }
 
         @Override
@@ -95,8 +96,8 @@ public class LoadAndStorePattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceConstantInt value) {
-            return selector.getMachineFunction().allocatePhysicalRegister("wzr", IceType.I32);
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConstantInt value) {
+            return selector.getMachineFunction().getZeroRegister(IceType.I32);
         }
 
         @Override
@@ -111,7 +112,7 @@ public class LoadAndStorePattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceCopyInstruction value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCopyInstruction value) {
             var srcReg = selector.emit(value.getSource());
             assert value.getDestination() instanceof IcePHINode;// 一般目标是PHINode
             // 目标寄存器一般是PHINode，为了防止没有被选择过，先选择一下
@@ -135,7 +136,7 @@ public class LoadAndStorePattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IceCopyInstruction value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCopyInstruction value) {
             assert value.getDestination() instanceof IcePHINode;// 一般目标是PHINode
             // 目标寄存器一般是PHINode，为了防止没有被选择过，先选择一下
             if (selector.select(value.getDestination()) == null) {
@@ -167,7 +168,7 @@ public class LoadAndStorePattern {
         }
 
         @Override
-        public IceMachineRegister emit(InstructionSelector selector, IcePHINode value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IcePHINode value) {
             // 什么指令也不生成就是生成一个虚拟寄存器
             return selector.getMachineFunction().allocateVirtualRegister(value.getType());
         }

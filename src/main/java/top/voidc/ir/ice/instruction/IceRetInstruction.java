@@ -18,6 +18,9 @@ public class IceRetInstruction extends IceInstruction {
     }
 
     public Optional<IceValue> getReturnValue() {
+        if (getOperandsList().isEmpty()) {
+            return Optional.empty();
+        }
         return Optional.ofNullable(getOperand(0));
     }
 

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 本地的 Clang IR 测试样例运行器
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * 主要用于测试编译器前端的编译和运行
  * **出于对运行速度和环境一致性的考虑，本地运行器仅支持 Linux 本地测试，非 Linux 使用 SSHGNURunner 代替**
  */
+@Deprecated
 public class LocalClangRunner implements TestcaseRunner {
 
     private static class TestResult {
@@ -35,9 +37,9 @@ public class LocalClangRunner implements TestcaseRunner {
         }
 
         public void cleanup() {
-            actualOutput.delete();
-            irOutput.delete();
-            executableOutput.delete();
+            assertTrue(actualOutput.delete());
+            assertTrue(irOutput.delete());
+            assertTrue(executableOutput.delete());
         }
 
         public File getExecutableOutput() {

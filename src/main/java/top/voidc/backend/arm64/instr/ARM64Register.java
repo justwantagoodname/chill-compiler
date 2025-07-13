@@ -12,9 +12,21 @@ public class ARM64Register extends IceMachineRegister {
         super(name, type, isVirtualize);
     }
 
+
+    @Override
+    public RegisterView createView(IceType type) {
+        var registerPrefix = switch (type.getTypeEnum()) {
+            case I32 -> "w";
+            case I64 -> "x";
+            case F64 -> "v";
+            default -> throw new IllegalStateException();
+        };
+        return new RegisterView(this, (isVirtualize() ? "virt_" : "") + registerPrefix + getName(), type);
+    }
+
     @Override
     public String getArchitecture() {
-        return "aarch64";
+        return "armv8-a";
     }
 
     @Override

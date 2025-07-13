@@ -1,6 +1,7 @@
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import top.voidc.backend.*;
 import top.voidc.backend.arm64.instr.pattern.ARM64InstructionPatternPack;
 import top.voidc.backend.instr.InstructionSelectionPass;
 import top.voidc.backend.instr.SSADestruction;
@@ -9,7 +10,6 @@ import top.voidc.frontend.parser.SysyParser;
 import top.voidc.frontend.translator.IRGenerator;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.IceUnit;
-import top.voidc.misc.AssemblyBuilder;
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
 import top.voidc.optimizer.PassManager;
@@ -37,6 +37,7 @@ public class Compiler {
         Log.should(source.exists(), "source file does not exist");
 
         context.setSource(source);
+        context.addPassResult("sourceFile", source);
     }
 
     public void compile() throws IOException {
@@ -46,6 +47,9 @@ public class Compiler {
 
     public void compile(PassManager passManager) throws IOException {
         context.setCurrentIR(new IceUnit(Flag.get("source")));
+        context.addPassResult("sourcePath", sourcePath);
+        context.addPassResult("outputPath", outputPath);
+
         IRGenerator generator = new IRGenerator(context);
         parseLibSource(context);
         generator.generateIR();
@@ -58,17 +62,15 @@ public class Compiler {
 
         // TODO: 后续添加O0 O1的组
         passManager.addDisableGroup("needfix");
-        // 在完成前先禁用后端相关的Pass
-//        passManager.addDisableGroup("backend");
+        String disableGroups = Flag.get("-fdisable-group");
+        if (disableGroups != null && !disableGroups.isBlank()) {
+            for (String group : disableGroups.split(",")) {
+                passManager.addDisableGroup(group.trim());
+            }
+        }
+
         passManager.runAll();
-
-        emitLLVM();
-
-        AssemblyBuilder assemblyBuilder = new AssemblyBuilder(outputPath);
-        assemblyBuilder.writeRaw(context.getCurrentIR().toString());
-        assemblyBuilder.close();
     }
-
 
     /**
      * 设置 Pass 的执行顺序
@@ -81,20 +83,23 @@ public class Compiler {
             pm.runPass(ScalarReplacementOfAggregates.class);
             pm.runPass(Mem2Reg.class);
             pm.runPass(SmartChilletSimplifyCFG.class);
-            pm.runPass(ShowIR.class);
             pm.untilStable(
                     GlobalValueNumbering.class,
-                    ShowIR.class,
                     SparseConditionalConstantPropagation.class,
                     SmartChilletSimplifyCFG.class
             );
             pm.runPass(RenameVariable.class);
+            pm.runPass(DumpIR.class);
+
+            // 后端相关
+            pm.runPass(SSADestruction.class);
+            pm.runPass(InstructionSelectionPass.class);
             pm.runPass(LivenessAnalysis.class);
             pm.runPass(ShowIR.class);
-            pm.runPass(RenameVariable.class);
-            pm.runPass(SSADestruction.class);
-            pm.runPass(ShowIR.class);
-            pm.runPass(InstructionSelectionPass.class);
+            pm.runPass(SillyChilletAllocateRegister.class);
+            pm.runPass(AlignFramePass.class);
+
+            pm.runPass(OutputARMASM.class);
         });
         return passManager;
     }
@@ -103,29 +108,20 @@ public class Compiler {
         final var headerStream = Compiler.class.getResourceAsStream("/lib.sy");
         Log.should(headerStream != null, "lib.sy not found");
         final var libSource = CharStreams.fromStream(headerStream);
-        initParse(libSource);
+        initParser(libSource);
     }
 
     public void parseSource(IceContext context) throws IOException {
         final var inputSource = CharStreams.fromFileName(context.getSource().getAbsolutePath());
-        initParse(inputSource);
+        initParser(inputSource);
     }
 
-    public void initParse(CharStream inputSource){
+    public void initParser(CharStream inputSource){
         final var lexer = new SysyLexer(inputSource);
         final var tokenStream = new CommonTokenStream(lexer);
         final var parser = new SysyParser(tokenStream);
         context.setAst(parser.compUnit());
         context.setParser(parser);
-    }
-
-    public void emitLLVM() throws IOException {
-        if (Boolean.TRUE.equals(Flag.get("-S"))) {
-            final var irPath = sourcePath.replace(".sy", ".ll");
-            AssemblyBuilder assemblyBuilder = new AssemblyBuilder(irPath);
-            assemblyBuilder.writeRaw(context.getCurrentIR().toString());
-            assemblyBuilder.close();
-        }
     }
 
     public static void main(String[] args) throws IOException {
