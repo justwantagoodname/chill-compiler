@@ -1,4 +1,4 @@
-package top.voidc.ir.machine;
+package top.voidc.ir.ice.interfaces;
 
 public interface IceArchitectureSpecification {
     default String getArchitectureDescription() {

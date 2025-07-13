@@ -7,11 +7,12 @@ import top.voidc.frontend.parser.IceLexer;
 import top.voidc.frontend.parser.IceParser;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.interfaces.IceAlignable;
 import top.voidc.ir.ice.type.IceType;
 
 import java.util.*;
 
-public class IceFunction extends IceConstant implements Iterable<IceBlock> {
+public class IceFunction extends IceConstant implements Iterable<IceBlock>, IceAlignable {
 
     public static class IceFunctionParameter extends IceValue {
 
@@ -216,5 +217,10 @@ public class IceFunction extends IceConstant implements Iterable<IceBlock> {
     @Override
     public Iterator<IceBlock> iterator() {
         return blocks().iterator();
+    }
+
+    @Override
+    public int getAlignment() {
+        return 4; // 默认对齐方式到4字节
     }
 }

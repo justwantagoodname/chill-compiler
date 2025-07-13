@@ -3,12 +3,36 @@ package top.voidc.ir.machine;
 import top.voidc.ir.IceUser;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 
 /**
  * 机器寄存器抽象，在寄存器分配后变为真实的物理寄存器
  * 默认为虚拟寄存器
  */
 public abstract class IceMachineRegister extends IceUser implements IceArchitectureSpecification {
+    public static class RegisterView extends IceValue {
+        private final IceMachineRegister register;
+
+        public RegisterView(IceMachineRegister register, String name, IceType type) {
+            super(name, type);
+            this.register = register;
+        }
+
+        public IceMachineRegister getRegister() {
+            return register;
+        }
+
+        @Override
+        public String getReferenceName(boolean withType) {
+            return getName();
+        }
+
+        @Override
+        public void getTextIR(StringBuilder builder) {
+            builder.append(getName());
+        }
+    }
+
     private boolean isVirtualize = true;
 
     public IceMachineRegister(String name, IceType type) {
@@ -32,14 +56,11 @@ public abstract class IceMachineRegister extends IceUser implements IceArchitect
         isVirtualize = virtualize;
     }
 
-    @Override
-    public void addOperand(IceValue operand) {
-        super.addOperand(operand);
-    }
+    public abstract RegisterView createView(IceType type);
 
     @Override
     public String getReferenceName(boolean withType) {
-        return getName();
+        return (isVirtualize() ? "virt_" : "") + "regslot_" + createView(getType()).getReferenceName();
     }
 
     @Override
@@ -48,11 +69,11 @@ public abstract class IceMachineRegister extends IceUser implements IceArchitect
     }
 
     /**
-     * 区分两个机器寄存器的不同是架构和名称
+     * 区分两个机器寄存器的不同是架构、类型和名称
      */
     @Override
     public int hashCode() {
-        return (getArchitectureDescription() + getName()).hashCode();
+        return (getArchitectureDescription() + getType().getTypeEnum() + getName()).hashCode();
     }
 
     @Override
@@ -60,6 +81,7 @@ public abstract class IceMachineRegister extends IceUser implements IceArchitect
         if (obj == this) return true;
         return obj instanceof IceMachineRegister register
                 && register.getArchitectureDescription().equals(getArchitectureDescription())
+                && register.getType().equals(getType())
                 && register.getName().equals(getName());
     }
 }

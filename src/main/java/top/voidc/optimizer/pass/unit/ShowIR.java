@@ -15,6 +15,10 @@ public class ShowIR implements CompilePass<IceUnit> {
 
     @Override
     public boolean run(IceUnit target) {
+        if (System.getProperty("chill.ci") != null && System.getProperty("chill.ci").equals("true")) {
+            // CI 环境下不打印 IR
+            return false;
+        }
         Log.d("\n" + target.getTextIR());
         return false;
     }
