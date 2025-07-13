@@ -3,10 +3,11 @@ package top.voidc.ir.machine;
 
 import top.voidc.ir.ice.interfaces.IceAlignable;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 
-public class IceStackSlot extends IceValue implements IceAlignable {
-    private IceMachineFunction parent;
+public class IceStackSlot extends IceValue implements IceAlignable, IceMachineValue {
+    private final IceMachineFunction parent;
     private int offset = -1; // 距离栈顶的偏移量
     private boolean isFinalized = false; // 是否已经分配了偏移量
     private int alignment;

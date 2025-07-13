@@ -4,6 +4,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
+import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
 import top.voidc.ir.machine.IceMachineRegister;
@@ -110,7 +111,7 @@ public class InstructionSelector {
      * @param value 要生成指令的节点
      * @return 指令结果存放的寄存器，如果无结果指令，那么返回null
      */
-    public IceMachineRegister.RegisterView emit(IceValue value) {
+    public IceMachineValue emit(IceValue value) {
         // 如果这个值已经计算过并存放在某个虚拟寄存器中，直接返回该寄存器
         return machineFunction.getRegisterForValue(value).orElseGet(() -> {
             MatchResult match = costCache.get(value);
@@ -122,19 +123,23 @@ public class InstructionSelector {
 
             // 使用模式的emit方法来生成指令
             // emit方法内部会递归调用 selector.emit(operand) 来获取操作数寄存器
-            final var resultReg = match.matchedPattern().emitForValue(this, value);
+            final var result = match.matchedPattern().emitForValue(this, value);
 
             // 将IR值和它的虚拟寄存器关联起来
-            if (resultReg != null) {
-                if (resultReg.getRegister().isVirtualize()) {
-                    // 如果是虚拟寄存器，绑定到虚拟寄存器
-                    machineFunction.bindVirtualRegisterToValue(value, resultReg);
+            if (result != null) {
+                if (result instanceof IceMachineRegister.RegisterView resultReg) {
+                    if (resultReg.getRegister().isVirtualize()) {
+                        // 如果是虚拟寄存器，绑定到虚拟寄存器
+                        machineFunction.bindVirtualRegisterToValue(value, resultReg);
+                    } else {
+                        // 如果是物理寄存器，直接绑定
+                        machineFunction.bindPhysicalRegisterToValue(value, resultReg);
+                    }
                 } else {
-                    // 如果是物理寄存器，直接绑定
-                    machineFunction.bindPhysicalRegisterToValue(value, resultReg);
+                    machineFunction.bindMachineValueToValue(value, result);
                 }
             }
-            return resultReg;
+            return result;
         });
     }
 
