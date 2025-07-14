@@ -18,6 +18,9 @@ import top.voidc.optimizer.pass.unit.ShowIR;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.util.List;
 import java.util.Objects;
 
 public class Compiler {
@@ -93,6 +96,7 @@ public class Compiler {
 
             // 后端相关
             pm.runPass(SSADestruction.class);
+            pm.runPass(ShowIR.class);
             pm.runPass(InstructionSelectionPass.class);
             pm.runPass(LivenessAnalysis.class);
             pm.runPass(ShowIR.class);
@@ -125,11 +129,19 @@ public class Compiler {
     }
 
     public static void main(String[] args) throws IOException {
-        Flag.init(args);
-        final String sourcePath = Flag.get("source");
-        final String outputPath = Flag.get("-o");
 
-        final var compiler = new Compiler(sourcePath, outputPath);
-        compiler.compile();
+        RuntimeMXBean mx = ManagementFactory.getRuntimeMXBean();
+        List<String> jvmArgs = mx.getInputArguments();
+        System.out.println("JVM 启动参数：");
+        for (String arg : jvmArgs) {
+            System.out.println("  " + arg);
+        }
+
+//        Flag.init(args);
+//        final String sourcePath = Flag.get("source");
+//        final String outputPath = Flag.get("-o");
+//
+//        final var compiler = new Compiler(sourcePath, outputPath);
+//        compiler.compile();
     }
 }
