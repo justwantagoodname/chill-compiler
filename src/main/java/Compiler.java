@@ -137,7 +137,7 @@ public class Compiler {
         for (String arg : jvmArgs) {
             sb.append("  ").append(arg);
         }
-        Log.e("JVM 启动参数：" + sb);
+        Log.i("JVM 启动参数：" + sb);
     }
 
     public static void main(String[] args) throws IOException {
