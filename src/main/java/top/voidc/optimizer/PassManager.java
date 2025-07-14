@@ -219,7 +219,7 @@ public class PassManager {
             for (String arg : jvmArgs) {
                 sb.append("  ").append(arg);
             }
-            throw new RuntimeException("运行 Pass " + clazz.getSimpleName() + " 出现错误 JVM 参数: " + sb, e);
+            throw new RuntimeException("运行 Pass " + clazz.getSimpleName() + " 出现错误 JVM 参数: [" + sb + "]", e);
         }
     }
 
