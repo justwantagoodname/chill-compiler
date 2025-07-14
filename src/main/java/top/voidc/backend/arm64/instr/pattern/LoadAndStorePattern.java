@@ -148,7 +148,8 @@ public class LoadAndStorePattern {
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            return value instanceof IceCopyInstruction copy && isImm12(copy.getSource());
+            return value instanceof IceCopyInstruction copy && isImm12(copy.getSource())
+                    && !(copy.getSource().equals(IceConstantData.create(0)));
         }
     }
 
