@@ -47,6 +47,14 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new MemoryAllocationPattern.SimpleAllocaPattern());
         patternSet.add(new MemoryAllocationPattern.ArrayAllocaPattern());
         patternSet.add(new MemoryAllocationPattern.DynamicAllocaPattern());
+
+        patternSet.add(new MemoryAccessPatterns.LoadImmediatePattern());
+        patternSet.add(new MemoryAccessPatterns.LoadStackPattern());
+        patternSet.add(new MemoryAccessPatterns.StoreImmediatePattern());
+        patternSet.add(new MemoryAccessPatterns.StoreStackPattern());
+        patternSet.add(new MemoryAccessPatterns.LoadRegisterPointerPattern());
+        patternSet.add(new MemoryAccessPatterns.StoreRegisterPointerPattern());
+
     }
 
     @Override
