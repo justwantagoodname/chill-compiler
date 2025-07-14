@@ -213,13 +213,7 @@ public class PassManager {
                 }
             };
         } catch (Exception e) {
-            var mx = ManagementFactory.getRuntimeMXBean();
-            var jvmArgs = mx.getInputArguments();
-            var sb = new StringBuilder();
-            for (String arg : jvmArgs) {
-                sb.append("  ").append(arg);
-            }
-            throw new RuntimeException("运行 Pass " + clazz.getSimpleName() + " 出现错误 JVM 参数: [" + sb + "]", e);
+            throw new RuntimeException("运行 Pass " + clazz.getSimpleName() + " 出现错误", e);
         }
     }
 
