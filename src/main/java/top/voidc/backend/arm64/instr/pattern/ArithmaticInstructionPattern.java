@@ -7,6 +7,7 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceBinaryInstruction;
+import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.instruction.IceNegInstruction;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
@@ -239,6 +240,45 @@ public class ArithmaticInstructionPattern {
     }
 
     /**
+     * 寄存器乘减模式，注意这个指令不满足交换律
+     * x - y * z -> dst
+     */
+    public static class MSUBInstruction extends InstructionPattern<IceBinaryInstruction.Sub> {
+        public MSUBInstruction() {
+            super(1);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceBinaryInstruction.Sub value) {
+            var mulNode = (IceBinaryInstruction.Mul)value.getRhs();
+            return getIntrinsicCost() + selector.select(value.getLhs()).cost()
+                    + selector.select(mulNode.getLhs()).cost() + selector.select(mulNode.getRhs()).cost();
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Sub value) {
+            // x - y * z -> dst
+            var xReg = selector.emit(value.getLhs());
+            var mulNode = (IceBinaryInstruction.Mul) value.getRhs();
+            var yReg = selector.emit(mulNode.getLhs());
+            var zReg = selector.emit(mulNode.getRhs());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("MSUB {dst}, {x}, {y}, {z}", dstReg, xReg, yReg, zReg)).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            if (value instanceof IceBinaryInstruction.Sub subNode) {
+                var lhs = subNode.getLhs();
+                var rhs = subNode.getRhs();
+                return canBeReg(selector, lhs) && rhs instanceof IceBinaryInstruction.Mul;
+            }
+            return false;
+        }
+    }
+
+    /**
      * 寄存器减法模式：`x - y -> dst`
      */
     public static class SUBTwoReg extends InstructionPattern<IceBinaryInstruction.Sub> {
@@ -332,6 +372,34 @@ public class ArithmaticInstructionPattern {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             return value instanceof IceNegInstruction;
+        }
+    }
+
+    /**
+     * 模运算模式：`x % y = x - (x / y) * y`
+     */
+    public static class SMODTwoReg extends InstructionPattern<IceBinaryInstruction.Mod> {
+
+        public SMODTwoReg() {
+            super(2);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Mod value) {
+            var xReg = selector.emit(value.getLhs());
+            var yReg = selector.emit(value.getRhs());
+            var divReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            selector.addEmittedInstruction(
+                    new ARM64Instruction("SDIV {dst}, {x}, {y}", divReg, xReg, yReg));
+            return selector.addEmittedInstruction(new ARM64Instruction("MSUB {dst}, {x}, {y}, {z}", dstReg, divReg, yReg, xReg)).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceBinaryInstruction.Mod modNode
+                    && canBeReg(selector, modNode.getLhs())
+                    && canBeReg(selector, modNode.getRhs());
         }
     }
 }
