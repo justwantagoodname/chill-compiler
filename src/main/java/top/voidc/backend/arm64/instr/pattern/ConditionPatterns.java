@@ -90,6 +90,11 @@ public class ConditionPatterns {
         }
 
         @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBranchInstruction value) {
             // 首先处理条件操作（比较或测试）
             selector.emit(value.getCondition());

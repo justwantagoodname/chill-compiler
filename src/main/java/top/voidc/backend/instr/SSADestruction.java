@@ -2,6 +2,7 @@ package top.voidc.backend.instr;
 
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.constant.IceUndef;
 import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceCopyInstruction;
 import top.voidc.ir.ice.instruction.IcePHINode;
@@ -78,6 +79,7 @@ public class SSADestruction implements CompilePass<IceFunction> {
                 for (var branches : phiNode.getBranches()) {
                     var fromBlock = branches.block();
                     var copyValue = branches.value();
+                    if (copyValue instanceof IceUndef) continue; // undef value 不需要赋值
                     fromBlock.addFirst(new IceCopyInstruction(fromBlock, phiNode, copyValue));
                 }
                 phiNode.setEliminated(true);

@@ -3,11 +3,12 @@ package top.voidc.ir.machine;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceInstruction;
+import top.voidc.ir.ice.interfaces.IceMachineValue;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class IceMachineBlock extends IceBlock {
+public class IceMachineBlock extends IceBlock implements IceMachineValue {
     public IceMachineBlock(IceFunction parentFunction, String name) {
         super(parentFunction, name);
     }

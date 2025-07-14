@@ -1,6 +1,7 @@
 package top.voidc.backend.arm64.instr;
 
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.machine.IceMachineInstruction;
 
 import java.util.Set;
@@ -10,7 +11,7 @@ public class ARM64Instruction extends IceMachineInstruction {
         super(renderTemplate);
     }
 
-    public ARM64Instruction(String renderTemplate, IceValue... values) {
+    public ARM64Instruction(String renderTemplate, IceMachineValue... values) {
         super(renderTemplate, values);
     }
 
