@@ -43,6 +43,10 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ConditionPatterns.CMPReg());
         patternSet.add(new ConditionPatterns.CMPImm());
         patternSet.add(new ConditionPatterns.CondBranch());
+
+        patternSet.add(new MemoryAllocationPattern.SimpleAllocaPattern());
+        patternSet.add(new MemoryAllocationPattern.ArrayAllocaPattern());
+        patternSet.add(new MemoryAllocationPattern.DynamicAllocaPattern());
     }
 
     @Override
