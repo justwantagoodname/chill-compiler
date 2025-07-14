@@ -13,6 +13,7 @@ import top.voidc.misc.annotation.Qualifier;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.optimizer.pass.unit.Feeler;
 
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.function.Consumer;
@@ -212,7 +213,13 @@ public class PassManager {
                 }
             };
         } catch (Exception e) {
-            throw new RuntimeException("运行 Pass " + clazz.getSimpleName() + " 出现错误", e);
+            var mx = ManagementFactory.getRuntimeMXBean();
+            var jvmArgs = mx.getInputArguments();
+            var sb = new StringBuilder();
+            for (String arg : jvmArgs) {
+                sb.append("  ").append(arg);
+            }
+            throw new RuntimeException("运行 Pass " + clazz.getSimpleName() + " 出现错误 JVM 参数: " + sb, e);
         }
     }
 
