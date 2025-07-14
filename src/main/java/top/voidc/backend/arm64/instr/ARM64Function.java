@@ -85,7 +85,7 @@ public class ARM64Function extends IceMachineFunction {
         AtomicInteger blockCount = new AtomicInteger();
         function.blocks()
                 .forEach(block -> {
-                    var machineBlock = new IceMachineBlock(this, ".L" + blockCount);
+                    var machineBlock = new IceMachineBlock(this, ".L" + getName() + "_" + blockCount);
                     blockCount.getAndIncrement();
                     machineBlocks.put(block.getName(), machineBlock);
                 });
