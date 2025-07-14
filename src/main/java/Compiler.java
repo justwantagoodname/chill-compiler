@@ -20,8 +20,10 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class Compiler {
     public final String sourcePath;
@@ -128,20 +130,25 @@ public class Compiler {
         context.setParser(parser);
     }
 
+    public static void showJVMArgs() {
+        var mx = ManagementFactory.getRuntimeMXBean();
+        var jvmArgs = mx.getInputArguments();
+        var sb = new StringBuilder();
+        for (String arg : jvmArgs) {
+            sb.append("  ").append(arg);
+        }
+        Log.e("JVM 启动参数：" + sb);
+    }
+
     public static void main(String[] args) throws IOException {
 
-        RuntimeMXBean mx = ManagementFactory.getRuntimeMXBean();
-        List<String> jvmArgs = mx.getInputArguments();
-        System.out.println("JVM 启动参数：");
-        for (String arg : jvmArgs) {
-            System.out.println("  " + arg);
-        }
+        showJVMArgs();
 
-//        Flag.init(args);
-//        final String sourcePath = Flag.get("source");
-//        final String outputPath = Flag.get("-o");
-//
-//        final var compiler = new Compiler(sourcePath, outputPath);
-//        compiler.compile();
+        Flag.init(args);
+        final String sourcePath = Flag.get("source");
+        final String outputPath = Flag.get("-o");
+
+        final var compiler = new Compiler(sourcePath, outputPath);
+        compiler.compile();
     }
 }
