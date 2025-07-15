@@ -26,7 +26,7 @@ public class MemoryAccessPatterns {
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceLoadInstruction load) {
             // 获取源指针（应该是栈槽）
-            IceValue pointer = load.getOperands().get(0);
+            IceValue pointer = load.getOperands().getFirst();
             IceMachineValue src = selector.emit(pointer);
 
             // 创建目标寄存器
@@ -35,7 +35,7 @@ public class MemoryAccessPatterns {
 
             // 生成加载指令
             selector.addEmittedInstruction(new ARM64Instruction(
-                    "LDR {dst}, {src}",
+                    "LDR {dst}, {local:src}",
                     dstReg, src
             ));
 
@@ -46,7 +46,7 @@ public class MemoryAccessPatterns {
         public boolean test(InstructionSelector selector, IceValue value) {
             // 匹配load指令，且源操作数是栈槽
             return value instanceof IceLoadInstruction load &&
-                    load.getOperands().get(0) instanceof IceStackSlot;
+                    load.getOperands().getFirst() instanceof IceStackSlot;
         }
     }
 
@@ -71,7 +71,7 @@ public class MemoryAccessPatterns {
 
             // 生成存储指令
             selector.addEmittedInstruction(new ARM64Instruction(
-                    "STR {src}, {dst}",
+                    "STR {src}, {local:dst}",
                     src, dst
             ));
 
@@ -98,7 +98,7 @@ public class MemoryAccessPatterns {
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceLoadInstruction load) {
             // 获取源指针（应该在寄存器中）
-            IceValue pointer = load.getOperands().get(0);
+            IceValue pointer = load.getOperands().getFirst();
             IceMachineValue src = selector.emit(pointer);
 
             // 创建目标寄存器
@@ -118,7 +118,7 @@ public class MemoryAccessPatterns {
         public boolean test(InstructionSelector selector, IceValue value) {
             // 匹配load指令，且源操作数是寄存器指针
             return value instanceof IceLoadInstruction load &&
-                    !(load.getOperands().get(0) instanceof IceStackSlot);
+                    !(load.getOperands().getFirst() instanceof IceStackSlot);
         }
     }
 
@@ -133,18 +133,18 @@ public class MemoryAccessPatterns {
 
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceStoreInstruction store) {
-            // 获取要存储的值
+            // 获取目标指针
             IceValue valueToStore = store.getOperands().get(0);
             IceMachineValue src = selector.emit(valueToStore);
 
-            // 获取目标指针（应该在寄存器中）
+            // 获取要存储的值
             IceValue pointer = store.getOperands().get(1);
             IceMachineValue dst = selector.emit(pointer);
 
             // 生成存储指令
             selector.addEmittedInstruction(new ARM64Instruction(
-                    "STR {src}, [{dst}]",
-                    src, dst
+                    "STR {dst}, [{src}]",
+                    dst, src
             ));
 
             return null; // 存储指令无返回值
@@ -170,17 +170,22 @@ public class MemoryAccessPatterns {
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceLoadInstruction load) {
             // 获取源指针（应该是立即数）
-            IceValue pointer = load.getOperands().get(0);
+            IceValue pointer = load.getOperands().getFirst();
+
+            // 确保立即数转换为IceMachineValue
+            if (!(pointer instanceof IceMachineValue src)) {
+                throw new IllegalArgumentException("LoadImmediatePattern requires IceMachineValue operand");
+            }
 
             // 创建目标寄存器
             IceMachineFunction mf = selector.getMachineFunction();
             var dstReg = mf.allocateVirtualRegister(load.getType());
 
-            // 生成加载指令 TODO
-//            selector.addEmittedInstruction(new ARM64Instruction(
-//                    "MOV {dst}, {src}",
-//                    dstReg, pointer
-//            ));
+            // 生成加载指令
+            selector.addEmittedInstruction(new ARM64Instruction(
+                    "MOV {0}, {imm16:1}",
+                    dstReg, src
+            ));
 
             return dstReg;
         }
@@ -189,7 +194,7 @@ public class MemoryAccessPatterns {
         public boolean test(InstructionSelector selector, IceValue value) {
             // 匹配load指令，且源操作数是立即数
             return value instanceof IceLoadInstruction load &&
-                    load.getOperands().get(0) instanceof IceConstant;
+                    load.getOperands().getFirst() instanceof IceConstant;
         }
     }
 
@@ -207,19 +212,24 @@ public class MemoryAccessPatterns {
             // 获取要存储的值（立即数）
             IceValue valueToStore = store.getOperands().get(0);
 
-            // 获取目标指针
+            // 确保立即数转换为IceMachineValue
+            if (!(valueToStore instanceof IceMachineValue src)) {
+                throw new IllegalArgumentException("StoreImmediatePattern requires IceMachineValue operand");
+            }
+
+            // 获取目标指针0
             IceValue pointer = store.getOperands().get(1);
             IceMachineValue dst = selector.emit(pointer);
 
-            // 如果目标在寄存器中，使用不同的指令格式
+            // 根据目标类型选择模板
             String template = (dst instanceof IceMachineRegister) ?
-                    "STR {src}, [{dst}]" : "STR {src}, {dst}";
+                    "STR {imm16:0}, [{1}]" : "STR {imm16:0}, {1}";
 
-            // 生成存储指令 TODO
-//            selector.addEmittedInstruction(new ARM64Instruction(
-//                    template,
-//                    valueToStore, dst
-//            ));
+            // 生成存储指令
+            selector.addEmittedInstruction(new ARM64Instruction(
+                    template,
+                    src, dst
+            ));
 
             return null; // 存储指令无返回值
         }
@@ -228,7 +238,7 @@ public class MemoryAccessPatterns {
         public boolean test(InstructionSelector selector, IceValue value) {
             // 匹配store指令，且源操作数是立即数
             return value instanceof IceStoreInstruction store &&
-                    store.getOperands().get(0) instanceof IceConstant;
+                    store.getOperands().getFirst() instanceof IceConstant;
         }
     }
 }
