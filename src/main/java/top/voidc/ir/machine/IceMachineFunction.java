@@ -13,13 +13,15 @@ import java.util.*;
  *
  */
 public abstract class IceMachineFunction extends IceFunction implements IceArchitectureSpecification {
+    private boolean hasCall = false; // 是否有外部调用
+
     public IceMachineFunction(String name) {
         super(name);
     }
 
     public abstract List<IceStackSlot> getStackFrame();
 
-    public abstract IceStackSlot allocateStackSlot(IceType type);
+    public abstract IceStackSlot allocateStackSlot(IceType type, IceStackSlot.StackSlotType stackSlotType);
 
     public abstract void bindMachineValueToValue(IceValue value, IceMachineValue machineValue);
 
@@ -32,7 +34,7 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
     /**
      * 给 MachineFunction 分配物理寄存器单元，仅供寄存器分配器使用
      */
-    public abstract IceMachineRegister allocatePhysicalRegister(String name, IceType type);
+    protected abstract IceMachineRegister allocatePhysicalRegister(String name, IceType type);
 
     /**
      * 给 MachineFunction 分配虚拟寄存器单元
@@ -41,11 +43,29 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
 
     public abstract IceMachineRegister.RegisterView allocateVirtualRegister(IceType type);
 
+    public abstract IceMachineRegister getPhysicalRegister(String name);
+
     public abstract IceMachineRegister.RegisterView getReturnRegister(IceType type);
 
     public abstract IceMachineRegister.RegisterView getZeroRegister(IceType type);
 
     public abstract Set<IceMachineRegister> getAllRegisters();
+
+    /**
+     * 获取当前函数是否有调用外部函数
+     * @return 如果有调用外部函数则返回true，否则返回false
+     */
+    public boolean isHasCall() {
+        return hasCall;
+    }
+
+    /**
+     * 设置当前函数是否有调用外部函数
+     * @param hasCall 如果有调用外部函数则设置为true，否则设置为false
+     */
+    public void setHasCall(boolean hasCall) {
+        this.hasCall = hasCall;
+    }
 
     /**
      * 获取实际汇编中的基本块入口

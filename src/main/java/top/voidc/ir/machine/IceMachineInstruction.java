@@ -21,10 +21,10 @@ import java.util.Map;
  * 操作数布局和指令顺序一致
  */
 public abstract class IceMachineInstruction extends IceInstruction implements IceArchitectureSpecification {
-    private final String renderTemplate;
-    private record NamedOperand(String placeholder, String prefix, int position) {}
+    protected final String renderTemplate;
+    protected record NamedOperand(String placeholder, String prefix, int position) {}
 
-    private final Map<String, NamedOperand> namedOperandPosition = new HashMap<>();
+    protected final Map<String, NamedOperand> namedOperandPosition = new HashMap<>();
 
     public IceMachineInstruction(String renderTemplate) {
         super(null, null, IceType.VOID);
@@ -92,6 +92,11 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
             
             IceValue operand = getOperand(pos);
             String operandText = switch (entry.getValue().prefix()) {
+                case "imm" -> {
+                    assert operand instanceof IceConstantInt;
+                    var intValue = ((IceConstantInt) operand).getValue();
+                    yield String.valueOf(intValue); // 直接输出整数值
+                }
                 case "imm16" -> {
                     assert operand instanceof IceConstantInt;
                     var intValue = ((IceConstantInt) operand).getValue();
@@ -141,4 +146,6 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
                 .map(entry -> getOperand(entry.getValue().position()))
                 .toList();
     }
+
+    public abstract IceMachineInstruction clone();
 }

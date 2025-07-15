@@ -97,8 +97,8 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     @Override
-    public IceStackSlot allocateStackSlot(IceType type) {
-        var slot = new IceStackSlot(this, type);
+    public IceStackSlot allocateStackSlot(IceType type, IceStackSlot.StackSlotType stackSlotType) {
+        var slot = new IceStackSlot(this, type, stackSlotType);
         stackFrame.add(slot);
         return slot;
     }
@@ -130,8 +130,21 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     @Override
-    public IceMachineRegister allocatePhysicalRegister(String name, IceType type) {
+    protected IceMachineRegister allocatePhysicalRegister(String name, IceType type) {
         return physicalRegisters.computeIfAbsent(name, _ -> new ARM64Register(name, type, false));
+    }
+
+    @Override
+    public IceMachineRegister getPhysicalRegister(String name) {
+        Objects.requireNonNull(name);
+
+        IceType registerType = switch (name.substring(0, 1).toLowerCase()) {
+            case "x" -> IceType.I64;
+            default -> throw new IllegalArgumentException("Wrong use!");
+        };
+
+        assert !name.substring(1).isBlank();
+        return allocatePhysicalRegister(name.substring(1), registerType);
     }
 
     @Override
