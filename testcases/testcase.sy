@@ -1,6 +1,8 @@
-int f() {
-    return 0;
+int defn(){
+    return 4;
 }
-int main() {
 
+int main(){
+    int a=defn();
+    return a;
 }

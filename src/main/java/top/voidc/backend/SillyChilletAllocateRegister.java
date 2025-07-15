@@ -31,7 +31,7 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                     if (operand instanceof IceMachineRegister.RegisterView registerView) {
                         if (registerView.getRegister().isVirtualize()) {
                             slotMap.computeIfAbsent(registerView.getRegister(), register ->
-                                    target.allocateStackSlot(register.getType()));
+                                    target.allocateStackSlot(register.getType(), IceStackSlot.StackSlotType.VARIABLE));
                         }
                     }
                 }
@@ -40,13 +40,13 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
 
         // Phase 2: 重写指令
         final var regPool = List.of(
-                target.allocatePhysicalRegister("9", IceType.I64),
-                target.allocatePhysicalRegister("10", IceType.I64),
-                target.allocatePhysicalRegister("11", IceType.I64),
-                target.allocatePhysicalRegister("12", IceType.I64),
-                target.allocatePhysicalRegister("13", IceType.I64),
-                target.allocatePhysicalRegister("14", IceType.I64),
-                target.allocatePhysicalRegister("15", IceType.I64)
+                target.getPhysicalRegister("x9"),
+                target.getPhysicalRegister("x10"),
+                target.getPhysicalRegister("x11"),
+                target.getPhysicalRegister("x12"),
+                target.getPhysicalRegister("x13"),
+                target.getPhysicalRegister("x14"),
+                target.getPhysicalRegister("x15")
         );
         for (var block : target) {
             for (var i = 0; i < block.size(); i++) {

@@ -26,6 +26,10 @@ public class IceCallInstruction extends IceInstruction {
         return (IceFunction) getOperand(0);
     }
 
+    /**
+     * 获取调用指令的参数列表
+     * @return 参数列表
+     */
     public List<IceValue> getArguments() {
         return getOperandsList().subList(1, getOperandsList().size());
     }

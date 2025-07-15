@@ -21,7 +21,7 @@ import java.util.LinkedList;
  * 对每一个表达式进行哈希，合并其中重复的部分
  * 该 pass 应位于 Mem2Reg 下游
  */
-@Pass
+@Pass(group = {"O1"})
 public class GlobalValueNumbering implements CompilePass<IceFunction> {
     /** 用于作用域管理的栈
      * 由 LinkedList 实现，新入栈的元素位于第 0 个

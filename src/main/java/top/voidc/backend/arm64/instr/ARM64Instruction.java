@@ -35,4 +35,14 @@ public class ARM64Instruction extends IceMachineInstruction {
         if (getOpcode().startsWith("B.")) return true;
         return Set.of("RET", "B").contains(getOpcode());
     }
+
+    @Override
+    public IceMachineInstruction clone() {
+        var clone = new ARM64Instruction(this.renderTemplate);
+        clone.setName(getName());
+        for (var operand : getOperands()) {
+            clone.addOperand(operand);
+        }
+        return clone;
+    }
 }

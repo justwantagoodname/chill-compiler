@@ -28,6 +28,8 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ControlInstructionPattern.BranchUnconditional());
         patternSet.add(new ControlInstructionPattern.RetVoid());
         patternSet.add(new ControlInstructionPattern.RetInteger());
+        patternSet.add(new ControlInstructionPattern.VoidCall());
+        patternSet.add(new ControlInstructionPattern.IntCall());
 
         patternSet.add(new LoadAndStorePattern.LoadRegFuncParam());
         patternSet.add(new LoadAndStorePattern.LoadIntImmediateToReg());

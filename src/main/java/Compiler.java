@@ -67,6 +67,10 @@ public class Compiler {
 
         // TODO: 后续添加O0 O1的组
         passManager.addDisableGroup("needfix");
+        Boolean hasO1 = Flag.get("-O1");
+        if (Boolean.FALSE.equals(hasO1)) {
+            passManager.addDisableGroup("O1");
+        }
         String disableGroups = Flag.get("-fdisable-group");
         if (disableGroups != null && !disableGroups.isBlank()) {
             for (String group : disableGroups.split(",")) {
@@ -104,7 +108,7 @@ public class Compiler {
             pm.runPass(ShowIR.class);
             pm.runPass(SillyChilletAllocateRegister.class);
             pm.runPass(AlignFramePass.class);
-
+            pm.runPass(ShowIR.class);
             pm.runPass(OutputARMASM.class);
         });
         return passManager;
