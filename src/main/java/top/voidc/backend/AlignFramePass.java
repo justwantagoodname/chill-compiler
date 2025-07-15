@@ -4,8 +4,11 @@ import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
+import top.voidc.backend.arm64.instr.ARM64Instruction;
+import top.voidc.ir.IceBlock;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
+import top.voidc.ir.machine.IceStackSlot;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
 
@@ -73,4 +76,34 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
     public int getBitSize() {
         return 64;
     }
+
+//    public boolean run(IceMachineFunction function) {
+//        // 1. 收集所有栈槽
+//        List<IceStackSlot> slots = function.getStackFrame();
+//
+//        // 2. 计算总栈大小（考虑对齐）
+//        int totalSize = 0;
+//        for (IceStackSlot slot : slots) {
+//            // 对齐当前偏移量
+//            totalSize = align(totalSize, slot.getAlignment());
+//            slot.setOffset(totalSize);
+//            totalSize += slot.getType().getByteSize();
+//        }
+//
+//        // 3. 对齐总栈大小到16字节
+//        totalSize = align(totalSize, 16);
+//
+//        // 4. 在入口块插入栈调整指令
+//        IceBlock entry = function.getMachineBlock("entry");
+//        entry.addInstructionAtFront(new ARM64Instruction("SUB sp, sp, #" + totalSize));
+//
+//        // 5. 在返回块恢复栈指针
+//        function.getExitBlock().addInstruction(new ARM64Instruction("ADD sp, sp, #" + totalSize));
+//
+//        return true;
+//    }
+//
+//    private int align(int offset, int alignment) {
+//        return (offset + alignment - 1) & ~(alignment - 1);
+//    }
 }
