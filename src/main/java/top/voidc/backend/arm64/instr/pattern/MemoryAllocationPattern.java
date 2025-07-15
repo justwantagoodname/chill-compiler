@@ -9,8 +9,6 @@ import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.instruction.IceAllocaInstruction;
 import top.voidc.backend.arm64.instr.ARM64Instruction;
 
-import java.util.List;
-
 /**
  * 内存分配指令模式匹配模块 - 处理alloca指令
  */
@@ -23,13 +21,12 @@ public class MemoryAllocationPattern {
         }
 
         @Override
-        public IceMachineValue emit(InstructionSelector selector, IceAllocaInstruction alloca) {
+        public IceStackSlot emit(InstructionSelector selector, IceAllocaInstruction alloca) {
             // 获取分配的类型
             IceType allocatedType = alloca.getType().getPointTo();
 
             // 在machine function中创建栈槽
-            IceMachineFunction machineFunction = selector.getMachineFunction();
-            IceStackSlot slot = new IceStackSlot(machineFunction, allocatedType);
+            var slot = selector.getMachineFunction().allocateStackSlot(allocatedType, IceStackSlot.StackSlotType.VARIABLE);
 
             // 设置栈槽的对齐要求
             slot.setAlignment(allocatedType.getByteSize());
@@ -57,8 +54,7 @@ public class MemoryAllocationPattern {
             IceType allocatedType = alloca.getType().getPointTo();
 
             // 在machine function中创建栈槽
-            IceMachineFunction machineFunction = selector.getMachineFunction();
-            IceStackSlot slot = new IceStackSlot(machineFunction, allocatedType);
+            IceStackSlot slot = selector.getMachineFunction().allocateStackSlot(allocatedType, IceStackSlot.StackSlotType.VARIABLE);
 
             // 数组需要更高的对齐要求（至少8字节）
             slot.setAlignment(Math.max(allocatedType.getByteSize(), 8));
@@ -86,7 +82,7 @@ public class MemoryAllocationPattern {
             IceMachineFunction mf = selector.getMachineFunction();
 
             // 1. 获取分配大小
-            IceValue sizeValue = alloca.getOperands().get(0);
+            IceValue sizeValue = alloca.getOperands().getFirst();
             IceMachineValue sizeReg = selector.emit(sizeValue);
 
             // 2. 计算对齐后的大小
