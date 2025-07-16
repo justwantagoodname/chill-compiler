@@ -26,7 +26,7 @@ public class MemoryAllocationPattern {
             IceType allocatedType = alloca.getType().getPointTo();
 
             // 在machine function中创建栈槽
-            var slot = selector.getMachineFunction().allocateStackSlot(allocatedType, IceStackSlot.StackSlotType.VARIABLE);
+            var slot = selector.getMachineFunction().allocateVariableStackSlot(allocatedType);
 
             // 设置栈槽的对齐要求
             slot.setAlignment(allocatedType.getByteSize());
@@ -54,7 +54,7 @@ public class MemoryAllocationPattern {
             IceType allocatedType = alloca.getType().getPointTo();
 
             // 在machine function中创建栈槽
-            IceStackSlot slot = selector.getMachineFunction().allocateStackSlot(allocatedType, IceStackSlot.StackSlotType.VARIABLE);
+            IceStackSlot slot = selector.getMachineFunction().allocateVariableStackSlot(allocatedType);
 
             // 数组需要更高的对齐要求（至少8字节）
             slot.setAlignment(Math.max(allocatedType.getByteSize(), 8));
@@ -68,55 +68,6 @@ public class MemoryAllocationPattern {
             return value instanceof IceAllocaInstruction &&
                     ((IceAllocaInstruction) value).getType().getPointTo().isArray() &&
                     ((IceAllocaInstruction) value).getOperands().isEmpty();
-        }
-    }
-
-    public static class DynamicAllocaPattern extends InstructionPattern<IceAllocaInstruction> {
-
-        public DynamicAllocaPattern() {
-            super(3);
-        }
-
-        @Override
-        public IceMachineValue emit(InstructionSelector selector, IceAllocaInstruction alloca) {
-            IceMachineFunction mf = selector.getMachineFunction();
-
-            // 1. 获取分配大小
-            IceValue sizeValue = alloca.getOperands().getFirst();
-            IceMachineValue sizeReg = selector.emit(sizeValue);
-
-            // 2. 计算对齐后的大小
-            var alignedSizeReg = mf.allocateVirtualRegister(IceType.I64);
-            selector.addEmittedInstruction(new ARM64Instruction(
-                    "ADD {0}, {1}, 15",
-                    alignedSizeReg, sizeReg
-            ));
-            selector.addEmittedInstruction(new ARM64Instruction(
-                    "AND {0}, {1}, -16",
-                    alignedSizeReg, alignedSizeReg
-            ));
-
-            // 3. 调整栈指针（只生成一条指令）
-            selector.addEmittedInstruction(new ARM64Instruction(
-                    "SUB sp, sp, {0}",
-                    alignedSizeReg
-            ));
-
-            // 4. 保存当前栈指针到寄存器
-            var addrReg = mf.allocateVirtualRegister(IceType.I64);
-            selector.addEmittedInstruction(new ARM64Instruction(
-                    "MOV {0}, sp",
-                    addrReg
-            ));
-
-            return addrReg;
-        }
-
-        @Override
-        public boolean test(InstructionSelector selector, IceValue value) {
-            // 匹配有操作数的alloca（动态分配）
-            return value instanceof IceAllocaInstruction &&
-                    !((IceAllocaInstruction) value).getOperands().isEmpty();
         }
     }
 }

@@ -1,8 +1,8 @@
 package top.voidc.backend.arm64.instr;
 
-import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.instruction.IceCallInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineBlock;
@@ -97,8 +97,15 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     @Override
-    public IceStackSlot allocateStackSlot(IceType type, IceStackSlot.StackSlotType stackSlotType) {
-        var slot = new IceStackSlot(this, type, stackSlotType);
+    public IceStackSlot.VariableStackSlot allocateVariableStackSlot(IceType type) {
+        var slot = new IceStackSlot.VariableStackSlot(this, type);
+        stackFrame.add(slot);
+        return slot;
+    }
+
+    @Override
+    public IceStackSlot.ArgumentStackSlot allocateArgumentStackSlot(IceCallInstruction callInstruction, int argumentIndex, IceType type) {
+        var slot = new IceStackSlot.ArgumentStackSlot(this, callInstruction, argumentIndex, type);
         stackFrame.add(slot);
         return slot;
     }
