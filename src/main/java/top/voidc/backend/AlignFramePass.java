@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 对齐栈帧并设置偏移量，同时插入函数序言和尾声
+ * <br>
+ * <a href="https://blog.csdn.net/anyegongjuezjd/article/details/107173140">AArch 64 栈帧</a>
  */
 @Pass(group = {"O0", "backend"})
 public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
@@ -25,18 +27,64 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
     public boolean run(IceMachineFunction target) {
         var prologueList = new ArrayList<IceMachineInstruction>();
         var epilogueList = new ArrayList<IceMachineInstruction>();
+        var stackSize = 0;
 
-        var base = new AtomicInteger(0);
-        target.getStackFrame().forEach(slot -> {
-            slot.setOffset(base.get());
-            base.addAndGet(slot.getType().getByteSize()); // TODO: 后序需要修改按照 align 和AAPCS64要求对齐
-        });
+        // Phase 1: 计算栈大小
 
-        if (target.isHasCall()) {
-            // 如果函数有调用外部函数，则需要保存返回地址
-            prologueList.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]!", IceConstantData.create(32)));
-            epilogueList.add(new ARM64Instruction("LDP x29, x30, [sp], {imm:stack}", IceConstantData.create(32)));
+        // 计算栈帧中所有变量的大小
+        var variableSize = 0;
+        for (var slot : target.getStackFrame()) {
+            if (slot instanceof IceStackSlot.VariableStackSlot varSlot) {
+                variableSize += varSlot.getType().getByteSize();
+                if (variableSize % varSlot.getAlignment() != 0) {
+                    // 对齐到当前栈槽的对齐要求
+                    variableSize += varSlot.getAlignment() - (variableSize % varSlot.getAlignment());
+                }
+            }
         }
+
+        // 计算参数区大小
+        var argumentSize = 0;
+        for (var slot : target.getStackFrame()) {
+            if (slot instanceof IceStackSlot.ArgumentStackSlot argSlot) {
+                argumentSize = Math.max(argumentSize, argSlot.getCallInstruction().getArguments().size());
+            }
+        }
+
+        if (variableSize % 16 != 0) {
+            // 对齐到 16 字节
+            variableSize += 16 - (variableSize % 16);
+        }
+
+        if (argumentSize % 16 != 0) {
+            // 对齐到 16 字节
+            argumentSize += 16 - (argumentSize % 16);
+        }
+        stackSize += variableSize + argumentSize; // 对齐到 16 字节的栈帧大小
+
+        var returnRegisterSize = 0;
+        if (target.isHasCall()) { // 如果函数有调用外部函数，则需要保存返回地址
+            returnRegisterSize = 2 * 8; // 大小为16字节依旧对齐/.
+            stackSize += returnRegisterSize;
+            if (argumentSize != 0) {
+                prologueList.add(new ARM64Instruction("SUB sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
+                prologueList.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]", IceConstantData.create(argumentSize)));
+                prologueList.add(new ARM64Instruction("ADD x29, sp, {imm:stack}", IceConstantData.create(argumentSize)));
+
+                epilogueList.add(new ARM64Instruction("LDP x29, x30, [sp, {imm:stack}]", IceConstantData.create(argumentSize)));
+                epilogueList.add(new ARM64Instruction("ADD sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
+            } else {
+                prologueList.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]!", IceConstantData.create(-stackSize)));
+                prologueList.add(new ARM64Instruction("MOV x29, sp"));
+
+                epilogueList.add(new ARM64Instruction("LDP x29, x30, [sp], {imm:stack}", IceConstantData.create(stackSize)));
+            }
+        } else {
+            prologueList.add(new ARM64Instruction("SUB sp, sp, {imm:stack}", IceConstantData.create(-stackSize)));
+            prologueList.add(new ARM64Instruction("MOV x29, sp"));
+            epilogueList.add(new ARM64Instruction("ADD sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
+        }
+
 
         // Phase 2: entry 插入函数序言
         prologueList.forEach(instr -> instr.setParent(target.getEntryBlock()));
@@ -56,6 +104,35 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
                         break;
                     }
                 }
+            }
+        }
+
+        // Phase 4: 设置栈槽偏移量
+        // 设置参数栈槽偏移量
+        for (var slot : target.getStackFrame()) {
+            if (slot instanceof IceStackSlot.ArgumentStackSlot argSlot) {
+                // 参数从栈顶开始向下分配
+                assert argSlot.getArgumentIndex() > 8;
+
+                int offset = ((argSlot.getArgumentIndex() - 8) * 8);
+                argSlot.setOffset(offset);
+            }
+        }
+
+        // 设置变量栈槽偏移量
+        var currentOffset = variableSize;
+        for (var slot : target.getStackFrame()) {
+            if (slot instanceof IceStackSlot.VariableStackSlot varSlot) {
+                // 变量从栈顶开始向下分配
+                varSlot.setOffset(currentOffset + argumentSize + returnRegisterSize);
+
+                // 计算下一个变量的偏移量
+                var currentVariableSize = varSlot.getType().getByteSize();
+                if (currentVariableSize % varSlot.getAlignment() != 0) {
+                    // 对齐到当前栈槽的对齐要求
+                    currentVariableSize += varSlot.getAlignment() - (currentVariableSize % varSlot.getAlignment());
+                }
+                currentOffset -= currentVariableSize;
             }
         }
 

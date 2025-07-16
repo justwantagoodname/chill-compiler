@@ -30,8 +30,9 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                 for (var operand : instruction.getOperands()) {
                     if (operand instanceof IceMachineRegister.RegisterView registerView) {
                         if (registerView.getRegister().isVirtualize()) {
-                            slotMap.computeIfAbsent(registerView.getRegister(), register ->
-                                    target.allocateStackSlot(register.getType(), IceStackSlot.StackSlotType.VARIABLE));
+                            var slot = slotMap.computeIfAbsent(registerView.getRegister(), register ->
+                                    target.allocateVariableStackSlot(register.getType()));
+                            slot.setAlignment(4); // TODO: 默认对齐到4字节，后续可以根据类型调整
                         }
                     }
                 }

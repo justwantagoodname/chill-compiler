@@ -36,6 +36,8 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
         var assemblyBuilder = new AssemblyBuilder(outputPath);
         assemblyBuilder.writeLine("\t.arch " + getArchitecture())
                 .writeLine("\t.file\t\"" + sourceFile.getAbsolutePath() + "\"")
+                .writeLine("\t.section\t.note.GNU-stack,\"\",@progbits")
+                .writeLine("\t.ident\t \"Chill-Compiler\"")
                 .writeLine();
 
         assemblyBuilder.writeLine("\t.text");

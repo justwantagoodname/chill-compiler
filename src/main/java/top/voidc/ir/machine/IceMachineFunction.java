@@ -1,8 +1,8 @@
 package top.voidc.ir.machine;
 
-import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.instruction.IceCallInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
@@ -21,7 +21,9 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
 
     public abstract List<IceStackSlot> getStackFrame();
 
-    public abstract IceStackSlot allocateStackSlot(IceType type, IceStackSlot.StackSlotType stackSlotType);
+    public abstract IceStackSlot.VariableStackSlot allocateVariableStackSlot(IceType type);
+
+    public abstract IceStackSlot.ArgumentStackSlot allocateArgumentStackSlot(IceCallInstruction callInstruction, int argumentIndex, IceType type);
 
     public abstract void bindMachineValueToValue(IceValue value, IceMachineValue machineValue);
 
