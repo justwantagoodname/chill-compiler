@@ -3,6 +3,7 @@ package top.voidc.ir.machine;
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantInt;
+import top.voidc.ir.ice.instruction.IceAllocaInstruction;
 import top.voidc.ir.ice.instruction.IceBinaryInstruction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 
@@ -41,6 +42,26 @@ public class InstructionSelectUtil {
             return false;
         }
     }
+
+    /**
+     * 检查给定的值是否可以被指令选择器选择为能够产生栈槽结果的模式
+     * 这是一个动态检查，考虑了指令选择器的当前状态和可用模式
+     */
+    public static boolean canBeStackSlot(InstructionSelector selector, IceValue value) {
+        // 如果是一个 alloca 那一定是一个寄存器
+        if (value instanceof IceAllocaInstruction) return true;
+
+        try {
+            // 如果指令选择器能够为该值选择一个模式，则认为它可以是寄存器
+            var matchResult = selector.select(value);
+            var emittedType = matchResult.matchedPattern().getEmittedType();
+            return emittedType != null && emittedType.isAssignableFrom(IceStackSlot.class);
+        } catch (Exception e) {
+            // 如果选择失败，则不能作为寄存器使用
+            return false;
+        }
+    }
+
 
     public static boolean commutativeTest(IceBinaryInstruction instr, BiPredicate<IceValue, IceValue> biPredicate) {
         return biPredicate.test(instr.getLhs(), instr.getRhs()) || biPredicate.test(instr.getRhs(), instr.getLhs());
