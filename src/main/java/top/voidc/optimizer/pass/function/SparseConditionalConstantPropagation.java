@@ -13,7 +13,7 @@ import java.util.*;
 
 
 @Pass(
-        group = {"O1"}
+        group = {"O0"}
 )
 public class SparseConditionalConstantPropagation implements CompilePass<IceFunction> {
 
