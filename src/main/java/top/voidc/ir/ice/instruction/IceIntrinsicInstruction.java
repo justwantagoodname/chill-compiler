@@ -22,6 +22,7 @@ public class IceIntrinsicInstruction extends IceInstruction {
         this.intrinsicName = intrinsicName;
         parameters.forEach(this::addOperand);
     }
+
     public IceIntrinsicInstruction(
             IceBlock parent,
             IceType retType,

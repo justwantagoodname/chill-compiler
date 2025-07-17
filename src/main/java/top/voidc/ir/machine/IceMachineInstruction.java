@@ -116,6 +116,10 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
                     assert operand instanceof IceStackSlot;
                     yield "[sp, #" + ((IceStackSlot) operand).getOffset() + "]"; // TODO 平台加载
                 }
+                case "local-offset" -> {
+                    assert operand instanceof IceStackSlot;
+                    yield "#" + ((IceStackSlot) operand).getOffset();
+                }
                 case "label" -> operand.getName();
                 default -> operand.getReferenceName();
             };
