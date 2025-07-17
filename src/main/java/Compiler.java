@@ -1,6 +1,5 @@
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import top.voidc.backend.*;
 import top.voidc.backend.arm64.instr.pattern.ARM64InstructionPatternPack;
 import top.voidc.backend.instr.InstructionSelectionPass;
@@ -19,11 +18,7 @@ import top.voidc.optimizer.pass.unit.ShowIR;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class Compiler {
     public final String sourcePath;
@@ -130,6 +125,13 @@ public class Compiler {
         final var lexer = new SysyLexer(inputSource);
         final var tokenStream = new CommonTokenStream(lexer);
         final var parser = new SysyParser(tokenStream);
+        parser.addErrorListener(new BaseErrorListener() {
+            @Override
+            public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
+                Log.e("在 " + line + " 行 " + charPositionInLine + " 列出现语法错误: " + msg);
+                throw new ParseCancellationException();
+            }
+        });
         context.setAst(parser.compUnit());
         context.setParser(parser);
     }
