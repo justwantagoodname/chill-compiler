@@ -13,6 +13,10 @@ public class AssemblyBuilder {
         }
     }
 
+    public AssemblyBuilder(BufferedWriter output) {
+        this.output = output;
+    }
+
     public AssemblyBuilder writeRaw(String str) throws IOException {
         output.write(str);
         return this;

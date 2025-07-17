@@ -13,7 +13,7 @@ import java.util.*;
 
 
 @Pass(
-        group = {"O0"}
+        group = {"O0"} // O0 吧因为有些 10 / 5 这种常量除法会被优化掉
 )
 public class SparseConditionalConstantPropagation implements CompilePass<IceFunction> {
 

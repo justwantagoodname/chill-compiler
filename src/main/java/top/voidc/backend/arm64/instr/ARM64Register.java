@@ -17,7 +17,7 @@ public class ARM64Register extends IceMachineRegister {
     public RegisterView createView(IceType type) {
         var registerPrefix = switch (type.getTypeEnum()) {
             case I32 -> "w";
-            case I64 -> "x";
+            case I64, PTR -> "x";
             case F64 -> "v";
             default -> throw new IllegalStateException();
         };

@@ -80,6 +80,14 @@ public class IceArrayType extends IceType {
         return size;
     }
 
+    /**
+     * 数组的字节大小是全部的字节大小
+     */
+    @Override
+    public int getByteSize() {
+        return getTotalSize() * elementType.getByteSize();
+    }
+
     @Override
     public String toString() {
         return "[" + numElements + " x " + elementType + "]";
