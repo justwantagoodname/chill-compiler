@@ -83,7 +83,7 @@ public class SSADestruction implements CompilePass<IceFunction> {
                     fromBlock.addFirst(new IceCopyInstruction(fromBlock, phiNode, copyValue));
                 }
                 phiNode.setEliminated(true);
-            } else break;
+            };
         }
     }
 
