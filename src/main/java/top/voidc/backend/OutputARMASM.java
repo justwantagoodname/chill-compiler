@@ -60,7 +60,9 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
                 assemblyBuilder.writeLine("\t.global\t" + globalVariable.getName())
                         .writeLine("\t.type\t" + globalVariable.getName() + ", @object")
                         .writeLine(globalVariable.getName() + ":");
-                if (globalVariable.getInitializer() != null) {
+                if (globalVariable.getInitializer() != null
+                        && globalVariable.getInitializer() instanceof IceConstantArray arrayInitializer
+                        && !arrayInitializer.isFullZero()) {
                     switch (globalVariable.getInitializer()) {
                         case IceConstantInt constInt -> assemblyBuilder.writeLine("\t.word\t" + constInt.getValue());
                         case IceConstantFloat constant -> assemblyBuilder.writeLine("\t.word\t" + Float.floatToIntBits(constant.getValue()));
@@ -74,8 +76,9 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
                         .writeLine("\t.type\t" + globalVariable.getName() + ", @object")
                         .writeLine(globalVariable.getName() + ":");
 
-                if (globalVariable.getInitializer() != null) {
-                    var arrayInitializer = (IceConstantArray) globalVariable.getInitializer();
+                if (globalVariable.getInitializer() != null
+                        && globalVariable.getInitializer() instanceof IceConstantArray arrayInitializer
+                        && !arrayInitializer.isFullZero()) {
                     for (var row : arrayInitializer.getFullElements()) {
                         if (row instanceof IceConstantInt constData) {
                             assemblyBuilder.writeLine("\t.word\t" + constData.getValue());
