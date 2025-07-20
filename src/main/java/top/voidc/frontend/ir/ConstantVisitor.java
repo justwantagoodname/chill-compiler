@@ -14,13 +14,13 @@ public class ConstantVisitor extends IceBaseVisitor<IceConstantData> {
                 String text = ctx.NUMBER().getText();
                 if (text.startsWith("0x") || text.startsWith("0X")) {
                     // 十六进制
-                    return IceConstantData.create(Long.parseLong(text.substring(2), 16));
+                    return IceConstantData.create(Integer.parseInt(text.substring(2), 16));
                 } else if (text.length() > 1 && text.startsWith("0")) {
                     // 八进制
-                    return IceConstantData.create(Long.parseLong(text.substring(1), 8));
+                    return IceConstantData.create(Integer.parseInt(text.substring(1), 8));
                 } else {
                     // 十进制
-                    return IceConstantData.create(Long.parseLong(text));
+                    return IceConstantData.create(Integer.parseInt(text));
                 }
             }
             
