@@ -1,8 +1,9 @@
 package top.voidc.backend;
 
 import top.voidc.ir.IceUnit;
-import top.voidc.ir.ice.constant.IceExternFunction;
+import top.voidc.ir.ice.constant.*;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
+import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.misc.AssemblyBuilder;
 import top.voidc.misc.Flag;
@@ -13,6 +14,7 @@ import top.voidc.optimizer.pass.CompilePass;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 /**
  * 输出最终的汇编代码
@@ -31,6 +33,73 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
     }
 
 
+    private void emitGlobalSymbols(AssemblyBuilder assemblyBuilder, IceUnit target) throws IOException {
+        assemblyBuilder.writeLine("\t.section\t.rodata");
+        for (var global : target.getGlobalVariables()) {
+            if (global instanceof IceGlobalVariable globalVariable && ((IcePtrType<?>) global.getType()).isConst()) {
+                assemblyBuilder.writeLine("\t.global\t" + globalVariable.getName())
+                        .writeLine("\t.type\t" + globalVariable.getName() + ", @object")
+                        .writeLine(globalVariable.getName() + ":");
+
+                assert globalVariable.getInitializer() != null;
+
+                var arrayInitializer = (IceConstantArray) globalVariable.getInitializer();
+                for (var row : arrayInitializer.getFullElements()) {
+                    if (row instanceof IceConstantInt constData) {
+                        assemblyBuilder.writeLine("\t.word\t" + constData.getValue());
+                    }
+                }
+            }
+        }
+
+        assemblyBuilder.writeLine().writeLine("\t.data");
+
+        for (var global : target.getGlobalVariables()) {
+            if (global instanceof IceGlobalVariable globalVariable && !((IcePtrType<?>) global.getType()).getPointTo().isArray()) {
+                // 非数组类型
+                assemblyBuilder.writeLine("\t.global\t" + globalVariable.getName())
+                        .writeLine("\t.type\t" + globalVariable.getName() + ", @object")
+                        .writeLine(globalVariable.getName() + ":");
+                if (globalVariable.getInitializer() != null) {
+                    switch (globalVariable.getInitializer()) {
+                        case IceConstantInt constInt -> assemblyBuilder.writeLine("\t.word\t" + constInt.getValue());
+                        case IceConstantFloat constant -> assemblyBuilder.writeLine("\t.word\t" + Float.floatToIntBits(constant.getValue()));
+                        default -> throw new IllegalStateException("Unexpected value: " + globalVariable.getInitializer());
+                    }
+                } else {
+                    assemblyBuilder.writeLine("\t.zero\t" + globalVariable.getType().getByteSize());
+                }
+            } else if (global instanceof IceGlobalVariable globalVariable && ((IcePtrType<?>) global.getType()).getPointTo().isArray()) {
+                assemblyBuilder.writeLine("\t.global\t" + globalVariable.getName())
+                        .writeLine("\t.type\t" + globalVariable.getName() + ", @object")
+                        .writeLine(globalVariable.getName() + ":");
+
+                if (globalVariable.getInitializer() != null) {
+                    var arrayInitializer = (IceConstantArray) globalVariable.getInitializer();
+                    for (var row : arrayInitializer.getFullElements()) {
+                        if (row instanceof IceConstantInt constData) {
+                            assemblyBuilder.writeLine("\t.word\t" + constData.getValue());
+                        }
+                    }
+                } else {
+                    // 如果没有初始化器 则分配一个零字节的空间
+                    var arrayType = ((IcePtrType<?>) globalVariable.getType()).getPointTo();
+                    assemblyBuilder.writeLine("\t.zero\t" + arrayType.getByteSize());
+                }
+            }
+        }
+    }
+
+    private void emitFunctionASM(AssemblyBuilder assemblyBuilder, IceUnit target) throws IOException {
+        assemblyBuilder.writeLine().writeLine("\t.text");
+        for (var func : target.getFunctions()) {
+            if (func instanceof IceExternFunction) continue; // 外部函数在汇编中不用声明 由连接器处理
+            assert func instanceof IceMachineFunction;
+
+            assemblyBuilder.writeRaw(func.getTextIR())
+                    .writeLine();
+        }
+    }
 
     private void emitASM(IceUnit target) throws IOException {
         var assemblyBuilder = new AssemblyBuilder(outputPath);
@@ -40,15 +109,9 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
                 .writeLine("\t.ident\t \"Chill-Compiler\"")
                 .writeLine();
 
-        assemblyBuilder.writeLine("\t.text");
+        emitGlobalSymbols(assemblyBuilder, target);
+        emitFunctionASM(assemblyBuilder, target);
 
-        for (var func : target.getFunctions()) {
-            if (func instanceof IceExternFunction) continue;
-            assert func instanceof IceMachineFunction;
-
-            assemblyBuilder.writeRaw(func.getTextIR())
-                    .writeLine();
-        }
         assemblyBuilder.close();
     }
 

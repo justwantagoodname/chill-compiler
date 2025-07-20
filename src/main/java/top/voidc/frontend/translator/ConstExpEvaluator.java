@@ -98,7 +98,7 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
     public IceConstantData visitNumber(SysyParser.NumberContext ctx) {
         final var literal = ctx.getText();
         if (ctx.IntConst() != null) {
-            return IceConstantData.create(Long.decode(literal));
+            return IceConstantData.create(Integer.decode(literal));
         } else if (ctx.FloatConst() != null) {
             return IceConstantData.create(Float.parseFloat(literal));
         }
@@ -128,7 +128,7 @@ public class ConstExpEvaluator extends SysyBaseVisitor<IceConstant> {
             throw new EvaluationException(ctx, context);
         }
         final var constArrayRef = arrayRefValues.stream()
-                .map(exp -> (int) ((IceConstantInt) exp).getValue()).toList();
+                .map(exp -> ((IceConstantInt) exp).getValue()).toList();
         final var constValue = target.get(constArrayRef);
         if (!(constValue instanceof IceConstantData)) {
             throw new EvaluationException(ctx, context);

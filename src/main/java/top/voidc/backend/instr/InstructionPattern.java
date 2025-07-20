@@ -4,6 +4,8 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 
+import java.util.Arrays;
+
 public abstract class InstructionPattern <T extends IceValue> {
     int intrinsicCost;
 
@@ -23,12 +25,9 @@ public abstract class InstructionPattern <T extends IceValue> {
      * @return 指令模式的返回类型
      */
     public Class<?> getEmittedType() {
-        try {
-            var emitMethod = this.getClass().getDeclaredMethod("emit", InstructionSelector.class, IceValue.class);
-            return emitMethod.getReturnType();
-        } catch (NoSuchMethodException e) {
-            throw new AssertionError(e); // This should never happen, as all subclasses must implement emit
-        }
+        var emitMethod = Arrays.stream(this.getClass().getMethods())
+                .filter(method -> method.getName().equals("emit") && !method.isBridge()).findFirst().orElseThrow();
+        return emitMethod.getReturnType();
     }
 
     public int getCost(InstructionSelector selector, T value) {

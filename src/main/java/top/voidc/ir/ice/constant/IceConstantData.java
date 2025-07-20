@@ -5,9 +5,6 @@ import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 
 /**
- * 所有字面常量的基类
- */
-/**
  * 所有字面常量的基类，提供常量数据的基本操作和运算接口
  * 包括类型转换、算术运算、比较运算和逻辑运算
  */
@@ -38,8 +35,12 @@ public abstract class IceConstantData extends IceConstant implements IceMachineV
 
     public static IceConstantDouble create(double value) {return new IceConstantDouble(value);}
 
-    public static IceConstantInt create(long value) {
+    public static IceConstantInt create(int value) {
         return new IceConstantInt(value);
+    }
+
+    public static IceConstantLong create(long value) {
+        return new IceConstantLong(value);
     }
 
     public static IceConstantBoolean create(boolean value) {

@@ -235,7 +235,7 @@ public class ExpEmitter extends SysyBaseVisitor<IceValue> {
         final var literal = ctx.getText();
 
         if (ctx.IntConst() != null) {
-            return IceConstantData.create(Long.decode(literal));
+            return IceConstantData.create(Integer.decode(literal));
         } else if (ctx.FloatConst() != null) {
             return IceConstantData.create(Float.parseFloat(literal));
         }

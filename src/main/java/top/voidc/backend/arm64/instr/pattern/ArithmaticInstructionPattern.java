@@ -168,6 +168,7 @@ public class ArithmaticInstructionPattern {
 
         @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Mul value) {
+            // TODO: 需要修改
             return commutativeApply(value,
                     (lhs, rhs) -> canBeReg(selector, lhs) && isConstInt(rhs),
                     (IceValue lhs, IceConstantInt rhs) -> {

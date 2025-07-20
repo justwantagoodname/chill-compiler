@@ -16,7 +16,7 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ArithmaticInstructionPattern.ADDTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.ADDImm());
         patternSet.add(new ArithmaticInstructionPattern.MULTwoReg());
-        patternSet.add(new ArithmaticInstructionPattern.MULImm());
+//        patternSet.add(new ArithmaticInstructionPattern.MULImm());
         patternSet.add(new ArithmaticInstructionPattern.MADDInstruction());
         patternSet.add(new ArithmaticInstructionPattern.MSUBInstruction());
         patternSet.add(new ArithmaticInstructionPattern.SUBTwoReg());
@@ -48,16 +48,18 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ConditionPatterns.CMPImm());
         patternSet.add(new ConditionPatterns.CondBranch());
 
-        patternSet.add(new MemoryAllocationPattern.SimpleAllocaPattern());
-        patternSet.add(new MemoryAllocationPattern.ArrayAllocaPattern());
+        patternSet.add(new MemoryAllocationPattern.SimpleAlloca());
+        patternSet.add(new MemoryAllocationPattern.SimpleAllocaPointer());
+        patternSet.add(new MemoryAllocationPattern.ArrayAlloca());
+        patternSet.add(new MemoryAllocationPattern.ArrayAllocaPointer());
+        patternSet.add(new MemoryAllocationPattern.MemsetIntrinsic());
+        patternSet.add(new MemoryAllocationPattern.MemcpyIntrinsic());
 
-        patternSet.add(new MemoryAccessPatterns.LoadImmediatePattern());
         patternSet.add(new MemoryAccessPatterns.LoadStackPattern());
-        patternSet.add(new MemoryAccessPatterns.StoreImmediatePattern());
         patternSet.add(new MemoryAccessPatterns.StoreStackPattern());
         patternSet.add(new MemoryAccessPatterns.LoadRegisterPointerPattern());
         patternSet.add(new MemoryAccessPatterns.StoreRegisterPointerPattern());
-
+        patternSet.add(new MemoryAccessPatterns.LoadGlobalPointer());
     }
 
     @Override

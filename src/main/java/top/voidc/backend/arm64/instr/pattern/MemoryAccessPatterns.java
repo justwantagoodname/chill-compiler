@@ -4,14 +4,17 @@ import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.backend.instr.InstructionPattern;
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.constant.IceConstant;
+import top.voidc.ir.ice.constant.IceGlobalVariable;
+import top.voidc.ir.ice.instruction.IceGEPInstruction;
 import top.voidc.ir.ice.instruction.IceLoadInstruction;
 import top.voidc.ir.ice.instruction.IceStoreInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
+import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
-import top.voidc.misc.Log;
+
+import static top.voidc.ir.machine.InstructionSelectUtil.*;
 
 public class MemoryAccessPatterns {
 
@@ -21,14 +24,13 @@ public class MemoryAccessPatterns {
     public static class LoadStackPattern extends InstructionPattern<IceLoadInstruction> {
 
         public LoadStackPattern() {
-            super(1);
+            super(10);
         }
 
         @Override
-        public IceMachineValue emit(InstructionSelector selector, IceLoadInstruction load) {
-            Log.d("LoadStackPattern 被激活");
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceLoadInstruction load) {
             // 获取源指针（应该是栈槽）
-            IceValue pointer = load.getOperands().getFirst();
+            IceValue pointer = load.getSource();
             IceMachineValue src = selector.emit(pointer);
 
             // 创建目标寄存器
@@ -47,8 +49,7 @@ public class MemoryAccessPatterns {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             // 匹配load指令，且源操作数是栈槽
-            return value instanceof IceLoadInstruction load &&
-                    load.getOperands().getFirst() instanceof IceStackSlot;
+            return value instanceof IceLoadInstruction load && canBeStackSlot(selector, load.getSource());
         }
     }
 
@@ -58,19 +59,22 @@ public class MemoryAccessPatterns {
     public static class StoreStackPattern extends InstructionPattern<IceStoreInstruction> {
 
         public StoreStackPattern() {
-            super(1);
+            super(10);
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
         }
 
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceStoreInstruction store) {
-            Log.d("StoreStackPattern 被激活");
-
             // 获取要存储的值
-            IceValue valueToStore = store.getOperands().get(0);
+            IceValue valueToStore = store.getTargetPtr();
             IceMachineValue src = selector.emit(valueToStore);
 
             // 获取目标指针（应该是栈槽）
-            IceValue pointer = store.getOperands().get(1);
+            IceValue pointer = store.getValue();
             IceMachineValue dst = selector.emit(pointer);
 
             // 生成存储指令
@@ -85,8 +89,7 @@ public class MemoryAccessPatterns {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             // 匹配store指令，且目标操作数是栈槽
-            return value instanceof IceStoreInstruction store &&
-                    store.getOperands().get(1) instanceof IceStackSlot;
+            return value instanceof IceStoreInstruction store && canBeStackSlot(selector, store.getTargetPtr());
         }
     }
 
@@ -96,15 +99,13 @@ public class MemoryAccessPatterns {
     public static class LoadRegisterPointerPattern extends InstructionPattern<IceLoadInstruction> {
 
         public LoadRegisterPointerPattern() {
-            super(1);
+            super(10);
         }
 
         @Override
-        public IceMachineValue emit(InstructionSelector selector, IceLoadInstruction load) {
-            Log.d("LoadRegisterPointerPattern 被激活");
-
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceLoadInstruction load) {
             // 获取源指针（应该在寄存器中）
-            IceValue pointer = load.getOperands().getFirst();
+            IceValue pointer = load.getSource();
             IceMachineValue src = selector.emit(pointer);
 
             // 创建目标寄存器
@@ -123,8 +124,7 @@ public class MemoryAccessPatterns {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             // 匹配load指令，且源操作数是寄存器指针
-            return value instanceof IceLoadInstruction load &&
-                    !(load.getOperands().getFirst() instanceof IceStackSlot);
+            return value instanceof IceLoadInstruction load && canBeReg(selector, load.getSource());
         }
     }
 
@@ -134,19 +134,22 @@ public class MemoryAccessPatterns {
     public static class StoreRegisterPointerPattern extends InstructionPattern<IceStoreInstruction> {
 
         public StoreRegisterPointerPattern() {
-            super(1);
+            super(10);
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
         }
 
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceStoreInstruction store) {
-            Log.d("StoreRegisterPointerPattern 被激活");
-
             // 获取目标指针
-            IceValue valueToStore = store.getOperands().get(0);
+            IceValue valueToStore = store.getTargetPtr();
             IceMachineValue src = selector.emit(valueToStore);
 
             // 获取要存储的值
-            IceValue pointer = store.getOperands().get(1);
+            IceValue pointer = store.getValue();
             IceMachineValue dst = selector.emit(pointer);
 
             // 生成存储指令
@@ -161,96 +164,65 @@ public class MemoryAccessPatterns {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             // 匹配store指令，且目标操作数是寄存器指针
-            return value instanceof IceStoreInstruction store &&
-                    !(store.getOperands().get(1) instanceof IceStackSlot);
+            return value instanceof IceStoreInstruction store && canBeReg(selector, store.getTargetPtr());
         }
     }
 
     /**
-     * 加载立即数到寄存器
+     * 加载全局变量的指针地址
      */
-    public static class LoadImmediatePattern extends InstructionPattern<IceLoadInstruction> {
-
-        public LoadImmediatePattern() {
-            super(1);
+    public static class LoadGlobalPointer extends InstructionPattern<IceGlobalVariable> {
+        public LoadGlobalPointer() {
+            super(2);
         }
 
         @Override
-        public IceMachineValue emit(InstructionSelector selector, IceLoadInstruction load) {
-            Log.d("LoadImmediatePattern 被激活");
+        public int getCost(InstructionSelector selector, IceGlobalVariable value) {
+            return getIntrinsicCost();
+        }
 
-            // 获取源指针（应该是立即数）
-            IceValue pointer = load.getOperands().getFirst();
-
-            // 确保立即数转换为IceMachineValue
-            if (!(pointer instanceof IceMachineValue src)) {
-                throw new IllegalArgumentException("LoadImmediatePattern requires IceMachineValue operand");
-            }
-
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceGlobalVariable variable) {
+            // 获取源指针（应该是全局变量）
             // 创建目标寄存器
             IceMachineFunction mf = selector.getMachineFunction();
-            var dstReg = mf.allocateVirtualRegister(load.getType());
+            var dstReg = mf.allocateVirtualRegister(variable.getType());
 
-            // 生成加载指令
-            selector.addEmittedInstruction(new ARM64Instruction(
-                    "MOV {0}, {imm16:1}",
-                    dstReg, src
-            ));
+            selector.addEmittedInstruction(new ARM64Instruction("ADRP {dst}, " + variable.getName(), dstReg));
+            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {addr}, :lo12:" + variable.getName(), dstReg, dstReg));
+            return dstReg;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            // 匹配load指令，且源操作数是全局常量
+            return value instanceof IceGlobalVariable;
+        }
+    }
+
+    /**
+     * 加载GEP变成为指针寄存器
+     */
+    public static class GEPLoadPointer extends InstructionPattern<IceGEPInstruction> {
+        public GEPLoadPointer() {
+            super(0);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceGEPInstruction gep) {
+            // 获取全局变量
+            IceGlobalVariable globalVar = (IceGlobalVariable) gep.getBasePtr();
+            var basePtr = (IceMachineRegister.RegisterView) selector.emit(globalVar);
+
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(gep.getType());
+
 
             return dstReg;
         }
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            // 匹配load指令，且源操作数是立即数
-            return value instanceof IceLoadInstruction load &&
-                    load.getOperands().getFirst() instanceof IceConstant;
-        }
-    }
-
-    /**
-     * 存储立即数到内存
-     */
-    public static class StoreImmediatePattern extends InstructionPattern<IceStoreInstruction> {
-
-        public StoreImmediatePattern() {
-            super(1);
-        }
-
-        @Override
-        public IceMachineValue emit(InstructionSelector selector, IceStoreInstruction store) {
-            Log.d("StoreImmediatePattern 被激活");
-
-            // 获取要存储的值（立即数）
-            IceValue valueToStore = store.getOperands().get(0);
-
-            // 确保立即数转换为IceMachineValue
-            if (!(valueToStore instanceof IceMachineValue src)) {
-                throw new IllegalArgumentException("StoreImmediatePattern requires IceMachineValue operand");
-            }
-
-            // 获取目标指针0
-            IceValue pointer = store.getOperands().get(1);
-            IceMachineValue dst = selector.emit(pointer);
-
-            // 根据目标类型选择模板
-            String template = (dst instanceof IceMachineRegister) ?
-                    "STR {imm16:0}, [{1}]" : "STR {imm16:0}, {1}";
-
-            // 生成存储指令
-            selector.addEmittedInstruction(new ARM64Instruction(
-                    template,
-                    src, dst
-            ));
-
-            return null; // 存储指令无返回值
-        }
-
-        @Override
-        public boolean test(InstructionSelector selector, IceValue value) {
-            // 匹配store指令，且源操作数是立即数
-            return value instanceof IceStoreInstruction store &&
-                    store.getOperands().getFirst() instanceof IceConstant;
+            return value instanceof IceGEPInstruction gep && gep.getBasePtr() instanceof IceGlobalVariable;
         }
     }
 }
