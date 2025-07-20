@@ -143,9 +143,9 @@ public class LoadAndStorePattern {
                 throw new IllegalStateException("phi指令应该可以被选择");
             }
             var dstReg = selector.emit(value.getDestination());
-            var srcReg = selector.emit(value.getSource());
+            var imm = (IceConstantInt) ((IceConstantData) value.getSource()).castTo(IceType.I32);
             return selector.addEmittedInstruction(
-                    new ARM64Instruction("MOV {dst}, {imm12:src}", dstReg, srcReg)).getResultReg();
+                    new ARM64Instruction("MOV {dst}, {imm12:src}", dstReg, imm)).getResultReg();
         }
 
         @Override
