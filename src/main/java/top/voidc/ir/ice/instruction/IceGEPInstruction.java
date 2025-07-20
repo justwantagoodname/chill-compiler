@@ -26,6 +26,10 @@ public class IceGEPInstruction extends IceInstruction {
         indices.forEach(this::addOperand);
     }
 
+    public List<IceValue> getIndices() {
+        return this.getOperandsList().subList(1, this.getOperandsList().size());
+    }
+
     /**
      * 通过给定指针和索引计算返回类型
      * @param basePtr
