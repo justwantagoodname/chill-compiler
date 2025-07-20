@@ -334,14 +334,14 @@ public class ArithmaticInstructionPattern {
     /**
      * 除法模式：`x / y -> dst`
      */
-    public static class SDIVTwoReg extends InstructionPattern<IceBinaryInstruction.Div> {
+    public static class SDIVTwoReg extends InstructionPattern<IceBinaryInstruction.SDiv> {
 
         public SDIVTwoReg() {
             super(3);
         }
 
         @Override
-        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Div value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.SDiv value) {
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
@@ -351,7 +351,7 @@ public class ArithmaticInstructionPattern {
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            return value instanceof IceBinaryInstruction.Div divNode
+            return value instanceof IceBinaryInstruction.SDiv divNode
                     && canBeReg(selector, divNode.getLhs())
                     && canBeReg(selector, divNode.getRhs());
         }
