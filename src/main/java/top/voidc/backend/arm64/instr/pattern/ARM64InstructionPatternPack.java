@@ -24,6 +24,8 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ArithmaticInstructionPattern.SDIVTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.NEGReg());
         patternSet.add(new ArithmaticInstructionPattern.SMODTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.ZextBoolToInt());
+        patternSet.add(new ArithmaticInstructionPattern.ZextBoolImmToInt());
 
         patternSet.add(new ControlInstructionPattern.BranchUnconditional());
         patternSet.add(new ControlInstructionPattern.RetVoid());
