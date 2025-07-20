@@ -5,15 +5,15 @@ import top.voidc.ir.ice.type.IceType;
 import java.util.Objects;
 
 public class IceConstantInt extends IceConstantData {
-    private final long value;
+    private final int value;
 
-    public IceConstantInt(long value) {
+    public IceConstantInt(int value) {
         super(IceType.I32);
         this.value = value;
     }
 
-    public long getValue() {
-        return (int) value;
+    public int getValue() {
+        return value;
     }
 
     @Override

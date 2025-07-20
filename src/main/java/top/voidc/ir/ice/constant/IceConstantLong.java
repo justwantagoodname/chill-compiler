@@ -4,45 +4,44 @@ import top.voidc.ir.ice.type.IceType;
 
 import java.util.Objects;
 
-public class IceConstantDouble extends IceConstantData {
-    private final double value;
+public class IceConstantLong extends IceConstantData {
+    private final long value;
 
-    public IceConstantDouble(double value) {
-        super(IceType.F64);
+    public IceConstantLong(long value) {
+        super(IceType.I64);
         this.value = value;
     }
 
-    public double getValue() {
+    public long getValue() {
         return value;
     }
 
     @Override
     public String getReferenceName(boolean withType) {
-        final var bits = Double.doubleToRawLongBits(value);
-        return (withType ? getType() + " " : "") + "0x" + Long.toHexString(bits).toUpperCase();
+        return (withType ? getType() + " " : "") + getValue();
     }
 
     @Override
     public IceConstantData castTo(IceType targetType) {
         return switch (targetType.getTypeEnum()) {
-            case I32 -> IceConstantData.create((int) value);
-            case I1 -> IceConstantData.create(getValue() != 0);
-            case F32 -> IceConstantData.create((float) value);
-            case F64 -> this.clone();
+            case I32 -> new IceConstantInt((int) value);
+            case I1 -> IceConstantData.create(value != 0);
+            case F32 -> new IceConstantFloat((float) value);
+            case I64 -> this.clone();
             default -> throw new IllegalStateException("Unexpected value: " + type);
         };
     }
 
     @Override
     public IceConstantData clone() {
-        return IceConstantData.create(value);
+        return new IceConstantLong(value);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof IceConstantDouble that)) return false;
-        return Double.compare(that.value, value) == 0;
+        if (!(o instanceof IceConstantLong that)) return false;
+        return value == that.value;
     }
 
     @Override
@@ -54,8 +53,9 @@ public class IceConstantDouble extends IceConstantData {
         } else if (compare > 0) {
             return this.plus(other.castTo(this.getType()));
         } else {
+            // 同类型
             final var thisValue = this.getValue();
-            final var otherValue = ((IceConstantDouble) other).getValue();
+            final var otherValue = ((IceConstantLong) other).getValue();
             return IceConstantData.create(thisValue + otherValue);
         }
     }
@@ -70,7 +70,7 @@ public class IceConstantDouble extends IceConstantData {
             return this.minus(other.castTo(this.getType()));
         } else {
             final var thisValue = this.getValue();
-            final var otherValue = ((IceConstantDouble) other).getValue();
+            final var otherValue = ((IceConstantLong) other).getValue();
             return IceConstantData.create(thisValue - otherValue);
         }
     }
@@ -85,7 +85,7 @@ public class IceConstantDouble extends IceConstantData {
             return this.multiply(other.castTo(this.getType()));
         } else {
             final var thisValue = this.getValue();
-            final var otherValue = ((IceConstantDouble) other).getValue();
+            final var otherValue = ((IceConstantLong) other).getValue();
             return IceConstantData.create(thisValue * otherValue);
         }
     }
@@ -100,11 +100,29 @@ public class IceConstantDouble extends IceConstantData {
             return this.divide(other.castTo(this.getType()));
         } else {
             final var thisValue = this.getValue();
-            final var otherValue = ((IceConstantDouble) other).getValue();
-            if (otherValue == 0.0) {
+            final var otherValue = ((IceConstantLong) other).getValue();
+            if (otherValue == 0) {
                 throw new ArithmeticException("Division by zero");
             }
             return IceConstantData.create(thisValue / otherValue);
+        }
+    }
+
+    @Override
+    public IceConstantData mod(IceConstantData other) {
+        Objects.requireNonNull(other);
+        final var compare = this.getType().compareTo(other.getType());
+        if (compare < 0) {
+            return this.castTo(other.getType()).mod(other);
+        } else if (compare > 0) {
+            return this.mod(other.castTo(this.getType()));
+        } else {
+            final var thisValue = this.getValue();
+            final var otherValue = ((IceConstantLong) other).getValue();
+            if (otherValue == 0) {
+                throw new ArithmeticException("Division by zero in modulo operation");
+            }
+            return IceConstantData.create(thisValue % otherValue);
         }
     }
 
@@ -118,7 +136,7 @@ public class IceConstantDouble extends IceConstantData {
             return this.lt(other.castTo(this.getType()));
         } else {
             final var thisValue = this.getValue();
-            final var otherValue = ((IceConstantDouble) other).getValue();
+            final var otherValue = ((IceConstantLong) other).getValue();
             return IceConstantData.create(thisValue < otherValue);
         }
     }
@@ -133,7 +151,7 @@ public class IceConstantDouble extends IceConstantData {
             return this.le(other.castTo(this.getType()));
         } else {
             final var thisValue = this.getValue();
-            final var otherValue = ((IceConstantDouble) other).getValue();
+            final var otherValue = ((IceConstantLong) other).getValue();
             return IceConstantData.create(thisValue <= otherValue);
         }
     }
@@ -148,7 +166,7 @@ public class IceConstantDouble extends IceConstantData {
             return this.gt(other.castTo(this.getType()));
         } else {
             final var thisValue = this.getValue();
-            final var otherValue = ((IceConstantDouble) other).getValue();
+            final var otherValue = ((IceConstantLong) other).getValue();
             return IceConstantData.create(thisValue > otherValue);
         }
     }
@@ -163,7 +181,7 @@ public class IceConstantDouble extends IceConstantData {
             return this.ge(other.castTo(this.getType()));
         } else {
             final var thisValue = this.getValue();
-            final var otherValue = ((IceConstantDouble) other).getValue();
+            final var otherValue = ((IceConstantLong) other).getValue();
             return IceConstantData.create(thisValue >= otherValue);
         }
     }
@@ -178,7 +196,7 @@ public class IceConstantDouble extends IceConstantData {
             return this.eq(other.castTo(this.getType()));
         } else {
             final var thisValue = this.getValue();
-            final var otherValue = ((IceConstantDouble) other).getValue();
+            final var otherValue = ((IceConstantLong) other).getValue();
             return IceConstantData.create(thisValue == otherValue);
         }
     }
@@ -193,7 +211,7 @@ public class IceConstantDouble extends IceConstantData {
             return this.ne(other.castTo(this.getType()));
         } else {
             final var thisValue = this.getValue();
-            final var otherValue = ((IceConstantDouble) other).getValue();
+            final var otherValue = ((IceConstantLong) other).getValue();
             return IceConstantData.create(thisValue != otherValue);
         }
     }
