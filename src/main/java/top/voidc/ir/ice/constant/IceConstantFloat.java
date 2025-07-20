@@ -27,7 +27,7 @@ public class IceConstantFloat extends IceConstantData {
     @Override
     public IceConstantData castTo(IceType targetType) {
         return switch (targetType.getTypeEnum()) {
-            case I32 -> IceConstantData.create((long) value);
+            case I32 -> IceConstantData.create((int) value);
             case I1 -> IceConstantData.create(getValue() != 0);
             case F32 -> this.clone();
             case F64 -> IceConstantData.create((double) value);

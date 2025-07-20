@@ -1,23 +1,33 @@
 package top.voidc.backend.arm64.instr.pattern;
 
+import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.backend.instr.InstructionPattern;
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceGlobalVariable;
+import top.voidc.ir.ice.instruction.IceIntrinsicInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.machine.*;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.instruction.IceAllocaInstruction;
-import top.voidc.backend.arm64.instr.ARM64Instruction;
+
+import static top.voidc.ir.machine.InstructionSelectUtil.canBeStackSlot;
 
 /**
  * 内存分配指令模式匹配模块 - 处理alloca指令
  */
 public class MemoryAllocationPattern {
 
-    public static class SimpleAllocaPattern extends InstructionPattern<IceAllocaInstruction> {
+    // 返回 Slot 对象
+    public static class SimpleAlloca extends InstructionPattern<IceAllocaInstruction> {
 
-        public SimpleAllocaPattern() {
-            super(1);
+        public SimpleAlloca() {
+            super(0);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceAllocaInstruction value) {
+            return getIntrinsicCost();
         }
 
         @Override
@@ -36,20 +46,64 @@ public class MemoryAllocationPattern {
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            // 匹配基本类型的alloca，并且没有操作数（即不是动态分配）
-            return value instanceof IceAllocaInstruction &&
-                    ((IceAllocaInstruction) value).getOperands().isEmpty();
+            // 匹配基本类型的alloca
+            return value instanceof IceAllocaInstruction alloca && !alloca.getType().getPointTo().isArray();
         }
     }
 
-    public static class ArrayAllocaPattern extends InstructionPattern<IceAllocaInstruction> {
-
-        public ArrayAllocaPattern() {
-            super(2);
+    // 返回存了偏移后地址的的寄存器
+    public static class SimpleAllocaPointer extends InstructionPattern<IceAllocaInstruction> {
+        public SimpleAllocaPointer() {
+            super(1);
         }
 
         @Override
-        public IceMachineValue emit(InstructionSelector selector, IceAllocaInstruction alloca) {
+        public int getCost(InstructionSelector selector, IceAllocaInstruction value) {
+            return getIntrinsicCost();
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceAllocaInstruction alloca)  {
+            // 获取分配的类型
+            IceType allocatedType = alloca.getType().getPointTo();
+
+            // 在machine function中创建栈槽
+            var slot = selector.getMachineFunction().allocateVariableStackSlot(allocatedType);
+
+            // 设置栈槽的对齐要求
+            slot.setAlignment(allocatedType.getByteSize());
+
+            // 创建目标寄存器
+            var mf = selector.getMachineFunction();
+            var dstReg = mf.allocateVirtualRegister(IceType.I64);
+
+            // 生成指令
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", dstReg, slot)
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            // 匹配基本类型的alloca
+            return value instanceof IceAllocaInstruction alloca && !alloca.getType().getPointTo().isArray();
+        }
+    }
+
+    // 返回 Slot 对象
+    public static class ArrayAlloca extends InstructionPattern<IceAllocaInstruction> {
+
+        public ArrayAlloca() {
+            super(0);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceAllocaInstruction value) {
+            return getIntrinsicCost();
+        }
+
+        @Override
+        public IceStackSlot emit(InstructionSelector selector, IceAllocaInstruction alloca) {
             // 获取数组类型
             IceType allocatedType = alloca.getType().getPointTo();
 
@@ -64,10 +118,141 @@ public class MemoryAllocationPattern {
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            // 匹配数组类型的alloca，并且没有操作数（即不是动态分配）
-            return value instanceof IceAllocaInstruction &&
-                    ((IceAllocaInstruction) value).getType().getPointTo().isArray() &&
-                    ((IceAllocaInstruction) value).getOperands().isEmpty();
+            // 匹配数组类型的alloca
+            return value instanceof IceAllocaInstruction alloca && alloca.getType().getPointTo().isArray();
+        }
+    }
+
+    // 返回存了偏移后地址的的寄存器
+    public static class ArrayAllocaPointer extends InstructionPattern<IceAllocaInstruction> {
+
+        public ArrayAllocaPointer() {
+            super(1);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceAllocaInstruction value) {
+            return getIntrinsicCost();
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceAllocaInstruction alloca) {
+            // 获取数组类型
+            IceType allocatedType = alloca.getType().getPointTo();
+
+            // 在machine function中创建栈槽
+            IceStackSlot slot = selector.getMachineFunction().allocateVariableStackSlot(allocatedType);
+
+            // 数组需要更高的对齐要求（至少8字节）
+            slot.setAlignment(Math.max(allocatedType.getByteSize(), 8));
+
+            // 创建目标寄存器
+            var mf = selector.getMachineFunction();
+            var dstReg = mf.allocateVirtualRegister(IceType.I64);
+
+            // 生成指令
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", dstReg, slot)
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            // 匹配数组类型的alloca
+            return value instanceof IceAllocaInstruction alloca && alloca.getType().getPointTo().isArray();
+        }
+    }
+
+    public static class MemsetIntrinsic extends InstructionPattern<IceIntrinsicInstruction> {
+
+        public MemsetIntrinsic() {
+            super(1);
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
+        public IceMachineValue emit(InstructionSelector selector, IceIntrinsicInstruction value) {
+            // TODO len 小于 8 的直接换成STR wzr
+            var slot = (IceStackSlot) selector.emit(value.getParameters().getFirst());
+            var val = (IceMachineRegister.RegisterView) selector.emit(value.getParameters().get(1)); // 支持常量其他不管了
+            var len = (IceMachineRegister.RegisterView) selector.emit(value.getParameters().get(2));
+            // 第四位是 volatile 位直接不管了
+
+            // TODO 先想办法保存原来的寄存器值
+            var x0 = selector.getMachineFunction().getPhysicalRegister("x0").createView(IceType.I64); // 第一个参数是地址
+            var x1 = selector.getMachineFunction().getPhysicalRegister("x1").createView(IceType.I32); // 第二个参数是值
+            var x2 = selector.getMachineFunction().getPhysicalRegister("x2").createView(IceType.I32); // 第三个参数是长度
+
+            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", x0, slot));
+            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x1, val));
+            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x2, len));
+            selector.addEmittedInstruction(new ARM64Instruction("BL memset"));
+            return null;
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceIntrinsicInstruction value) {
+            return getIntrinsicCost();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceIntrinsicInstruction intrinsic
+                    && canBeStackSlot(selector, intrinsic.getParameters().getFirst())
+                    && intrinsic.getIntrinsicName().equals(IceIntrinsicInstruction.MEMSET);
+        }
+    }
+
+    public static class MemcpyIntrinsic extends InstructionPattern<IceIntrinsicInstruction> {
+
+        public MemcpyIntrinsic() {
+            super(1);
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
+        public IceMachineValue emit(InstructionSelector selector, IceIntrinsicInstruction value) {
+            // TODO len 小于 8 的直接换成STR wzr
+            var slot = (IceStackSlot) selector.emit(value.getParameters().getFirst());
+            var src = (IceGlobalVariable) value.getParameters().get(1); // 支持常量其他不管了
+            var len = (IceMachineRegister.RegisterView) selector.emit(value.getParameters().get(2));
+            // 第四位是 volatile 位直接不管了
+
+            var addrReg = selector.getMachineFunction().allocateVirtualRegister(src.getType());
+
+            selector.addEmittedInstruction(new ARM64Instruction("ADRP {dst}, " + src.getName(), addrReg));
+            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {addr}, :lo12:" + src.getName(), addrReg, addrReg));
+
+            // TODO 先想办法保存原来的寄存器值
+            var x0 = selector.getMachineFunction().getPhysicalRegister("x0").createView(IceType.I64); // 第一个参数是地址
+            var x1 = selector.getMachineFunction().getPhysicalRegister("x1").createView(IceType.I64); // 第二个参数是值
+            var x2 = selector.getMachineFunction().getPhysicalRegister("x2").createView(IceType.I32); // 第三个参数是长度
+
+            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", x0, slot)); // dst
+            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x1, addrReg)); // src
+            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x2, len));
+            selector.addEmittedInstruction(new ARM64Instruction("BL memcpy"));
+            return null;
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceIntrinsicInstruction value) {
+            return getIntrinsicCost();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceIntrinsicInstruction intrinsic
+                    && canBeStackSlot(selector, intrinsic.getParameters().getFirst())
+                    && intrinsic.getIntrinsicName().equals(IceIntrinsicInstruction.MEMSET);
         }
     }
 }

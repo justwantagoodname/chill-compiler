@@ -92,7 +92,7 @@ public class VarDeclEmitter extends ConstDeclEmitter {
         // 在栈上分配空间
         final var varStackPtr = new IceAllocaInstruction(
                 currentFunction.getEntryBlock(), arrayType);
-        ((IcePtrType<?>)varStackPtr.getType()).setConst(true);
+        varStackPtr.getType().setConst(true);
 
         currentFunction.getEntryBlock().addInstructionAtFront(varStackPtr);
 
@@ -130,7 +130,7 @@ public class VarDeclEmitter extends ConstDeclEmitter {
         fillArray(initArray, ctx, arraySize, 0);
         visited.clear();
 
-        final var arrayByteSize = arrayShapeType.getTotalSize() * arrayShapeType.getElementType().getByteSize();
+        final var arrayByteSize = arrayShapeType.getByteSize();
 
         final var nonZeroElements = initArray.getNonZeroElements();
         final var isConstInit = nonZeroElements.stream().allMatch(elem -> elem.value() instanceof IceConstantData);

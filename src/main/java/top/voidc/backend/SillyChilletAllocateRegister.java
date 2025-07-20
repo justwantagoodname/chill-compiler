@@ -54,8 +54,12 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                 var instruction = (IceMachineInstruction) block.get(i);
                 var phyRegisterIndex = 0;
 
+                var loadSourceOperandsInstructions = new ArrayList<IceMachineInstruction>();
+                var dstReg = instruction.getResultReg(); // 一定要在插入加载指令前获取目标寄存器因为有可能在和源操作数重合的情况下被覆盖
+                IceMachineRegister dstPhyReg = null;
+
                 // 处理源操作数
-                var sourceOperands = new ArrayList<IceMachineInstruction>();
+
                 for (var operand : List.copyOf(instruction.getSourceOperands())) {
                     if (operand instanceof IceMachineRegister.RegisterView registerView && registerView.getRegister().isVirtualize()) {
                         // 如果是虚拟寄存器，先加载到临时寄存器中
@@ -63,26 +67,30 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                         // 生成ldr指令
                         var load = new ARM64Instruction("LDR {dst}, {local:src}",
                                 regPool.get(phyRegisterIndex++).createView(registerView.getType()), slot);
-                        sourceOperands.add(load);
+                        loadSourceOperandsInstructions.add(load);
                         instruction.replaceOperand(operand, load.getResultReg()); // 替换原指令的虚拟寄存器操作数为实际的寄存器
+
+                        if (dstReg != null && dstReg.getRegister().equals(registerView.getRegister())) {
+                            // 如果目标寄存器也是这个虚拟寄存器，记录下来 以便分配同一个物理寄存器
+                            dstPhyReg = load.getResultReg().getRegister();
+                        }
                     }
                 }
 
-                if (!sourceOperands.isEmpty()) {
+                if (!loadSourceOperandsInstructions.isEmpty()) {
                     changed = true;
-                    sourceOperands.forEach(instr -> instr.setParent(block));
-                    block.addAll(i, sourceOperands); // 在原指令前插入加载指令
-                    i += sourceOperands.size();
+                    loadSourceOperandsInstructions.forEach(instr -> instr.setParent(block));
+                    block.addAll(i, loadSourceOperandsInstructions); // 在原指令前插入加载指令
+                    i += loadSourceOperandsInstructions.size(); // 更新索引，跳过插入的加载指令
                 }
 
 
                 // 处理目标操作数
-                var dstReg = instruction.getResultReg();
                 if (dstReg != null) {
                     // 如果是虚拟寄存器，放回栈上
                     if (dstReg.getRegister().isVirtualize()) {
                         changed = true;
-                        var phyReg = regPool.get(phyRegisterIndex);
+                        var phyReg = dstPhyReg == null ? regPool.get(phyRegisterIndex) : dstPhyReg; // 如果没有记录到物理寄存器，则使用下一个物理寄存器
                         var phyView = phyReg.createView(dstReg.getType());
                         instruction.replaceOperand(dstReg, phyView);
 

@@ -217,7 +217,7 @@ public class ConstDeclEmitter extends SysyBaseVisitor<Void> {
         for (var exp : ctx.constExp()) {
             var constValue = exp.accept(new ConstExpEvaluator(context));
             Log.should(constValue instanceof IceConstantInt, "index value should be constant");
-            arraySize.add((int) ((IceConstantInt) constValue).getValue());
+            arraySize.add(((IceConstantInt) constValue).getValue());
         }
         return arraySize;
     }

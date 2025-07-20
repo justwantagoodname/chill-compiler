@@ -53,6 +53,18 @@ public class IceArrayType extends IceType {
     }
 
     /**
+     * 获取数组的最内层元素类型
+     * @return 最内层元素类型
+     */
+    public IceType getInsideElementType() {
+        IceType type = this;
+        while (type.isArray()) {
+            type = ((IceArrayType) type).getElementType();
+        }
+        return type;
+    }
+
+    /**
      * 获取总维度数
      * @return 获取总维度数
      */
@@ -78,6 +90,14 @@ public class IceArrayType extends IceType {
             type = ((IceArrayType) type).getElementType();
         }
         return size;
+    }
+
+    /**
+     * 数组的字节大小是全部的字节大小
+     */
+    @Override
+    public int getByteSize() {
+        return getTotalSize() * getInsideElementType().getByteSize();
     }
 
     @Override
