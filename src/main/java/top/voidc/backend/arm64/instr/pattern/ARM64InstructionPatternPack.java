@@ -60,6 +60,8 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new MemoryAccessPatterns.LoadRegisterPointerPattern());
         patternSet.add(new MemoryAccessPatterns.StoreRegisterPointerPattern());
         patternSet.add(new MemoryAccessPatterns.LoadGlobalPointer());
+        patternSet.add(new MemoryAccessPatterns.GEPLoadGlobalPointer());
+        patternSet.add(new MemoryAccessPatterns.GEPLoadLocalPointer());
     }
 
     @Override
