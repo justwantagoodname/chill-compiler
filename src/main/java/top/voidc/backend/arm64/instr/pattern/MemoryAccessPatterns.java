@@ -11,6 +11,7 @@ import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
+import top.voidc.misc.Log;
 
 public class MemoryAccessPatterns {
 
@@ -25,6 +26,7 @@ public class MemoryAccessPatterns {
 
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceLoadInstruction load) {
+            Log.d("LoadStackPattern 被激活");
             // 获取源指针（应该是栈槽）
             IceValue pointer = load.getOperands().getFirst();
             IceMachineValue src = selector.emit(pointer);
@@ -61,6 +63,8 @@ public class MemoryAccessPatterns {
 
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceStoreInstruction store) {
+            Log.d("StoreStackPattern 被激活");
+
             // 获取要存储的值
             IceValue valueToStore = store.getOperands().get(0);
             IceMachineValue src = selector.emit(valueToStore);
@@ -97,6 +101,8 @@ public class MemoryAccessPatterns {
 
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceLoadInstruction load) {
+            Log.d("LoadRegisterPointerPattern 被激活");
+
             // 获取源指针（应该在寄存器中）
             IceValue pointer = load.getOperands().getFirst();
             IceMachineValue src = selector.emit(pointer);
@@ -133,6 +139,8 @@ public class MemoryAccessPatterns {
 
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceStoreInstruction store) {
+            Log.d("StoreRegisterPointerPattern 被激活");
+
             // 获取目标指针
             IceValue valueToStore = store.getOperands().get(0);
             IceMachineValue src = selector.emit(valueToStore);
@@ -169,6 +177,8 @@ public class MemoryAccessPatterns {
 
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceLoadInstruction load) {
+            Log.d("LoadImmediatePattern 被激活");
+
             // 获取源指针（应该是立即数）
             IceValue pointer = load.getOperands().getFirst();
 
@@ -209,6 +219,8 @@ public class MemoryAccessPatterns {
 
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceStoreInstruction store) {
+            Log.d("StoreImmediatePattern 被激活");
+
             // 获取要存储的值（立即数）
             IceValue valueToStore = store.getOperands().get(0);
 
