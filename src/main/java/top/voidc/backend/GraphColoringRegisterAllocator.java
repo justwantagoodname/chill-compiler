@@ -1,14 +1,24 @@
 package top.voidc.backend;
 
+import top.voidc.ir.IceContext;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
 import top.voidc.ir.machine.IceMachineRegister;
+
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
 
 @Pass(group = {"O1", "backend"})
-public class GraphColoringAllocateRegister implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
+public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
+    private final LivenessAnalysis.LivenessResult livenessResult;
+    private final IceContext iceContext;
+
+    public GraphColoringRegisterAllocator(LivenessAnalysis.LivenessResult livenessResult, IceContext iceContext) {
+        this.livenessResult = livenessResult;
+        this.iceContext = iceContext;
+    }
+
     @Override
     public boolean run(IceMachineFunction target) {
         if (!hasVirtualRegAlloc(target)) {
