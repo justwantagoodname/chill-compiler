@@ -5,8 +5,8 @@ import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.backend.arm64.instr.ARM64Register;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
-import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
 import top.voidc.ir.machine.IceMachineRegister;
@@ -63,6 +63,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
             for (var instr : instructions) {
                 IceMachineRegister.RegisterView def = instr.getResultReg();
                 if (def != null && def.getRegister().isVirtualize()) {
+                    
                     for (var reg : live) {
                         if (!reg.equals(def.getRegister())) {
                             try { igraph.addEdge(def.getRegister(), reg); } catch (Exception ignored) {}
@@ -100,7 +101,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
         // 5. Rewrite instructions: replace vregs with physical regs, insert loads/stores for spills
         boolean changed = false;
         for (var block : target) {
-            ListIterator<Object> it = block.listIterator();
+            ListIterator<IceInstruction> it = block.listIterator();
             while (it.hasNext()) {
                 int idx = it.nextIndex();
                 var obj = it.next();
@@ -111,7 +112,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
                 for (var operand : srcOperands) {
                     if (operand instanceof IceMachineRegister.RegisterView rv && spilled.contains(rv.getRegister())) {
                         var slot = spillSlots.get(rv.getRegister());
-                        var phyReg = mf.getPhysicalRegister(ALLOCATABLE_REGS.get(0)); // Always use x9 for reload
+                        var phyReg = mf.getPhysicalRegister(ALLOCATABLE_REGS.getFirst()); // Always use x9 for reload
                         var load = new ARM64Instruction("LDR {dst}, {local:src}", phyReg.createView(rv.getType()), slot);
                         loads.add(load);
                         instr.replaceOperand(operand, load.getResultReg());
@@ -132,7 +133,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
                 var def = instr.getResultReg();
                 if (def != null && spilled.contains(def.getRegister())) {
                     var slot = spillSlots.get(def.getRegister());
-                    var phyReg = mf.getPhysicalRegister(ALLOCATABLE_REGS.get(0)); // Always use x9 for store
+                    var phyReg = mf.getPhysicalRegister(ALLOCATABLE_REGS.getFirst()); // Always use x9 for store
                     instr.replaceOperand(def, phyReg.createView(def.getType()));
                     var store = new ARM64Instruction("STR {src}, {local:target}", phyReg.createView(def.getType()), slot);
                     store.setParent(block);
