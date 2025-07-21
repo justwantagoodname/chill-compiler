@@ -63,8 +63,6 @@ public class InstructionSelector {
         for (IceInstruction instruction : block) {
             // 如果一个指令本身没有被用作操作数（并且它有副作用，如store, ret），它就是根
             if (!allOperands.contains(instruction) || hasSideEffect(instruction)) {
-                // FIXME: 从抽象层级来看，这里不应该用机器特定的ARM64指令，但是需要分离出来
-                this.addEmittedInstruction(new ARM64Instruction("// " + instruction.toString()));
                 emit(instruction);
             }
         }
