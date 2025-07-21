@@ -48,8 +48,10 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ConditionPatterns.CMPImm());
         patternSet.add(new ConditionPatterns.CondBranch());
 
-        patternSet.add(new MemoryAllocationPattern.SimpleAllocaPattern());
-        patternSet.add(new MemoryAllocationPattern.ArrayAllocaPattern());
+        patternSet.add(new MemoryAllocationPattern.SimpleAlloca());
+        patternSet.add(new MemoryAllocationPattern.SimpleAllocaPointer());
+        patternSet.add(new MemoryAllocationPattern.ArrayAlloca());
+        patternSet.add(new MemoryAllocationPattern.ArrayAllocaPointer());
         patternSet.add(new MemoryAllocationPattern.MemsetIntrinsic());
         patternSet.add(new MemoryAllocationPattern.MemcpyIntrinsic());
 
@@ -58,7 +60,6 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new MemoryAccessPatterns.LoadRegisterPointerPattern());
         patternSet.add(new MemoryAccessPatterns.StoreRegisterPointerPattern());
         patternSet.add(new MemoryAccessPatterns.LoadGlobalPointer());
-
     }
 
     @Override

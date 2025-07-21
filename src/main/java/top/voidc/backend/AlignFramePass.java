@@ -109,6 +109,7 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
 
         // Phase 4: 设置栈槽偏移量
         // 设置参数栈槽偏移量
+        // FIXME: 这里写的不对
         for (var slot : target.getStackFrame()) {
             if (slot instanceof IceStackSlot.ArgumentStackSlot argSlot) {
                 // 参数从栈顶开始向下分配
@@ -120,11 +121,11 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
         }
 
         // 设置变量栈槽偏移量
-        var currentOffset = variableSize;
+        var currentOffset = 0;
         for (var slot : target.getStackFrame()) {
             if (slot instanceof IceStackSlot.VariableStackSlot varSlot) {
                 // 变量从栈顶开始向下分配
-                varSlot.setOffset(currentOffset + argumentSize + returnRegisterSize);
+                varSlot.setOffset(currentOffset + argumentSize + returnRegisterSize); // 有为内部函数调用准备的栈帧和 lr + fp
 
                 // 计算下一个变量的偏移量
                 var currentVariableSize = varSlot.getType().getByteSize();
@@ -132,7 +133,7 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
                     // 对齐到当前栈槽的对齐要求
                     currentVariableSize += varSlot.getAlignment() - (currentVariableSize % varSlot.getAlignment());
                 }
-                currentOffset -= currentVariableSize;
+                currentOffset += currentVariableSize;
             }
         }
 

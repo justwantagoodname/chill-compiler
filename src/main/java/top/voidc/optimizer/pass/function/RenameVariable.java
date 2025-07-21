@@ -1,6 +1,5 @@
 package top.voidc.optimizer.pass.function;
 
-import top.voidc.ir.IceUnit;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
@@ -37,12 +36,10 @@ public class RenameVariable implements CompilePass<IceFunction> {
 
     private void renameVariable(IceFunction function) {
         variableCount = 0;
-        function.blocks().forEach(block -> {
-            block.instructions().forEach(instruction -> {
-                if (canRename(instruction.getName())) {
-                    instruction.setName(String.valueOf(variableCount++));
-                }
-            });
-        });
+        function.blocks().forEach(block -> block.forEach(instruction -> {
+            if (canRename(instruction.getName())) {
+                instruction.setName(String.valueOf(variableCount++));
+            }
+        }));
     }
 }
