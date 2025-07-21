@@ -9,6 +9,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
 import top.voidc.ir.machine.IceStackSlot;
+import top.voidc.misc.Tool;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
 
@@ -23,6 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Pass(group = {"O0", "backend"})
 public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
+
+    public static boolean isSTPImmediate(int offset) {
+        return Tool.inRange(offset, -512, 504);
+    }
+
     @Override
     public boolean run(IceMachineFunction target) {
         var prologueList = new ArrayList<IceMachineInstruction>();
@@ -67,6 +73,7 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
             returnRegisterSize = 2 * 8; // 大小为16字节依旧对齐/.
             stackSize += returnRegisterSize;
             if (argumentSize != 0) {
+                // 有函数调用且有栈上参数 => 保存返回地址和帧指针
                 prologueList.add(new ARM64Instruction("SUB sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
                 prologueList.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]", IceConstantData.create(argumentSize)));
                 prologueList.add(new ARM64Instruction("ADD x29, sp, {imm:stack}", IceConstantData.create(argumentSize)));
@@ -74,15 +81,31 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
                 epilogueList.add(new ARM64Instruction("LDP x29, x30, [sp, {imm:stack}]", IceConstantData.create(argumentSize)));
                 epilogueList.add(new ARM64Instruction("ADD sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
             } else {
-                prologueList.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]!", IceConstantData.create(-stackSize)));
-                prologueList.add(new ARM64Instruction("MOV x29, sp"));
+                // 有函数调用但没有栈上参数 => 只需要保存返回地址和帧指针
+                if (isSTPImmediate(stackSize)) {
+                    // 处理小的栈帧
+                    prologueList.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]!", IceConstantData.create(-stackSize)));
+                    prologueList.add(new ARM64Instruction("MOV x29, sp"));
 
-                epilogueList.add(new ARM64Instruction("LDP x29, x30, [sp], {imm:stack}", IceConstantData.create(stackSize)));
+                    epilogueList.add(new ARM64Instruction("LDP x29, x30, [sp], {imm:stack}", IceConstantData.create(stackSize)));
+                } else {
+                    // 处理大的栈帧
+                    prologueList.add(new ARM64Instruction("SUB sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
+                    prologueList.add(new ARM64Instruction("STP x29, x30, [sp]", IceConstantData.create(0)));
+                    prologueList.add(new ARM64Instruction("ADD x29, sp, {imm:stack}", IceConstantData.create(0)));
+
+                    epilogueList.add(new ARM64Instruction("LDP x29, x30, [sp]", IceConstantData.create(0)));
+                    epilogueList.add(new ARM64Instruction("ADD sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
+                }
+
             }
         } else {
-            prologueList.add(new ARM64Instruction("SUB sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
-            prologueList.add(new ARM64Instruction("MOV x29, sp"));
-            epilogueList.add(new ARM64Instruction("ADD sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
+            // Leaf function => 只用分配栈空间
+            if (stackSize > 0) {
+                prologueList.add(new ARM64Instruction("SUB sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
+                prologueList.add(new ARM64Instruction("MOV x29, sp"));
+                epilogueList.add(new ARM64Instruction("ADD sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
+            }
         }
 
 

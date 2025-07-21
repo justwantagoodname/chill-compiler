@@ -106,7 +106,7 @@ public class IceConstantArray extends IceConstantData {
     public List<IceValue> getFullElements() {
         final var result = new ArrayList<IceValue>();
         if (isZeroInit()) {
-            final var type = (IceArrayType) getType();
+            final var type = getType();
             for (int i = 0; i < type.getTotalSize(); i++) {
                 result.add(new IceConstantInt(0));
             }
@@ -114,7 +114,9 @@ public class IceConstantArray extends IceConstantData {
             assert elements != null;
             elements.forEach(e -> {
                 for (int i = 0; i < e.repeat; i++) {
-                    if (e.element instanceof IceConstantData) {
+                    if (e.element instanceof IceConstantArray innerArray) {
+                        result.addAll(innerArray.getFullElements());
+                    } else if (e.element instanceof IceConstantData) {
                         result.add(((IceConstantData) e.element).clone());
                     } else {
                         result.add(e.element);

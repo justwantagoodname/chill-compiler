@@ -18,7 +18,6 @@ public class ARM64Register extends IceMachineRegister {
         var registerPrefix = switch (type.getTypeEnum()) {
             case I32 -> "w";
             case I64, PTR -> "x";
-            case F64 -> "v";
             default -> throw new IllegalStateException();
         };
         return new RegisterView(this, (isVirtualize() ? "virt_" : "") + registerPrefix + getName(), type);

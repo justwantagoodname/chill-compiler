@@ -13,11 +13,11 @@ import java.util.function.BiPredicate;
 
 public class InstructionSelectUtil {
     public static boolean isImm16(IceValue value) {
-        return value instanceof IceConstantInt intValue && ((int) intValue.getValue() >> 16) == 0;
+        return value instanceof IceConstantInt intValue && (intValue.getValue() >> 16) == 0;
     }
 
     public static boolean isImm12(IceValue value) {
-        return value instanceof IceConstantInt intValue && ((int) intValue.getValue() >> 12) == 0;
+        return value instanceof IceConstantInt intValue && (intValue.getValue() >> 12) == 0;
     }
 
     public static boolean isConstInt(IceValue value) {

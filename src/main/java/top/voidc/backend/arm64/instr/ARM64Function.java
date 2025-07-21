@@ -112,7 +112,7 @@ public class ARM64Function extends IceMachineFunction {
 
     @Override
     public void bindMachineValueToValue(IceValue value, IceMachineValue machineValue) {
-
+        valueToMachineValue.put(value, machineValue);
     }
 
     @Override

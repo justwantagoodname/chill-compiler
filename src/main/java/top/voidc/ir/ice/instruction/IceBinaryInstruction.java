@@ -68,16 +68,6 @@ public class IceBinaryInstruction extends IceInstruction {
         }
     }
     
-    public static class Div extends IceBinaryInstruction {
-        public Div(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
-            super(parent, type, lhs, rhs);
-        }
-        
-        public Div(IceBlock parent, String name, IceType type, IceValue lhs, IceValue rhs) {
-            super(parent, name, type, lhs, rhs);
-        }
-    }
-    
     public static class SDiv extends IceBinaryInstruction {
         public SDiv(IceBlock parent, IceType type, IceValue lhs, IceValue rhs) {
             super(parent, type, lhs, rhs);
@@ -207,7 +197,6 @@ public class IceBinaryInstruction extends IceInstruction {
             case FSub _ -> "fsub";
             case Mul _ -> "mul";
             case FMul _ -> "fmul";
-            case Div _ -> "div";
             case SDiv _ -> "sdiv";
             case FDiv _ -> "fdiv";
             case Mod _ -> "srem";
@@ -239,7 +228,6 @@ public class IceBinaryInstruction extends IceInstruction {
             case FSub _ -> 0x6b378;
             case Mul _ -> 0x0542b;
             case FMul _ -> 0xbb945;
-            case Div _ -> 0xfad90;
             case SDiv _ -> 0x84add;
             case FDiv _ -> 0xcc603;
             case Mod _ -> 0x594e2;

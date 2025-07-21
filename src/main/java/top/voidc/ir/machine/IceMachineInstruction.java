@@ -118,7 +118,11 @@ public abstract class IceMachineInstruction extends IceInstruction implements Ic
                 }
                 case "local-offset" -> {
                     assert operand instanceof IceStackSlot;
-                    yield "#" + ((IceStackSlot) operand).getOffset();
+                    try {
+                        yield "#" + ((IceStackSlot) operand).getOffset();
+                    } catch (IllegalStateException ignored) {
+                        yield "slot_uninitialized"; // 如果未初始化，返回占位符
+                    }
                 }
                 case "label" -> operand.getName();
                 default -> operand.getReferenceName();

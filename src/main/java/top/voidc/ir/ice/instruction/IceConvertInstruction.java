@@ -20,6 +20,13 @@ public class IceConvertInstruction extends IceInstruction {
         addOperand(operand);
     }
 
+    public IceValue getOperand() {
+        if (getOperands().isEmpty()) {
+            throw new IllegalStateException("No operand found in IceConvertInstruction");
+        }
+        return getOperand(0);
+    }
+
     private String getConvertOp() {
         IceType fromType = getOperand(0).getType();
         IceType toType = getType();
