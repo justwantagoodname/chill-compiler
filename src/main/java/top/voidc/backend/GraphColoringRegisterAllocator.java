@@ -19,17 +19,15 @@ import top.voidc.optimizer.pass.CompilePass;
 
 import java.util.*;
 
-@Pass(group = {"O1", "backend"})
+@Pass(group = {"O0", "backend"}, enable = true)
 public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
     private final LivenessAnalysis.LivenessResult livenessResult;
-    private final IceContext iceContext;
 
     // ARM64 integer allocatable registers (x9-x15)
     private static final List<String> ALLOCATABLE_REGS = List.of("x9", "x10", "x11", "x12", "x13", "x14", "x15");
 
     public GraphColoringRegisterAllocator(LivenessAnalysis.LivenessResult livenessResult, IceContext iceContext) {
         this.livenessResult = livenessResult;
-        this.iceContext = iceContext;
     }
 
     @Override
