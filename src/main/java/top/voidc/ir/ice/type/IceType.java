@@ -85,7 +85,10 @@ public class IceType implements Comparable<IceType> {
     }
 
     public boolean isInteger() {
-        return this.getTypeEnum() == TypeEnum.I32 || this.getTypeEnum() == TypeEnum.I1;
+        return this.getTypeEnum() == TypeEnum.I32
+                || this.getTypeEnum() == TypeEnum.I1
+                || this.getTypeEnum() == TypeEnum.I8
+                || this.getTypeEnum() == TypeEnum.I64;
     }
 
     public boolean isFloat() {
@@ -124,7 +127,7 @@ public class IceType implements Comparable<IceType> {
     }
 
     public boolean isNumeric() {
-        return Set.of(TypeEnum.I1, TypeEnum.I8, TypeEnum.I32, TypeEnum.F32, TypeEnum.F64)
+        return Set.of(TypeEnum.I1, TypeEnum.I8, TypeEnum.I32, TypeEnum.I64, TypeEnum.F32, TypeEnum.F64)
                 .contains(this.getTypeEnum());
     }
 

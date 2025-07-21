@@ -4,11 +4,12 @@ import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.backend.instr.InstructionPattern;
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.constant.IceConstant;
 import top.voidc.ir.ice.constant.IceGlobalVariable;
+import top.voidc.ir.ice.instruction.IceGEPInstruction;
 import top.voidc.ir.ice.instruction.IceLoadInstruction;
 import top.voidc.ir.ice.instruction.IceStoreInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
+import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
@@ -167,42 +168,61 @@ public class MemoryAccessPatterns {
         }
     }
 
-    public static class LoadGlobalPointer extends InstructionPattern<IceLoadInstruction> {
+    /**
+     * 加载全局变量的指针地址
+     */
+    public static class LoadGlobalPointer extends InstructionPattern<IceGlobalVariable> {
         public LoadGlobalPointer() {
-            super(10);
+            super(2);
         }
 
         @Override
-        public int getCost(InstructionSelector selector, IceLoadInstruction value) {
+        public int getCost(InstructionSelector selector, IceGlobalVariable value) {
             return getIntrinsicCost();
         }
 
         @Override
-        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceLoadInstruction load) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceGlobalVariable variable) {
             // 获取源指针（应该是全局变量）
-            IceValue pointer = load.getSource();
-            if (!(pointer instanceof IceConstant)) {
-                throw new IllegalArgumentException("Expected a global constant for loading pointer");
-            }
-
             // 创建目标寄存器
             IceMachineFunction mf = selector.getMachineFunction();
-            var dstReg = mf.allocateVirtualRegister(load.getType());
-            var addrReg = mf.allocateVirtualRegister(pointer.getType());
+            var dstReg = mf.allocateVirtualRegister(variable.getType());
 
-            selector.addEmittedInstruction(new ARM64Instruction("ADRP {dst}, " + pointer.getName(), addrReg));
-            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {addr}, :lo12:" + pointer.getName(), addrReg, addrReg));
-
-            // 生成加载指令
-            selector.addEmittedInstruction(new ARM64Instruction("LDR {dst}, [{pointer}]", dstReg, addrReg));
-
+            selector.addEmittedInstruction(new ARM64Instruction("ADRP {dst}, " + variable.getName(), dstReg));
+            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {addr}, :lo12:" + variable.getName(), dstReg, dstReg));
             return dstReg;
         }
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             // 匹配load指令，且源操作数是全局常量
-            return value instanceof IceLoadInstruction load && load.getSource() instanceof IceGlobalVariable;
+            return value instanceof IceGlobalVariable;
+        }
+    }
+
+    /**
+     * 加载GEP变成为指针寄存器
+     */
+    public static class GEPLoadPointer extends InstructionPattern<IceGEPInstruction> {
+        public GEPLoadPointer() {
+            super(0);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceGEPInstruction gep) {
+            // 获取全局变量
+            IceGlobalVariable globalVar = (IceGlobalVariable) gep.getBasePtr();
+            var basePtr = (IceMachineRegister.RegisterView) selector.emit(globalVar);
+
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(gep.getType());
+
+
+            return dstReg;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceGEPInstruction gep && gep.getBasePtr() instanceof IceGlobalVariable;
         }
     }
 }
