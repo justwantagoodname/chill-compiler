@@ -12,6 +12,7 @@ import top.voidc.ir.ice.instruction.IceRetInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
+import top.voidc.ir.machine.IceStackSlot;
 
 import static top.voidc.ir.machine.InstructionSelectUtil.canBeReg;
 import static top.voidc.ir.machine.InstructionSelectUtil.isImm12;
@@ -127,15 +128,27 @@ public class ControlInstructionPattern {
                     throw new UnsupportedOperationException();
                 }
                 var arg = value.getArguments().get(curArg);
-                var resultArg = selector.emit(arg);
-                var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
-                        .createView(((IceValue) resultArg).getType());
-                if (resultArg instanceof IceMachineRegister.RegisterView argReg) {
-                    selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
-                } else if (resultArg instanceof IceConstantInt argInt) {
-                    selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, #{imm12:src}", paramReg, argInt));
+                if (arg instanceof IceConstantInt argInt && isImm12(argInt)) {
+                    // 立即数参数
+                    var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
+                            .createView(IceType.I32);
+                    selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm12:src}", paramReg, argInt));
                 } else {
-                    throw new IllegalStateException();
+                    var resultArg = selector.emit(arg);
+                    if (resultArg instanceof IceMachineRegister.RegisterView argReg) {
+                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
+                                .createView(argReg.getType());
+                        selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
+                    } else if (resultArg instanceof IceStackSlot argStackSlot) {
+                        // 是栈上的参数需要作为指针加载
+                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
+                                .createView(IceType.I64);
+                        var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
+                        selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlot));
+                        selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, tmpReg));
+                    } else {
+                        throw new IllegalStateException();
+                    }
                 }
             }
             // FIXME: 正确处理函数作为操作数的情况？
@@ -175,18 +188,28 @@ public class ControlInstructionPattern {
                     throw new UnsupportedOperationException();
                 }
                 var arg = value.getArguments().get(curArg);
-                var resultArg = selector.emit(arg);
-                var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
-                        .createView(((IceValue) resultArg).getType());
-                if (resultArg instanceof IceMachineRegister.RegisterView argReg) {
-                    selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
-                } else if (resultArg instanceof IceConstantInt argInt) {
-                    selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, #{imm12:src}", paramReg, argInt));
+                if (arg instanceof IceConstantInt argInt && isImm12(argInt)) {
+                    // 立即数参数
+                    var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
+                            .createView(IceType.I32);
+                    selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm12:src}", paramReg, argInt));
                 } else {
-                    throw new IllegalStateException();
+                    var resultArg = selector.emit(arg);
+                    if (resultArg instanceof IceMachineRegister.RegisterView argReg) {
+                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
+                                .createView(argReg.getType());
+                        selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
+                    } else if (resultArg instanceof IceStackSlot argStackSlot) {
+                        // 是栈上的参数需要作为指针加载
+                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
+                                .createView(IceType.I64);
+                        var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
+                        selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlot));
+                        selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, tmpReg));
+                    } else {
+                        throw new IllegalStateException();
+                    }
                 }
-
-
             }
             // FIXME: 正确处理函数作为操作数的情况？
             selector.addEmittedInstruction(new ARM64Instruction("BL " + value.getTarget().getName()));
