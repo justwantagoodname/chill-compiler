@@ -44,14 +44,14 @@ public class LoadAndStorePattern {
         }
     }
 
-    public static class LoadIntImmediateToReg extends InstructionPattern<IceConstantInt> {
+    public static class LoadIntImmediateToReg extends InstructionPattern<IceConstantData> {
 
         public LoadIntImmediateToReg() {
             super(0);
         }
 
         @Override
-        public int getCost(InstructionSelector selector, IceConstantInt value) {
+        public int getCost(InstructionSelector selector, IceConstantData value) {
             if (isImm16(value)) {
                 return 2;
             } else {
@@ -60,9 +60,9 @@ public class LoadAndStorePattern {
         }
 
         @Override
-        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConstantInt value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConstantData value) {
             // TODO：充分利用movz movz
-            final var constValue = (int) value.getValue();
+            final var constValue = ((IceConstantInt) value.castTo(IceType.I32)).getValue();
             final var dstRegView = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             if (!isImm16(value)) {
                 var lowBit = constValue & 0xFFFF;
@@ -79,7 +79,9 @@ public class LoadAndStorePattern {
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            return isConstInt(value);
+            return value instanceof IceConstantData
+                    && value.getType().isInteger()
+                    && !value.getType().equals(IceType.I64);
         }
     }
 
@@ -141,9 +143,9 @@ public class LoadAndStorePattern {
                 throw new IllegalStateException("phi指令应该可以被选择");
             }
             var dstReg = selector.emit(value.getDestination());
-            var srcReg = selector.emit(value.getSource());
+            var imm = (IceConstantInt) ((IceConstantData) value.getSource()).castTo(IceType.I32);
             return selector.addEmittedInstruction(
-                    new ARM64Instruction("MOV {dst}, {imm12:src}", dstReg, srcReg)).getResultReg();
+                    new ARM64Instruction("MOV {dst}, {imm12:src}", dstReg, imm)).getResultReg();
         }
 
         @Override

@@ -21,4 +21,13 @@ public class Tool {
         }
         return 31 - Integer.numberOfLeadingZeros(value);
     }
+
+    /**
+     * 检查一个整数是否是2的幂
+     * @param value 要检查的值，必须为正整数
+     * @return 如果是2的幂返回true，否则返回false
+     */
+    public static boolean isPowerOfTwo(int value) {
+        return value > 0 && (value & (value - 1)) == 0;
+    }
 }

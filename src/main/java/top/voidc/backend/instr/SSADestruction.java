@@ -80,7 +80,22 @@ public class SSADestruction implements CompilePass<IceFunction> {
                     var fromBlock = branches.block();
                     var copyValue = branches.value();
                     if (copyValue instanceof IceUndef) continue; // undef value 不需要赋值
-                    fromBlock.addFirst(new IceCopyInstruction(fromBlock, phiNode, copyValue));
+                    var insertedFlag = false;
+                    for (var i = fromBlock.size() - 1; i >= 0; i--) {
+                        var inst = fromBlock.get(i);
+                        if (!inst.isTerminal()) {
+                            // 找到第一个非终结指令，插入复制指令到这个指令之后
+                            fromBlock.add(i + 1, new IceCopyInstruction(fromBlock, phiNode, copyValue));
+                            insertedFlag = true;
+                            break;
+                        }
+                    }
+
+                    if (!insertedFlag) {
+                        // 如果没有找到非终结指令，则插入到块的开头
+                        fromBlock.add(0, new IceCopyInstruction(fromBlock, phiNode, copyValue));
+                    }
+
                 }
                 phiNode.setEliminated(true);
             };

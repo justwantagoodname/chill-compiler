@@ -24,6 +24,8 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ArithmaticInstructionPattern.SDIVTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.NEGReg());
         patternSet.add(new ArithmaticInstructionPattern.SMODTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.ZextBoolToInt());
+        patternSet.add(new ArithmaticInstructionPattern.ZextBoolImmToInt());
 
         patternSet.add(new ControlInstructionPattern.BranchUnconditional());
         patternSet.add(new ControlInstructionPattern.RetVoid());
@@ -60,6 +62,9 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new MemoryAccessPatterns.LoadRegisterPointerPattern());
         patternSet.add(new MemoryAccessPatterns.StoreRegisterPointerPattern());
         patternSet.add(new MemoryAccessPatterns.LoadGlobalPointer());
+        patternSet.add(new MemoryAccessPatterns.GEPLoadGlobalPointer());
+        patternSet.add(new MemoryAccessPatterns.GEPLoadLocalPointer());
+        patternSet.add(new MemoryAccessPatterns.GEPLoadArgumentPointer());
     }
 
     @Override

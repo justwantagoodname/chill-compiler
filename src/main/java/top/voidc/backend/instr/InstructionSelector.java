@@ -1,5 +1,6 @@
 package top.voidc.backend.instr;
 
+import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;

@@ -4,11 +4,14 @@ import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.backend.instr.InstructionPattern;
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceConstantBoolean;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceBinaryInstruction;
+import top.voidc.ir.ice.instruction.IceConvertInstruction;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.instruction.IceNegInstruction;
+import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
 
@@ -334,14 +337,14 @@ public class ArithmaticInstructionPattern {
     /**
      * 除法模式：`x / y -> dst`
      */
-    public static class SDIVTwoReg extends InstructionPattern<IceBinaryInstruction.Div> {
+    public static class SDIVTwoReg extends InstructionPattern<IceBinaryInstruction.SDiv> {
 
         public SDIVTwoReg() {
             super(3);
         }
 
         @Override
-        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Div value) {
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.SDiv value) {
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
@@ -351,7 +354,7 @@ public class ArithmaticInstructionPattern {
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            return value instanceof IceBinaryInstruction.Div divNode
+            return value instanceof IceBinaryInstruction.SDiv divNode
                     && canBeReg(selector, divNode.getLhs())
                     && canBeReg(selector, divNode.getRhs());
         }
@@ -401,6 +404,64 @@ public class ArithmaticInstructionPattern {
             return value instanceof IceBinaryInstruction.Mod modNode
                     && canBeReg(selector, modNode.getLhs())
                     && canBeReg(selector, modNode.getRhs());
+        }
+    }
+
+    public static class ZextBoolToInt extends InstructionPattern<IceConvertInstruction> {
+        public ZextBoolToInt() {
+            super(0);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
+            var inner = (IceMachineRegister.RegisterView) selector.emit(value.getOperand());
+            return inner.getRegister().createView(IceType.I32);
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConvertInstruction convertInstruction
+                    && convertInstruction.getOperand().getType().isBoolean()
+                    && !(convertInstruction.getOperand() instanceof IceConstantData)
+                    && convertInstruction.getType().equals(IceType.I32);
+        }
+    }
+
+    public static class ZextBoolImmToInt extends InstructionPattern<IceConvertInstruction> {
+        public ZextBoolImmToInt() {
+            super(0);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceConvertInstruction value) {
+            var inner = (IceConstantBoolean) value.getOperand();
+            if (inner.equals(IceConstantData.create(true))) {
+                // 如果是 true，则返回 1
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
+            var inner = (IceConstantBoolean) value.getOperand();
+            if (inner.equals(IceConstantData.create(true))) {
+                // true
+                var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+                return selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, #1", dstReg)).getResultReg();
+            } else {
+                // false
+                return selector.getMachineFunction().getZeroRegister(IceType.I32);
+            }
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConvertInstruction convertInstruction
+                    && convertInstruction.getOperand().getType().isBoolean()
+                    && convertInstruction.getOperand() instanceof IceConstantBoolean
+                    && convertInstruction.getType().equals(IceType.I32);
         }
     }
 }

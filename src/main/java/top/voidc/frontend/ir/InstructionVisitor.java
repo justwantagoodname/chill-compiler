@@ -180,7 +180,6 @@ public class InstructionVisitor extends IceBaseVisitor<IceInstruction> {
             case "FSUB" -> new IceBinaryInstruction.FSub(block, getPureName(resultReg), type, lhs, rhs);
             case "MUL" -> new IceBinaryInstruction.Mul(block, getPureName(resultReg), type, lhs, rhs);
             case "FMUL" -> new IceBinaryInstruction.FMul(block, getPureName(resultReg), type, lhs, rhs);
-            case "DIV" -> new IceBinaryInstruction.Div(block, getPureName(resultReg), type, lhs, rhs);
             case "SDIV" -> new IceBinaryInstruction.SDiv(block, getPureName(resultReg), type, lhs, rhs);
             case "FDIV" -> new IceBinaryInstruction.FDiv(block, getPureName(resultReg), type, lhs, rhs);
             case "MOD" -> new IceBinaryInstruction.Mod(block, getPureName(resultReg), type, lhs, rhs);

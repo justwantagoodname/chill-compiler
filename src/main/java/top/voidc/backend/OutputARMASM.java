@@ -14,7 +14,6 @@ import top.voidc.optimizer.pass.CompilePass;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
 /**
  * 输出最终的汇编代码
@@ -55,6 +54,9 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
         assemblyBuilder.writeLine().writeLine("\t.data");
 
         for (var global : target.getGlobalVariables()) {
+            // 跳过常量
+            if (((IcePtrType<?>) global.getType()).isConst()) continue;
+
             if (global instanceof IceGlobalVariable globalVariable && !((IcePtrType<?>) global.getType()).getPointTo().isArray()) {
                 // 非数组类型
                 assemblyBuilder.writeLine("\t.global\t" + globalVariable.getName())
@@ -74,8 +76,9 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
                         .writeLine("\t.type\t" + globalVariable.getName() + ", @object")
                         .writeLine(globalVariable.getName() + ":");
 
-                if (globalVariable.getInitializer() != null) {
-                    var arrayInitializer = (IceConstantArray) globalVariable.getInitializer();
+                if (globalVariable.getInitializer() != null
+                        && globalVariable.getInitializer() instanceof IceConstantArray arrayInitializer
+                        && !arrayInitializer.isFullZero()) {
                     for (var row : arrayInitializer.getFullElements()) {
                         if (row instanceof IceConstantInt constData) {
                             assemblyBuilder.writeLine("\t.word\t" + constData.getValue());

@@ -1,5 +1,6 @@
 package top.voidc.backend.instr;
 
+import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
@@ -56,6 +57,7 @@ public abstract class InstructionPattern <T extends IceValue> {
     }
 
     public final IceMachineValue emitForValue(InstructionSelector selector, IceValue value) {
+        selector.addEmittedInstruction(new ARM64Instruction("// " + value.toString()));
         @SuppressWarnings("unchecked") final var target = (T) value;
         return this.emit(selector, target);
     }
