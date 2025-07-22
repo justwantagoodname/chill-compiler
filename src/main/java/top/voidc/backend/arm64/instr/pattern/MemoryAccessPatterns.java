@@ -85,8 +85,8 @@ public class MemoryAccessPatterns {
 
             // 生成存储指令
             selector.addEmittedInstruction(new ARM64Instruction(
-                    "STR {src}, {local:dst}",
-                    src, dst
+                    "STR {dst}, {local:src}",
+                    dst, src
             ));
 
             return null; // 存储指令无返回值
