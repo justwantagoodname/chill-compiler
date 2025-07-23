@@ -74,7 +74,7 @@ public abstract class IceMachineRegister extends IceUser implements IceArchitect
      */
     @Override
     public int hashCode() {
-        return (getArchitectureDescription() + getType().getTypeEnum() + getName()).hashCode();
+        return ((isVirtualize() ? "virt_" : "") + getArchitectureDescription() + getType().getTypeEnum() + getName()).hashCode();
     }
 
     @Override
