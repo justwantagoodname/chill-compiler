@@ -12,6 +12,7 @@ import top.voidc.ir.machine.IceMachineInstruction;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
 
+import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.misc.ds.ChilletGraph;
 
@@ -47,6 +48,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
         for (var block : target.blocks()) {
             Set<IceMachineRegister> live = new HashSet<>();
             var blockLive = liveness.get(block);
+            Log.d("Liveness for block " + block.getName() + ": " + (blockLive != null ? blockLive.liveIn() : "null, ") + (blockLive != null ? blockLive.liveOut() : "null"));
             if (blockLive != null) {
                 for (var val : blockLive.liveOut()) {
                     if (val instanceof IceMachineRegister reg && reg.isVirtualize()) {
@@ -61,7 +63,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
             for (var instr : instructions) {
                 IceMachineRegister.RegisterView def = instr.getResultReg();
                 if (def != null && def.getRegister().isVirtualize()) {
-                    
+
                     for (var reg : live) {
                         if (!reg.equals(def.getRegister())) {
                             try { igraph.addEdge(def.getRegister(), reg); } catch (Exception ignored) {}
@@ -89,6 +91,27 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
                 spilled.add(reg);
             }
         }
+
+        // 3.5. Verify coloring and fix conflicts by spilling
+        // This handles cases where getColors returns an invalid coloring (adjacent nodes have the same color).
+        for (var reg1 : vregs) {
+            if (!regAssign.containsKey(reg1)) continue; // reg1 is already spilled
+
+            var neighbors = igraph.getNeighbors(reg1);
+            if (neighbors == null) continue;
+
+            for (var reg2 : neighbors) {
+                // Check if reg2 is a neighbor and they have the same color
+                if (regAssign.containsKey(reg2) && regAssign.get(reg1).equals(regAssign.get(reg2))) {
+                    Log.w("Graph coloring conflict detected between " + reg1.getName() + " and " + reg2.getName() + ". Forcing one to spill.");
+                    // Conflict detected. Spill reg1 to be safe.
+                    regAssign.remove(reg1);
+                    spilled.add(reg1);
+                    break; // Move to the next reg1
+                }
+            }
+        }
+
 
         // 4. For spilled registers, allocate stack slots
         Map<IceMachineRegister, IceStackSlot> spillSlots = new HashMap<>();
