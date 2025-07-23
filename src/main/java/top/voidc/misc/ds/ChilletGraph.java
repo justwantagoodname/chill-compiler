@@ -1,5 +1,6 @@
 package top.voidc.misc.ds;
 
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -43,6 +44,22 @@ public class ChilletGraph<T> {
         nodes.remove(name);
     }
 
+    public List<T> getNeighbors(T name) {
+        if (!nodes.containsKey(name)) {
+            throw new RuntimeException("Node " + name + " does not exist");
+        }
+
+        Node node = nodes.get(name);
+        List<T> neighbors = new ArrayList<>();
+        for (Node n : node.edges) {
+            neighbors.add(n.name);
+        }
+        if (neighbors.isEmpty()) {
+            return null;
+        }
+        return neighbors;
+    }
+
     /**
      * 添加一条 u 和 v 之间的 双向边
      * @param u 节点 1
@@ -68,7 +85,7 @@ public class ChilletGraph<T> {
      * @return 哈希映射，节点名字 -> 节点颜色
      */
     public Hashtable<T, Integer> getColors(int k) {
-        minConflicts(k, 1000);
+        minConflicts(k, 100);
 
         Hashtable<T, Integer> colors = new Hashtable<>();
         for (Node n : nodes.values()) {
