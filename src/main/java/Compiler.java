@@ -1,6 +1,7 @@
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import top.voidc.backend.*;
+import top.voidc.backend.regallocator.GraphColoringRegisterAllocator;
 import top.voidc.backend.arm64.instr.pattern.ARM64InstructionPatternPack;
 import top.voidc.backend.instr.InstructionSelectionPass;
 import top.voidc.backend.instr.SSADestruction;
@@ -102,7 +103,7 @@ public class Compiler {
             pm.runPass(LivenessAnalysis.class);
             pm.runPass(ShowIR.class);
             pm.runPass(GraphColoringRegisterAllocator.class);
-            pm.runPass(ShowIR.class);
+//            pm.runPass(ShowIR.class);
             pm.runPass(AlignFramePass.class);
             pm.runPass(ShowIR.class);
             pm.runPass(OutputARMASM.class);
