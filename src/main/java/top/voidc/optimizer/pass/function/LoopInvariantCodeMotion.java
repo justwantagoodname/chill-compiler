@@ -3,9 +3,9 @@ package top.voidc.optimizer.pass.function;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstant;
-import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
+import top.voidc.misc.Log;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.misc.annotation.Pass;
 
@@ -134,11 +134,46 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
                 }
             }
 
-            // 外提指令
+            // 过滤出本轮可安全外提的指令（无循环内依赖）
+            List<IceInstruction> toMove = new ArrayList<>();
+            Set<IceInstruction> invariantSet = new HashSet<>(invariants);
             for (IceInstruction inst : invariants) {
-                IceBlock parent = inst.getParent();
-                parent.remove(inst);
-                preheader.addInstruction(inst);
+                boolean canMove = true;
+                for (IceValue operand : inst.getOperands()) {
+                    if (operand instanceof IceInstruction) {
+                        IceInstruction opInst = (IceInstruction) operand;
+                        // 如果操作数在循环内定义且也在本轮收集中，则存在依赖
+                        if (loop.blocks.contains(opInst.getParent()) && invariantSet.contains(opInst)) {
+                            canMove = false;
+                            break;
+                        }
+                    }
+                }
+                if (canMove) {
+                    toMove.add(inst);
+                }
+            }
+
+            // 外提指令：批量移动到前置块（保持终结指令在末尾）
+            if (!toMove.isEmpty()) {
+                IceInstruction term = preheader.getLast();
+                // 确保终结指令被正确处理
+                if (term != null && term.isTerminal()) {
+                    preheader.remove(term);
+                    for (IceInstruction inst : toMove) {
+                        IceBlock parent = inst.getParent();
+                        parent.remove(inst);
+                        preheader.addInstruction(inst);
+                    }
+                    preheader.addInstruction(term);
+                } else {
+                    // 如果没有终结指令则直接添加
+                    for (IceInstruction inst : toMove) {
+                        IceBlock parent = inst.getParent();
+                        parent.remove(inst);
+                        preheader.addInstruction(inst);
+                    }
+                }
                 moved = true;
                 changed = true;
             }
@@ -193,7 +228,7 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
             int index = function.getBlocks().indexOf(header);
             function.getBlocks().add(index, preheader);
 
-            // 重定向分支 - 使用正确的方法
+            // 重定向分支
             IceInstruction term = originalPred.getLast();
             if (term instanceof IceBranchInstruction) {
                 IceBranchInstruction br = (IceBranchInstruction) term;
