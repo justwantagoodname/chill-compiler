@@ -5,7 +5,6 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstant;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
-import top.voidc.misc.Log;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.misc.annotation.Pass;
 
@@ -140,8 +139,7 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
             for (IceInstruction inst : invariants) {
                 boolean canMove = true;
                 for (IceValue operand : inst.getOperands()) {
-                    if (operand instanceof IceInstruction) {
-                        IceInstruction opInst = (IceInstruction) operand;
+                    if (operand instanceof IceInstruction opInst) {
                         // 如果操作数在循环内定义且也在本轮收集中，则存在依赖
                         if (loop.blocks.contains(opInst.getParent()) && invariantSet.contains(opInst)) {
                             canMove = false;
@@ -185,8 +183,7 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
     private boolean isLoopInvariant(IceInstruction inst, LoopInfo loop) {
         // 检查所有操作数
         for (IceValue operand : inst.getOperands()) {
-            if (operand instanceof IceInstruction) {
-                IceInstruction defInst = (IceInstruction) operand;
+            if (operand instanceof IceInstruction defInst) {
                 // 如果定义在循环内且不是循环不变式
                 if (loop.blocks.contains(defInst.getParent()) && !isLoopInvariant(defInst, loop)) {
                     return false;
@@ -198,11 +195,7 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
         }
 
         // 检查指令是否有副作用
-        if (hasSideEffects(inst)) {
-            return false;
-        }
-
-        return true;
+        return !hasSideEffects(inst);
     }
 
     private boolean hasSideEffects(IceInstruction inst) {
@@ -221,7 +214,7 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
             return null;
         }
 
-        IceBlock originalPred = preds.get(0);
+        IceBlock originalPred = preds.getFirst();
         if (originalPred.getSuccessors().size() != 1) {
             // 前驱有多个后继，需要创建新的前置块
             IceBlock preheader = new IceBlock(function, "preheader_" + header.getName());
@@ -230,8 +223,7 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
 
             // 重定向分支
             IceInstruction term = originalPred.getLast();
-            if (term instanceof IceBranchInstruction) {
-                IceBranchInstruction br = (IceBranchInstruction) term;
+            if (term instanceof IceBranchInstruction br) {
 
                 // 移除原分支指令
                 originalPred.remove(term);
