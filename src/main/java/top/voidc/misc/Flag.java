@@ -71,6 +71,7 @@ public class Flag {
         flagInstance.registerOption(new Option<>("-O1", Boolean.class, false));
         flagInstance.registerOption(new Option<>("-emit-ir", Boolean.class, false));
         flagInstance.registerOption(new Option<>("-fenable-ptr-type", Boolean.class, false));
+        flagInstance.registerOption(new Option<>("-fshow-trace-info", Boolean.class, false));
         flagInstance.registerOption(new Option<>("-fdisable-group", String.class, ""));
 
         for (int i = 0; i < args.length; i++) {
