@@ -8,7 +8,9 @@ import top.voidc.ir.ice.instruction.*;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
+import top.voidc.ir.machine.IceMachineInstructionComment;
 import top.voidc.ir.machine.IceMachineRegister;
+import top.voidc.misc.Flag;
 
 import java.util.*;
 
@@ -63,6 +65,9 @@ public class InstructionSelector {
         for (IceInstruction instruction : block) {
             // 如果一个指令本身没有被用作操作数（并且它有副作用，如store, ret），它就是根
             if (!allOperands.contains(instruction) || hasSideEffect(instruction)) {
+                if (Boolean.TRUE.equals(Flag.get("-fshow-trace-info"))) {
+                    addEmittedInstruction(new IceMachineInstructionComment("// Block Level emit:"));
+                }
                 emit(instruction);
             }
         }
