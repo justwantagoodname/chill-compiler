@@ -17,6 +17,7 @@ public abstract class IceStackSlot extends IceValue implements IceAlignable, Ice
     public static class VariableStackSlot extends IceStackSlot {
         public VariableStackSlot(IceMachineFunction parent, IceType type) {
             super(parent, type);
+            setAlignment(4);
         }
     }
 

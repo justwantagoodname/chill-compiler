@@ -154,6 +154,10 @@ public class ARM64Function extends IceMachineFunction {
         return allocatePhysicalRegister(name.substring(1), registerType);
     }
 
+    public HashSet<IceMachineRegister> getAllVirtualRegisters() {
+        return new HashSet<>(virtualRegisters.values());
+    }
+
     @Override
     protected IceMachineRegister allocateVirtualRegister(String name, IceType type) {
         return virtualRegisters.computeIfAbsent(name, _ -> new ARM64Register(name, type));
