@@ -96,6 +96,7 @@ public class Compiler {
             pm.runPass(RenameVariable.class);
             pm.runPass(LoopInvariantCodeMotion.class);
             pm.runPass(InductionVariableOptimization.class);
+            pm.runPass(LoopClosedFormOptimization.class);
             pm.runPass(RenameVariable.class);
             pm.runPass(DumpIR.class);
 
