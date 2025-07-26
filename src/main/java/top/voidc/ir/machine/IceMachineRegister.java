@@ -83,6 +83,7 @@ public abstract class IceMachineRegister extends IceUser implements IceArchitect
         return obj instanceof IceMachineRegister register
                 && isVirtualize == register.isVirtualize
                 && register.getArchitectureDescription().equals(getArchitectureDescription())
+                && register.isVirtualize() == isVirtualize()
                 && register.getType().equals(getType())
                 && register.getName().equals(getName());
     }

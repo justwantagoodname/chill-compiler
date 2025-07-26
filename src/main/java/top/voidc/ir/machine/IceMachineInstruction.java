@@ -20,7 +20,7 @@ import java.util.Map;
  * 立即数之后设计
  * 操作数布局和指令顺序一致
  */
-public abstract class IceMachineInstruction extends IceInstruction implements IceArchitectureSpecification {
+public abstract class IceMachineInstruction extends IceInstruction {
     protected final String renderTemplate;
     protected record NamedOperand(String placeholder, String prefix, int position) {}
 
