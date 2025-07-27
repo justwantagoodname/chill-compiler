@@ -4,6 +4,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceUser;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantData;
+import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
 import top.voidc.misc.Log;
@@ -13,7 +14,7 @@ import top.voidc.misc.annotation.Pass;
 import java.util.*;
 
 @Pass(
-        group = {"O0", "needfix"}
+        group = {"O0"}
 )
 public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
 
@@ -35,7 +36,7 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
         if (!isLoopHeader(header)) return false;
 
         // 获取终止指令（最后一条指令）
-        IceInstruction terminator = header.get(header.size() - 1);
+        IceInstruction terminator = header.getLast();
         if (!(terminator instanceof IceBranchInstruction branch)) return false;
 
         // 必须是条件分支
@@ -67,10 +68,12 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
         } else {
             return false;
         }
+        Log.d("循环回边块为：" + latch.getTextIR());
 
         // 查找循环PHI节点（归纳变量）
         IcePHINode iv = findInductionVariable(header);
         if (iv == null) return false;
+        Log.d("循环PHI节点为：" + iv.getTextIR());
 
         // 获取初始值和步长
         IceValue initial = null;
@@ -99,10 +102,12 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
         }
 
         if (initial == null || step == null) return false;
+        Log.d("初始值为：{ " + initial + " }，步长为：{ " + step + " }");
 
         // 查找循环条件
         IceCmpInstruction.Icmp cmp = findLoopCondition(header);
         if (cmp == null) return false;
+        Log.d("循环条件为：" + cmp.getTextIR());
 
         // 获取边界值
         IceValue boundary = null;
@@ -117,6 +122,8 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
             return false;
         }
 
+        Log.d("边界值为：" + boundary.getTextIR());
+
         if (!(boundary instanceof IceConstantData)) return false;
 
         // 计算最终值（闭式形式）
@@ -129,6 +136,7 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
         );
 
         if (finalValue == null) return false;
+        Log.d("最终值为：" + finalValue.getTextIR());
 
         // 执行优化：替换循环为计算结果
         return replaceLoopWithResult(
@@ -142,7 +150,7 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
 
         // 最后一条指令应该是条件分支
         if (block.isEmpty()) return false;
-        IceInstruction terminator = block.get(block.size() - 1);
+        IceInstruction terminator = block.getLast();
         if (!(terminator instanceof IceBranchInstruction branch) || !branch.isConditional()) {
             return false;
         }
@@ -178,7 +186,7 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
     private IceCmpInstruction.Icmp findLoopCondition(IceBlock header) {
         // 查找条件分支前的比较指令
         if (header.isEmpty()) return null;
-        IceInstruction terminator = header.get(header.size() - 1);
+        IceInstruction terminator = header.getLast();
 
         // 遍历指令查找比较指令
         for (int i = header.size() - 2; i >= 0; i--) {
@@ -200,12 +208,94 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
             IceCmpInstruction.Icmp.Type cmpType,
             boolean isIVOnLeft
     ) {
-        // 只处理 iv < boundary 情况（归纳变量在左侧）
-        if (cmpType == IceCmpInstruction.Icmp.Type.SLT && isIVOnLeft) {
-            // 对于 iv < boundary，最终值 = boundary
-            return boundary;
+        // 定义退出条件类型常量
+        final int GE = 0; // 大于等于
+        final int GT = 1; // 大于
+        final int LE = 2; // 小于等于
+        final int LT = 3; // 小于
+
+
+
+        int exitCmp = -1;
+        // need fix
+        int initialValue = ((IceConstantInt)initial).getValue();
+        int stepValue = ((IceConstantInt)step).getValue();
+        int boundaryValue = ((IceConstantInt)boundary).getValue();
+
+        // 根据比较类型和IV位置确定退出条件
+        if (isIVOnLeft) {
+            switch (cmpType) {
+                case SLT: exitCmp = GE; break; // iv < b → 退出条件 iv >= b
+                case SLE: exitCmp = GT; break; // iv <= b → 退出条件 iv > b
+                case SGT: exitCmp = LE; break; // iv > b → 退出条件 iv <= b
+                case SGE: exitCmp = LT; break; // iv >= b → 退出条件 iv < b
+                default: return null;
+            }
+        } else {
+            switch (cmpType) {
+                case SLT: exitCmp = LE; break; // b < iv → 退出条件 iv <= b
+                case SLE: exitCmp = LT; break; // b <= iv → 退出条件 iv < b
+                case SGT: exitCmp = GE; break; // b > iv → 退出条件 iv >= b
+                case SGE: exitCmp = GT; break; // b >= iv → 退出条件 iv > b
+                default: return null;
+            }
         }
-        return null; // 其他情况暂不处理
+
+        // 检查步长方向是否有效
+        if ((exitCmp == GE || exitCmp == GT) && stepValue <= 0) {
+            return null; // 需要正步长
+        }
+        if ((exitCmp == LE || exitCmp == LT) && stepValue >= 0) {
+            return null; // 需要负步长
+        }
+
+        int n = 0; // 迭代次数
+        int finalValue; // 最终值
+
+        // 根据退出条件类型计算迭代次数
+        switch (exitCmp) {
+            case GE: // 退出条件: iv >= boundary
+                if (boundaryValue <= initialValue) {
+                    n = 0;
+                } else {
+                    n = (boundaryValue - initialValue + stepValue - 1) / stepValue;
+                }
+                break;
+
+            case GT: // 退出条件: iv > boundary
+                if (boundaryValue < initialValue) {
+                    n = 0;
+                } else {
+                    n = (boundaryValue - initialValue) / stepValue + 1;
+                }
+                break;
+
+            case LE: // 退出条件: iv <= boundary (步长为负)
+                if (initialValue <= boundaryValue) {
+                    n = 0;
+                } else {
+                    int stepAbs = -stepValue; // 步长取绝对值
+                    n = (initialValue - boundaryValue + stepAbs - 1) / stepAbs;
+                }
+                break;
+
+            case LT: // 退出条件: iv < boundary (步长为负)
+                if (initialValue < boundaryValue) {
+                    n = 0;
+                } else if (initialValue == boundaryValue) {
+                    n = 1;
+                } else {
+                    int stepAbs = -stepValue; // 步长取绝对值
+                    n = (initialValue - boundaryValue + stepAbs) / stepAbs;
+                }
+                break;
+        }
+
+        // 计算最终值
+        finalValue = initialValue + n * stepValue;
+
+        // 创建并返回新的常量
+        return IceConstantData.create(finalValue);
     }
 
     private boolean replaceLoopWithResult(
@@ -221,7 +311,7 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
         List<IceBlock> predecessors = header.getPredecessors();
         if (predecessors.isEmpty()) return false;
 
-        IceBlock entry = predecessors.get(0);
+        IceBlock entry = predecessors.getFirst();
         if (entry.isEmpty()) return false;
 
         // 获取入口块的终止指令
