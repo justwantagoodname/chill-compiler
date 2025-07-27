@@ -307,36 +307,72 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
             IcePHINode iv,
             IceConstantData finalValue
     ) {
-        // 1. 修改入口块的分支，直接跳转到退出块
-        List<IceBlock> predecessors = header.getPredecessors();
-        if (predecessors.isEmpty()) return false;
-
-        IceBlock entry = predecessors.getFirst();
-        if (entry.isEmpty()) return false;
-
-        // 获取入口块的终止指令
-        IceInstruction entryTerminator = entry.getLast();
-        if (entryTerminator instanceof IceBranchInstruction) {
-            // 创建新的无条件分支到退出块
-            IceBranchInstruction newBranch = new IceBranchInstruction(entry, exit);
-
-            // 替换终止指令
-            entry.removeLast();
-            entry.add(newBranch);
+        // 1. 替换所有对归纳变量的使用
+        List<IceUser> users = new ArrayList<>(iv.getUsers());
+        for (IceUser user : users) {
+            user.replaceOperand(iv, finalValue);
         }
 
+        // 2. 重定向所有进入循环头的前驱块（除回边块外）
+        for (IceBlock pred : new ArrayList<>(header.getPredecessors())) {
+            if (pred == latch) continue;
 
-        // 2. 在退出块中替换所有对归纳变量的使用
-        for (IceUser user : new ArrayList<>(iv.getUsers())) {
-            if (user instanceof IceInstruction instr && instr.getParent().equals(exit)){
-                user.replaceOperand(iv, finalValue);
+            IceInstruction terminator = pred.getLast();
+            if (terminator instanceof IceBranchInstruction branch) {
+                Log.d("branch: " + branch.getTextIR());
+                // 创建新分支指令替换原分支
+                if (branch.isConditional()) {
+                    IceValue cond = branch.getCondition();
+                    IceBlock trueBlock = branch.getTrueBlock();
+                    IceBlock falseBlock = branch.getFalseBlock();
+
+                    // 重定向指向header的分支
+                    if (trueBlock == header) trueBlock = exit;
+                    if (falseBlock == header) falseBlock = exit;
+
+                    // 创建新条件分支
+                    IceBranchInstruction newBranch = new IceBranchInstruction(
+                            pred, cond, trueBlock, falseBlock
+                    );
+
+                    Log.d("new branch: " + newBranch.getTextIR());
+                    // 替换终止指令
+                    pred.removeLast();
+                    pred.addInstruction(newBranch);
+                } else {
+                    // 无条件分支：直接重定向到退出块
+                    IceBlock target = branch.getTargetBlock();
+                    if (target == header) {
+                        IceBranchInstruction newBranch = new IceBranchInstruction(pred, exit);
+                        Log.d("new branch: " + newBranch.getTextIR());
+                        pred.removeLast();
+                        pred.addInstruction(newBranch);
+                    }
+                }
             }
         }
 
-        // 3. 清理循环体
+        // 3. 修改循环头的终止指令为跳转到退出块
+        header.removeLast();
+        header.add(new IceBranchInstruction(header, exit));
+
+        // 4. 安全移除循环体块
+        body.clear();
         body.destroy();
+
+        // 5. 安全移除回边块
+        latch.clear();
         latch.destroy();
-        header.destroy();
+
+        // 6. 清理循环头
+        Iterator<IceInstruction> it = header.iterator();
+        while (it.hasNext()) {
+            IceInstruction inst = it.next();
+            if (inst instanceof IcePHINode || inst == header.getLast()) {
+                it.remove();
+                inst.destroy();
+            }
+        }
 
         return true;
     }
