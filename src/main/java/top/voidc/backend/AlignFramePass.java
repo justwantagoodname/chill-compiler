@@ -41,11 +41,11 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
         var variableSize = 0;
         for (var slot : target.getStackFrame()) {
             if (slot instanceof IceStackSlot.VariableStackSlot varSlot) {
-                variableSize += varSlot.getType().getByteSize();
                 if (variableSize % varSlot.getAlignment() != 0) {
                     // 对齐到当前栈槽的对齐要求
                     variableSize += varSlot.getAlignment() - (variableSize % varSlot.getAlignment());
                 }
+                variableSize += varSlot.getType().getByteSize();
             }
         }
 
@@ -144,18 +144,17 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
         }
 
         // 设置变量栈槽偏移量
-        var currentOffset = 0;
+        var currentOffset = 0; // 变量从sp指针开始开始向高地址分配
         for (var slot : target.getStackFrame()) {
             if (slot instanceof IceStackSlot.VariableStackSlot varSlot) {
-                // 变量从栈顶开始向下分配
+                // 对齐确保当前地址是对齐到要求的
+                if (currentOffset % varSlot.getAlignment() != 0) {
+                    currentOffset += varSlot.getAlignment() - (currentOffset % varSlot.getAlignment());
+                }
                 varSlot.setOffset(currentOffset + argumentSize + returnRegisterSize); // 有为内部函数调用准备的栈帧和 lr + fp
 
                 // 计算下一个变量的偏移量
                 var currentVariableSize = varSlot.getType().getByteSize();
-                if (currentVariableSize % varSlot.getAlignment() != 0) {
-                    // 对齐到当前栈槽的对齐要求
-                    currentVariableSize += varSlot.getAlignment() - (currentVariableSize % varSlot.getAlignment());
-                }
                 currentOffset += currentVariableSize;
             }
         }
