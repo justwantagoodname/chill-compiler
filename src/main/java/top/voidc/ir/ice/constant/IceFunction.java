@@ -134,6 +134,27 @@ public class IceFunction extends IceConstant implements Iterable<IceBlock>, IceA
         return blocks();
     }
 
+    public List<IceBlock> getBFSBlocks() {
+        ArrayList<IceBlock> result = new ArrayList<>();
+        Set<IceBlock> visited = new HashSet<>();
+
+        Queue<IceBlock> queue = new LinkedList<>();
+        queue.add(getEntryBlock());
+        while (!queue.isEmpty()) {
+            IceBlock current = queue.poll();
+            if (visited.contains(current)) continue;
+            visited.add(current);
+            result.add(current);
+            for (IceBlock successor : current.successors()) {
+                if (!visited.contains(successor)) {
+                    queue.add(successor);
+                }
+            }
+        }
+
+        return result;
+    }
+
     @Override
     public String getReferenceName(boolean withType) {
         return "@" + getName() + "(" +
