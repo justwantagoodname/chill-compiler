@@ -29,7 +29,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
     private IceContext iceContext;
 
     // 工作列表
-    private ArrayList<IceMachineRegister> simplifyList;
+    private Deque<IceMachineRegister> simplifyList;
     private ArrayList<IceMachineInstruction> coalesceList;
     private ArrayList<IceMachineRegister> freezeList;
     private HashSet<IceMachineRegister> spillList;
@@ -97,7 +97,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
         this.preColored = new HashMap<>();
         this.slotMap = new HashMap<>();
 
-        this.simplifyList = new ArrayList<>();
+        this.simplifyList = new ArrayDeque<>();
         this.coalesceList = new ArrayList<>();
         this.freezeList = new ArrayList<>();
         this.spillList = new HashSet<>();
@@ -203,23 +203,23 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
     }
 
     private void flush() {
-        this.color = new HashMap<>();
-        this.simplifyList = new ArrayList<>();
-        this.coalesceList = new ArrayList<>();
-        this.freezeList = new ArrayList<>();
-        this.spillList = new HashSet<>();
+        this.color.clear();
+        this.simplifyList.clear();
+        this.coalesceList.clear();
+        this.freezeList.clear();
+        this.spillList.clear();
 
-        this.spilledNodes = new ArrayList<>();
-        this.coalescedNodes = new ArrayList<>();
+        this.spilledNodes.clear();
+        this.coalescedNodes.clear();
 
-        this.simplifiedNodes = new Stack<>();
-        this.helpFind = new HashSet<>();
+        this.simplifiedNodes.clear();
+        this.helpFind.clear();
 
-        this.coalescedMoves = new HashSet<>();
-        this.constrainedMoves = new HashSet<>();
-        this.frozenMoves = new HashSet<>();
-        this.activeMoves = new HashSet<>();
-        this.alias = new HashMap<>();
+        this.coalescedMoves.clear();
+        this.constrainedMoves.clear();
+        this.frozenMoves.clear();
+        this.activeMoves.clear();
+        this.alias.clear();
     }
 
     private void preWork() {
@@ -337,7 +337,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
 
     private void simplify() {
         while (!simplifyList.isEmpty()) {
-            IceMachineRegister reg = simplifyList.remove(0);
+            IceMachineRegister reg = simplifyList.remove();
             if (!helpFind.contains(reg)) {
                 simplifiedNodes.add(reg);
                 helpFind.add(reg);
