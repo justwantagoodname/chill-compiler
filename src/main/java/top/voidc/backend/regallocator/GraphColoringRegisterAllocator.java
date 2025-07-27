@@ -3,7 +3,6 @@ package top.voidc.backend.regallocator;
 import top.voidc.backend.LivenessAnalysis;
 import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.ir.IceBlock;
-import top.voidc.ir.IceContext;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.*;
@@ -18,8 +17,8 @@ import java.util.*;
 public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFunction> {
     private final LivenessAnalysis.LivenessResult livenessResult;
     private final boolean insInsertOpt;
-    private Map<IceType, List<IceMachineRegister>> phyRegsByType;
-    private int maxReg;
+    private final Map<IceType, List<IceMachineRegister>> phyRegsByType;
+    private final int maxReg;
 
     public GraphColoringRegisterAllocator(LivenessAnalysis.LivenessResult livenessResult) {
         this.insInsertOpt = true;
@@ -56,6 +55,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
 
     private class FunctionAllocator {
         private final IceMachineFunction function;
+        private final List<IceBlock> BBs;
         private final HashSet<IceMachineRegister> nodes = new HashSet<>();
         private final HashMap<IceMachineRegister, HashSet<IceMachineRegister>> edges = new HashMap<>();
         private HashMap<IceMachineRegister, HashSet<IceMachineRegister>> temp;
@@ -93,6 +93,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
 
         public FunctionAllocator(IceMachineFunction function) {
             this.function = function;
+            this.BBs = function.blocks();
         }
 
         private void doColor() {
@@ -147,7 +148,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
             }
 
             // 替换虚拟寄存器为物理寄存器
-            for (IceBlock block : function) {
+            for (IceBlock block : BBs) {
                 for (var instruction : block) {
                     IceMachineInstruction instr = (IceMachineInstruction) instruction;
                     // 替换源操作数中的虚拟寄存器
@@ -195,7 +196,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
 
         private void preWork() {
             // 收集所有虚拟寄存器
-            for (var block : function) {
+            for (var block : BBs) {
                 for (var instruction : block) {
                     IceMachineInstruction instr = (IceMachineInstruction) instruction;
                     for (var operand : instr.getOperands()) {
@@ -213,9 +214,9 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
 
         private void countUses() {
             useCount.clear();
-            for (var block : function) {
+            for (var block : BBs) {
                 for (var instruction : block) {
-                    for (var operand : ((IceMachineInstruction) instruction).getOperands()) {
+                    for (var operand : instruction.getOperands()) {
                         if (operand instanceof IceMachineRegister.RegisterView rv) {
                             var reg = rv.getRegister();
                             if (reg.isVirtualize()) {
@@ -240,7 +241,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
             Map<IceBlock, LivenessAnalysis.BlockLivenessData> blockLivenessData =
                     livenessResult.getLivenessData(function);
 
-            for (var block : function) {
+            for (var block : BBs) {
                 // 获取块末尾的活跃寄存器
                 Set<IceValue> liveOut = blockLivenessData.get(block).liveOut();
                 Set<IceMachineRegister> liveRegs = new HashSet<>();
@@ -502,7 +503,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
                         k -> function.allocateVariableStackSlot(regType));
                 slot.setAlignment(4);  // 默认4字节对齐
                 // 遍历所有使用该寄存器的指令
-                for (var block : function) {
+                for (var block : BBs) {
                     for (int i = 0; i < block.size(); i++) {
                         var instruction = (IceMachineInstruction) block.get(i);
                         boolean usesReg = false;
@@ -561,7 +562,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
 
         private void optimizeConsecutiveLoadStore() {
             // 消除连续的加载/存储指令
-            for (var block : function) {
+            for (var block : BBs) {
                 for (int i = 0; i < block.size() - 1; i++) {
                     var instr1 = (IceMachineInstruction) block.get(i);
                     var instr2 = (IceMachineInstruction) block.get(i + 1);
@@ -581,7 +582,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
 
         private void optimizeRedundantLoads() {
             // 消除冗余的加载指令
-            for (var block : function) {
+            for (var block : BBs) {
                 Map<String, Integer> lastLoadPos = new HashMap<>();
 
                 for (int i = 0; i < block.size(); i++) {
