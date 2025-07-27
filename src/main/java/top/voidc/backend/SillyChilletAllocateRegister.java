@@ -46,12 +46,15 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
 
         // Phase 2: 重写指令
         final var regPool = List.of(
-                target.getPhysicalRegister("x9"),
-                target.getPhysicalRegister("x10"),
-                target.getPhysicalRegister("x11"),
-                target.getPhysicalRegister("x12"),
-                target.getPhysicalRegister("x13"),
-                target.getPhysicalRegister("x14")
+                target.getPhysicalRegister("x19"),
+                target.getPhysicalRegister("x20"),
+                target.getPhysicalRegister("x21"),
+                target.getPhysicalRegister("x22"),
+                target.getPhysicalRegister("x23"),
+                target.getPhysicalRegister("x24"),
+                target.getPhysicalRegister("x25"),
+                target.getPhysicalRegister("x26"),
+                target.getPhysicalRegister("x27")
         );
         for (var block : target) {
             for (var i = 0; i < block.size(); i++) {
