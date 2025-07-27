@@ -91,10 +91,10 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
                 } else {
                     // 处理大的栈帧
                     prologueList.add(new ARM64Instruction("SUB sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
-                    prologueList.add(new ARM64Instruction("STP x29, x30, [sp]", IceConstantData.create(0)));
+                    prologueList.add(new ARM64Instruction("STP x29, x30, [sp]"));
                     prologueList.add(new ARM64Instruction("ADD x29, sp, {imm:stack}", IceConstantData.create(0)));
 
-                    epilogueList.add(new ARM64Instruction("LDP x29, x30, [sp]", IceConstantData.create(0)));
+                    epilogueList.add(new ARM64Instruction("LDP x29, x30, [sp]"));
                     epilogueList.add(new ARM64Instruction("ADD sp, sp, {imm:stack}", IceConstantData.create(stackSize)));
                 }
 

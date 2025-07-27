@@ -38,11 +38,8 @@ public class ARM64Instruction extends IceMachineInstruction implements IceArchit
 
     @Override
     public IceMachineInstruction clone() {
-        var clone = new ARM64Instruction(this.renderTemplate);
+        var clone = new ARM64Instruction(this.renderTemplate, getOperands().toArray(new IceMachineValue[0]));
         clone.setName(getName());
-        for (var operand : getOperands()) {
-            clone.addOperand(operand);
-        }
         return clone;
     }
 }
