@@ -63,7 +63,7 @@ public class FixStackOffset implements CompilePass<IceMachineFunction>, IceArchi
     @Override
     public boolean run(IceMachineFunction target) {
         // 需要在分配器中保留一个寄存器在这里用
-        var scratchRegister = target.getPhysicalRegister("x15");
+        var scratchRegister = target.getPhysicalRegister("x28");
         var isChanged = false;
 
         for (var block : target) {
