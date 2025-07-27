@@ -5,12 +5,8 @@ import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
-import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 机器指令映射，没有具体的类，全部由 InstructionPattern 生成
@@ -134,8 +130,22 @@ public abstract class IceMachineInstruction extends IceInstruction {
         builder.append(result);
     }
 
+    /**
+     * 用循环实现以提高性能
+     */
     public String getOpcode() {
-        return renderTemplate.split("\\s+")[0].trim().toUpperCase();
+        int len = renderTemplate.length();
+        int i = 0;
+        // 跳过前导空白
+        while (i < len && Character.isWhitespace(renderTemplate.charAt(i))) {
+            i++;
+        }
+        int start = i;
+        // 找到第一个空白字符
+        while (i < len && !Character.isWhitespace(renderTemplate.charAt(i))) {
+            i++;
+        }
+        return renderTemplate.substring(start, i).toUpperCase();
     }
 
     public IceMachineRegister.RegisterView getResultReg() {
@@ -149,10 +159,13 @@ public abstract class IceMachineInstruction extends IceInstruction {
      * @return 获取
      */
     public List<IceValue> getSourceOperands() {
-        return namedOperandPosition.entrySet().stream()
-                .filter(entry -> !entry.getKey().equals("dst"))
-                .map(entry -> getOperand(entry.getValue().position()))
-                .toList();
+        var results = new ArrayList<IceValue>();
+        for (var entry : namedOperandPosition.entrySet()) {
+            if (!entry.getKey().equals("dst")) {
+                results.add(getOperand(entry.getValue().position()));
+            }
+        }
+        return results;
     }
 
     public abstract IceMachineInstruction clone();
