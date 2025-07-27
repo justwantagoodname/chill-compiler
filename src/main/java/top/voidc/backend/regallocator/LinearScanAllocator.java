@@ -27,6 +27,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     private List<IceBlock> BBs;
     private Map<IceBlock, LivenessAnalysis.BlockLivenessData> functionLivenessData;
     private Map<IceMachineRegister, IceStackSlot> vregSlotMap = new HashMap<>();
+    private HashSet<IceStackSlot> vregSlotSet = new HashSet<>();
 
     private static class LiveInterval {
         IceMachineRegister vreg, preg;
@@ -180,7 +181,9 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 // 将虚拟寄存器映射到物理寄存器
                 regMapping.put(interval.vreg, interval.preg);
             } else {
-                vregSlotMap.putIfAbsent(interval.vreg, mf.allocateVariableStackSlot(interval.vreg.getType()));
+                var slot = mf.allocateVariableStackSlot(interval.vreg.getType());
+                vregSlotMap.putIfAbsent(interval.vreg, slot);
+                vregSlotSet.add(slot);
             }
         }
 
@@ -233,7 +236,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 Map<IceValue, IceValue> replacements = new HashMap<>();
 
                 for (IceValue operand : inst.getSourceOperands()) {
-                    if (operand instanceof IceStackSlot slot) {
+                    if (operand instanceof IceStackSlot slot && vregSlotSet.contains(slot)) {
                         // 如果是栈槽，需要替换
                         IceMachineInstruction loadInst = new ARM64Instruction("LDR {dst}, {local:src}",
                                 tempReg.createView(operand.getType()), slot);
