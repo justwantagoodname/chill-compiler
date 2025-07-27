@@ -81,7 +81,6 @@ public abstract class IceMachineRegister extends IceUser implements IceArchitect
     public boolean equals(Object obj) {
         if (obj == this) return true;
         return obj instanceof IceMachineRegister register
-                && isVirtualize == register.isVirtualize
                 && register.getArchitectureDescription().equals(getArchitectureDescription())
                 && register.isVirtualize() == isVirtualize()
                 && register.getType().equals(getType())
