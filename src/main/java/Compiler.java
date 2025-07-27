@@ -101,7 +101,7 @@ public class Compiler {
             pm.runPass(InstructionSelectionPass.class);
             pm.runPass(LivenessAnalysis.class);
             pm.runPass(ShowIR.class);
-            pm.runPass(GraphColoringRegisterAllocator.class);
+            pm.runPass(SillyChilletAllocateRegister.class);
             pm.runPass(ShowIR.class);
             pm.runPass(AlignFramePass.class);
             pm.runPass(ShowIR.class);

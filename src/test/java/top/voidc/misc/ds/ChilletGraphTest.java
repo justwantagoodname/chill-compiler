@@ -16,10 +16,5 @@ public class ChilletGraphTest {
         g.addEdge("A", "C");
         g.addEdge("B", "C");
 
-        var solution = g.getColors(3);
-
-        for (String node : solution.keySet()) {
-            Log.d(node + " -> " + solution.get(node));
-        }
     }
 }
