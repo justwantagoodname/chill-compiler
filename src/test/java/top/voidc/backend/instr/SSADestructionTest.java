@@ -1,6 +1,7 @@
 package top.voidc.backend.instr;
 
 import org.junit.jupiter.api.Test;
+import top.voidc.backend.SSADestruction;
 import top.voidc.ir.ice.constant.IceFunction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

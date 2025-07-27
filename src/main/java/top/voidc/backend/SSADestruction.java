@@ -1,4 +1,4 @@
-package top.voidc.backend.instr;
+package top.voidc.backend;
 
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.constant.IceFunction;
@@ -102,17 +102,56 @@ public class SSADestruction implements CompilePass<IceFunction> {
         }
     }
 
+    private void buildDepGraph(IceBlock block) {
+        var copyInstructions = new ArrayList<IceCopyInstruction>();
+        for (var inst : block) {
+            if (inst instanceof IceCopyInstruction copyInst) {
+                copyInstructions.add(copyInst);
+            }
+        }
+
+        assert copyInstructions.size() > 1;
+
+        // 创建依赖图
+
+
+    }
+
+    private boolean containsMoreThanOneCopy(IceBlock block) {
+        int copyCount = 0;
+        for (var inst : block) {
+            if (inst instanceof IceCopyInstruction) {
+                copyCount++;
+                if (copyCount > 1) return true; // 如果超过一个Phi节点，直接返回true
+            } else {
+                break; // 遇到非Phi指令，停止计数
+            }
+        }
+        return false; // 如果只有一个或没有Phi节点，返回false
+    }
+
     @Override
     public boolean run(IceFunction target) {
         var isChanged = false;
         var blocks = target.blocks();
+
+        // Phase 1: 分裂关键边
         splitCriticalEdge(blocks);
+
+        // Phase 2: 移除Phi节点 (假删除)
         for (var block : blocks) {
             if (block.stream().anyMatch(inst -> inst instanceof IcePHINode)) {
                 removePhiNodes(block);
                 isChanged = true;
             }
         }
+
+        // Phase 3: 分析Copy依赖图
+//        for (var block : blocks) {
+//            if (containsMoreThanOneCopy(block)) {
+//                buildDepGraph(block);
+//            }
+//        }
         return isChanged;
     }
 }

@@ -51,8 +51,7 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                 target.getPhysicalRegister("x11"),
                 target.getPhysicalRegister("x12"),
                 target.getPhysicalRegister("x13"),
-                target.getPhysicalRegister("x14"),
-                target.getPhysicalRegister("x15")
+                target.getPhysicalRegister("x14")
         );
         for (var block : target) {
             for (var i = 0; i < block.size(); i++) {
