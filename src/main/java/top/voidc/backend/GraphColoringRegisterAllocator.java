@@ -78,11 +78,11 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
         }
 
         // 3. Color the graph (register allocation)
-        var colorMap = igraph.getColors(ALLOCATABLE_REGS.size()); // node -> color index
+        var colorMap = -1; // node -> color index
         Map<IceMachineRegister, ARM64Register> regAssign = new HashMap<>();
         Set<IceMachineRegister> spilled = new HashSet<>();
         for (var reg : vregs) {
-            int color = colorMap.getOrDefault(reg, -1);
+            int color = -1;
             if (color >= 0 && color < ALLOCATABLE_REGS.size()) {
                 regAssign.put(reg, (ARM64Register) mf.getPhysicalRegister(ALLOCATABLE_REGS.get(color)));
             } else {
