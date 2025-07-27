@@ -240,7 +240,7 @@ public class MemoryAccessPatterns {
                     // 这个下标是动态的
                     if (!accumulatedOffset.equals(IceConstantData.create(0))) {
                         // 如果之前有累加的偏移量
-                        if (isImm16(accumulatedOffset)) {
+                        if (isImm12(accumulatedOffset)) {
                             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {imm12:offset}", dstReg, dstReg, accumulatedOffset));
                         } else {
                             selector.select(accumulatedOffset);
@@ -283,7 +283,7 @@ public class MemoryAccessPatterns {
 
             if (!accumulatedOffset.equals(IceConstantData.create(0))) {
                 // 如果之前有累加的偏移量
-                if (isImm16(accumulatedOffset)) {
+                if (isImm12(accumulatedOffset)) {
                     selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {imm12:offset}", dstReg, dstReg, accumulatedOffset));
                 } else {
                     selector.select(accumulatedOffset);
@@ -303,7 +303,7 @@ public class MemoryAccessPatterns {
             // 元素个数乘以元素的bytesize
             if (Tool.isPowerOfTwo(insideType.getByteSize())) {
                 var lsl = Tool.log2(insideType.getByteSize());
-                selector.addEmittedInstruction(new ARM64Instruction("LSL {dst}, {base}, {imm16:size} // * 内部元素大小", dstReg, dstReg, IceConstantData.create(lsl)));
+                selector.addEmittedInstruction(new ARM64Instruction("LSL {dst}, {base}, {imm16:size}", dstReg, dstReg, IceConstantData.create(lsl)));
             } else {
                 var insideTypeSize = IceConstantData.create(insideType.getByteSize());
                 selector.select(insideTypeSize);
@@ -367,7 +367,7 @@ public class MemoryAccessPatterns {
                     // 这个下标是动态的
                     if (!accumulatedOffset.equals(IceConstantData.create(0))) {
                         // 如果之前有累加的偏移量
-                        if (isImm16(accumulatedOffset)) {
+                        if (isImm12(accumulatedOffset)) {
                             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {imm12:offset}", dstReg, dstReg, accumulatedOffset));
                         } else {
                             selector.select(accumulatedOffset);
@@ -410,7 +410,7 @@ public class MemoryAccessPatterns {
 
             if (!accumulatedOffset.equals(IceConstantData.create(0))) {
                 // 如果之前有累加的偏移量
-                if (isImm16(accumulatedOffset)) {
+                if (isImm12(accumulatedOffset)) {
                     selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {imm12:offset}", dstReg, dstReg, accumulatedOffset));
                 } else {
                     selector.select(accumulatedOffset);
@@ -430,7 +430,7 @@ public class MemoryAccessPatterns {
             // 元素个数乘以元素的bytesize
             if (Tool.isPowerOfTwo(insideType.getByteSize())) {
                 var lsl = Tool.log2(insideType.getByteSize());
-                selector.addEmittedInstruction(new ARM64Instruction("LSL {dst}, {base}, {imm16:size} // * 内部元素大小", dstReg, dstReg, IceConstantData.create(lsl)));
+                selector.addEmittedInstruction(new ARM64Instruction("LSL {dst}, {base}, {imm16:size}", dstReg, dstReg, IceConstantData.create(lsl)));
             } else {
                 var insideTypeSize = IceConstantData.create(insideType.getByteSize());
                 selector.select(insideTypeSize);
@@ -502,7 +502,7 @@ public class MemoryAccessPatterns {
                     // 这个下标是动态的
                     if (!accumulatedOffset.equals(IceConstantData.create(0))) {
                         // 如果之前有累加的偏移量
-                        if (isImm16(accumulatedOffset)) {
+                        if (isImm12(accumulatedOffset)) {
                             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {imm12:offset}", dstReg, dstReg, accumulatedOffset));
                         } else {
                             selector.select(accumulatedOffset);
@@ -547,7 +547,7 @@ public class MemoryAccessPatterns {
 
             if (!accumulatedOffset.equals(IceConstantData.create(0))) {
                 // 如果之前有累加的偏移量
-                if (isImm16(accumulatedOffset)) {
+                if (isImm12(accumulatedOffset)) {
                     selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {imm12:offset}", dstReg, dstReg, accumulatedOffset));
                 } else {
                     selector.select(accumulatedOffset);
