@@ -114,7 +114,11 @@ public abstract class IceMachineInstruction extends IceInstruction {
                 }
                 case "local" -> {
                     assert operand instanceof IceStackSlot;
-                    yield "[sp, #" + ((IceStackSlot) operand).getOffset() + "]"; // TODO 平台加载
+                    try {
+                        yield "[sp, #" + ((IceStackSlot) operand).getOffset() + "]"; // TODO 平台加载
+                    } catch (IllegalStateException e) {
+                        yield "local_uninitialized"; // 如果未初始化，返回占位符
+                    }
                 }
                 case "local-offset" -> {
                     assert operand instanceof IceStackSlot;
