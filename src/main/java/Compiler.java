@@ -4,7 +4,7 @@ import top.voidc.backend.*;
 import top.voidc.backend.regallocator.*;
 import top.voidc.backend.arm64.instr.pattern.ARM64InstructionPatternPack;
 import top.voidc.backend.instr.InstructionSelectionPass;
-import top.voidc.backend.instr.SSADestruction;
+import top.voidc.backend.SSADestruction;
 import top.voidc.frontend.parser.SysyLexer;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.frontend.translator.IRGenerator;
@@ -14,7 +14,6 @@ import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
 import top.voidc.optimizer.PassManager;
 import top.voidc.optimizer.pass.function.*;
-import top.voidc.optimizer.pass.unit.ShowIR;
 
 import java.io.File;
 import java.io.IOException;
@@ -98,14 +97,13 @@ public class Compiler {
 
             // 后端相关
             pm.runPass(SSADestruction.class);
-            pm.runPass(ShowIR.class);
             pm.runPass(InstructionSelectionPass.class);
             pm.runPass(LivenessAnalysis.class);
             pm.runPass(ShowIR.class);
             pm.runPass(LinearScanAllocator.class);
 //            pm.runPass(ShowIR.class);
             pm.runPass(AlignFramePass.class);
-            pm.runPass(ShowIR.class);
+            pm.runPass(FixStackOffset.class);
             pm.runPass(OutputARMASM.class);
         });
         return passManager;
