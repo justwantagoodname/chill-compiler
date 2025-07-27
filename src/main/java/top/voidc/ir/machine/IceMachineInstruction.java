@@ -18,19 +18,22 @@ import java.util.*;
  */
 public abstract class IceMachineInstruction extends IceInstruction {
     protected final String renderTemplate;
-    protected record NamedOperand(String placeholder, String prefix, int position) {}
+    protected record NamedOperand(String name, String placeholder, String prefix) {}
 
-    protected final Map<String, NamedOperand> namedOperandPosition = new HashMap<>();
+    private int resultRegIndex = -1; // 结果寄存器的位置，-1表示未设置
+    private final NamedOperand[] namedOperandsArrays; // 用于存储命名操作数的数组
 
     public IceMachineInstruction(String renderTemplate) {
         super(null, null, IceType.VOID);
         this.renderTemplate = renderTemplate;
+        this.namedOperandsArrays = null;
         parserNamedOperandPosMap();
     }
 
     public IceMachineInstruction(String renderTemplate, IceMachineValue... values) {
         super(null, null, IceType.VOID);
         this.renderTemplate = renderTemplate;
+        this.namedOperandsArrays = new NamedOperand[values.length];
         Arrays.stream(values).map(machineValue -> (IceValue) machineValue).forEachOrdered(this::addOperand);
         parserNamedOperandPosMap();
     }
@@ -59,9 +62,12 @@ public abstract class IceMachineInstruction extends IceInstruction {
             }
 
             String placeholder = "{" + (prefix.isEmpty() ? name : prefix + ":" + name) + "}";
-            namedOperandPosition.put(name, new NamedOperand(placeholder, prefix, position));
+            if (name.equals("dst")) {
+                resultRegIndex = position; // 记录结果寄存器的位置
+            }
+            namedOperandsArrays[position] = new NamedOperand(name, placeholder, prefix);
+
             position++;
-            
             startIndex = endIndex + 1;
         }
     }
@@ -75,19 +81,17 @@ public abstract class IceMachineInstruction extends IceInstruction {
     @Override
     public void getTextIR(StringBuilder builder) {
         String result = renderTemplate;
-        for (var entry : namedOperandPosition.entrySet()) {
-            String name = entry.getKey();
-            var namedOperand = entry.getValue();
-            int pos = namedOperand.position();
+        if (namedOperandsArrays == null || namedOperandsArrays.length == 0) {
+            // 如果没有命名操作数，直接输出指令模板
+            builder.append(result);
+            return;
+        }
+
+        for (var i = 0;i < namedOperandsArrays.length; i++) {
+            var namedOperand = namedOperandsArrays[i];
             
-            // 如果没有足够的操作数则抛出异常
-            if (pos >= getOperands().size()) {
-                throw new IndexOutOfBoundsException("指令模板的操作数不足: " + renderTemplate +
-                        "。位置 " + pos + " 处缺少命名操作数 '" + name + "'");
-            }
-            
-            IceValue operand = getOperand(pos);
-            String operandText = switch (entry.getValue().prefix()) {
+            IceValue operand = getOperand(i);
+            String operandText = switch (namedOperand.prefix()) {
                 case "imm" -> {
                     assert operand instanceof IceConstantInt;
                     var intValue = ((IceConstantInt) operand).getValue();
@@ -134,24 +138,24 @@ public abstract class IceMachineInstruction extends IceInstruction {
      * 用循环实现以提高性能
      */
     public String getOpcode() {
+        var charArray = renderTemplate.toCharArray();
         int len = renderTemplate.length();
         int i = 0;
         // 跳过前导空白
-        while (i < len && Character.isWhitespace(renderTemplate.charAt(i))) {
+        while (i < len && Character.isWhitespace(charArray[i])) {
             i++;
         }
         int start = i;
         // 找到第一个空白字符
-        while (i < len && !Character.isWhitespace(renderTemplate.charAt(i))) {
+        while (i < len && !Character.isWhitespace(charArray[i])) {
             i++;
         }
         return renderTemplate.substring(start, i).toUpperCase();
     }
 
     public IceMachineRegister.RegisterView getResultReg() {
-        var position = namedOperandPosition.get("dst");
-        if (position == null) return null;
-        return (IceMachineRegister.RegisterView) getOperand(position.position());
+        if (resultRegIndex == -1) return null;
+        return (IceMachineRegister.RegisterView) getOperand(resultRegIndex);
     }
 
     /**
@@ -159,11 +163,14 @@ public abstract class IceMachineInstruction extends IceInstruction {
      * @return 获取
      */
     public List<IceValue> getSourceOperands() {
+        if (namedOperandsArrays == null || namedOperandsArrays.length == 0) {
+            return Collections.emptyList();
+        }
+
         var results = new ArrayList<IceValue>();
-        for (var entry : namedOperandPosition.entrySet()) {
-            if (!entry.getKey().equals("dst")) {
-                results.add(getOperand(entry.getValue().position()));
-            }
+        for (var i = 0; i < namedOperandsArrays.length; i++) {
+            if (i == resultRegIndex) continue; // 跳过结果寄存器
+            results.add(getOperand(i));
         }
         return results;
     }
