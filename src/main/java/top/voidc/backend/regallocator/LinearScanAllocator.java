@@ -23,20 +23,20 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     private final IceContext iceContext;
     private List<IceBlock> BBs;
     private Map<IceBlock, LivenessAnalysis.BlockLivenessData> functionLivenessData;
-    private final Map<IceMachineRegister, IceStackSlot> vregSlotMap = new HashMap<>();
-    private final Set<IceStackSlot> vregSlotSet = new HashSet<>();
+    private Map<IceMachineRegister, IceStackSlot> vregSlotMap;
+    private Set<IceStackSlot> vregSlotSet;
 
     private List<LiveInterval> intervals;
 
-    private List<LiveInterval> fixed = new ArrayList<>(); // 固定寄存器的区间
+    private List<LiveInterval> fixed; // 固定寄存器的区间
     private List<LiveInterval> unhandled; // 未处理的区间
-    private final List<LiveInterval> active = new ArrayList<>(); // 活跃的区间
-    private List<LiveInterval> inactive = new ArrayList<>(); // 当前不占用寄存器但之后仍然活跃的区间
+    private List<LiveInterval> active; // 活跃的区间
+    private List<LiveInterval> inactive; // 当前不占用寄存器但之后仍然活跃的区间
 
     private List<IceMachineRegister> freeRegisters; // 可用的物理寄存器
 
     // preg -> vreg 记录目前某个物理寄存器上占用的虚拟寄存器
-    private final Map<IceMachineRegister, IceMachineRegister> vregOnPreg = new HashMap<>();
+    private Map<IceMachineRegister, IceMachineRegister> vregOnPreg;
 
     private static class LiveInterval {
         IceMachineRegister vreg, preg;
@@ -84,6 +84,11 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         if (!(target instanceof ARM64Function mf)) {
             throw new IllegalArgumentException("LinearScanAllocator only supports ARM64Function.");
         }
+
+        vregSlotMap = new HashMap<>();
+        vregSlotSet = new HashSet<>();
+        active = new ArrayList<>();
+        vregOnPreg = new HashMap<>();
 
         functionLivenessData = livenessResult.getLivenessData(target);
 
