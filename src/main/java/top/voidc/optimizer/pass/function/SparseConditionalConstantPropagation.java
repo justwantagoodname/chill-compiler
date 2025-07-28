@@ -125,6 +125,7 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
                 case IceBranchInstruction branch -> visitBranch(branch);
                 case IcePHINode phiNode -> visitPHI(phiNode);
                 case IceNegInstruction neg -> visitUnary(neg);
+                case IceConvertInstruction convert -> visitConvert(convert);
                 default -> {
                     if (!inst.getType().isVoid()) {
                         getLattice(inst).markOverdefined();
@@ -141,6 +142,18 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
                 } else {
                     break; // 遇到非 PHI 指令即停止
                 }
+            }
+        }
+
+        private void visitConvert(IceConvertInstruction convert) {
+            var sourceLat = getLattice(convert.getOperand());
+            var convertLat = getLattice(convert);
+            if (sourceLat.isConstant()) {
+                var toType = convert.getType();
+                var sourceConstant = sourceLat.getConstant().orElseThrow();
+                convertLat.markConstant(sourceConstant.castTo(toType));
+            } else {
+                convertLat.markOverdefined(); // 如果源操作数不是常量，则转换结果也是 overdefined
             }
         }
 
