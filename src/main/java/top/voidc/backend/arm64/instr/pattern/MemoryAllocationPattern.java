@@ -52,45 +52,6 @@ public class MemoryAllocationPattern {
         }
     }
 
-    // 返回存了偏移后地址的的寄存器
-    public static class SimpleAllocaPointer extends InstructionPattern<IceAllocaInstruction> {
-        public SimpleAllocaPointer() {
-            super(1);
-        }
-
-        @Override
-        public int getCost(InstructionSelector selector, IceAllocaInstruction value) {
-            return getIntrinsicCost();
-        }
-
-        @Override
-        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceAllocaInstruction alloca)  {
-            // 获取分配的类型
-            IceType allocatedType = alloca.getType().getPointTo();
-
-            // 在machine function中创建栈槽
-            var slot = selector.getMachineFunction().allocateVariableStackSlot(allocatedType);
-
-            // 设置栈槽的对齐要求
-            slot.setAlignment(allocatedType.getByteSize());
-
-            // 创建目标寄存器
-            var mf = selector.getMachineFunction();
-            var dstReg = mf.allocateVirtualRegister(IceType.I64);
-
-            // 生成指令
-            return selector.addEmittedInstruction(
-                    new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", dstReg, slot)
-            ).getResultReg();
-        }
-
-        @Override
-        public boolean test(InstructionSelector selector, IceValue value) {
-            // 匹配基本类型的alloca
-            return value instanceof IceAllocaInstruction alloca && !alloca.getType().getPointTo().isArray();
-        }
-    }
-
     // 返回 Slot 对象
     public static class ArrayAlloca extends InstructionPattern<IceAllocaInstruction> {
 
@@ -115,46 +76,6 @@ public class MemoryAllocationPattern {
             slot.setAlignment(Math.max(allocatedType.getByteSize(), 8));
 
             return slot;
-        }
-
-        @Override
-        public boolean test(InstructionSelector selector, IceValue value) {
-            // 匹配数组类型的alloca
-            return value instanceof IceAllocaInstruction alloca && alloca.getType().getPointTo().isArray();
-        }
-    }
-
-    // 返回存了偏移后地址的的寄存器
-    public static class ArrayAllocaPointer extends InstructionPattern<IceAllocaInstruction> {
-
-        public ArrayAllocaPointer() {
-            super(1);
-        }
-
-        @Override
-        public int getCost(InstructionSelector selector, IceAllocaInstruction value) {
-            return getIntrinsicCost();
-        }
-
-        @Override
-        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceAllocaInstruction alloca) {
-            // 获取数组类型
-            IceType allocatedType = alloca.getType().getPointTo();
-
-            // 在machine function中创建栈槽
-            IceStackSlot slot = selector.getMachineFunction().allocateVariableStackSlot(allocatedType);
-
-            // 数组需要更高的对齐要求（至少8字节）
-            slot.setAlignment(Math.max(allocatedType.getByteSize(), 8));
-
-            // 创建目标寄存器
-            var mf = selector.getMachineFunction();
-            var dstReg = mf.allocateVirtualRegister(IceType.I64);
-
-            // 生成指令
-            return selector.addEmittedInstruction(
-                    new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", dstReg, slot)
-            ).getResultReg();
         }
 
         @Override

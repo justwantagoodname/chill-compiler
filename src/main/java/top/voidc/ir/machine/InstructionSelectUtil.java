@@ -49,7 +49,8 @@ public class InstructionSelectUtil {
      */
     public static boolean canBeStackSlot(InstructionSelector selector, IceValue value) {
         // 如果是一个 alloca 那一定是一个寄存器
-        if (value instanceof IceAllocaInstruction) return true;
+        // 不能直接使用 instanceof IceAllocaInstruction，这样就不会分配栈帧了
+//        if (value instanceof IceAllocaInstruction) return true;
 
         try {
             // 如果指令选择器能够为该值选择一个模式，则认为它可以是寄存器
