@@ -22,11 +22,13 @@ public abstract class IceMachineInstruction extends IceInstruction {
 
     private int resultRegIndex = -1; // 结果寄存器的位置，-1表示未设置
     private final NamedOperand[] namedOperandsArrays; // 用于存储命名操作数的数组
+    private final String opcode; // 指令的操作码
 
     public IceMachineInstruction(String renderTemplate) {
         super(null, null, IceType.VOID);
         this.renderTemplate = renderTemplate;
         this.namedOperandsArrays = null;
+        this.opcode = extractOpcode();
         parserNamedOperandPosMap();
     }
 
@@ -34,6 +36,7 @@ public abstract class IceMachineInstruction extends IceInstruction {
         super(null, null, IceType.VOID);
         this.renderTemplate = renderTemplate;
         this.namedOperandsArrays = new NamedOperand[values.length];
+        this.opcode = extractOpcode();
         Arrays.stream(values).map(machineValue -> (IceValue) machineValue).forEachOrdered(this::addOperand);
         parserNamedOperandPosMap();
     }
@@ -141,7 +144,8 @@ public abstract class IceMachineInstruction extends IceInstruction {
     /**
      * 用循环实现以提高性能
      */
-    public String getOpcode() {
+    private String extractOpcode() {
+        if (this instanceof IceMachineInstructionComment) return "NOP";
         var charArray = renderTemplate.toCharArray();
         int len = renderTemplate.length();
         int i = 0;
@@ -157,6 +161,10 @@ public abstract class IceMachineInstruction extends IceInstruction {
         return renderTemplate.substring(start, i).toUpperCase();
     }
 
+    public String getOpcode() {
+        return opcode;
+    }
+
     public IceMachineRegister.RegisterView getResultReg() {
         if (resultRegIndex == -1) return null;
         return (IceMachineRegister.RegisterView) getOperand(resultRegIndex);
@@ -169,6 +177,11 @@ public abstract class IceMachineInstruction extends IceInstruction {
     public List<IceValue> getSourceOperands() {
         if (namedOperandsArrays == null || namedOperandsArrays.length == 0) {
             return Collections.emptyList();
+        }
+
+        if (resultRegIndex == 0) {
+            // 如果结果寄存器在第一个位置，直接返回除第一个外的所有操作数
+            return getOperandsList().subList(1, getOperandsList().size());
         }
 
         var results = new ArrayList<IceValue>();

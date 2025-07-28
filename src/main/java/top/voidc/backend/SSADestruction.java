@@ -14,8 +14,6 @@ import java.util.*;
 @Pass(group = {"O0", "backend"})
 public class SSADestruction implements CompilePass<IceFunction> {
 
-    private final Map<IceBlock, Set<IceBlock>> criticalEdges = new HashMap<>();
-
     /**
      * 在CFG中，如果边的源结点具有多个后继结点，⽽边的⽬标结点具有多个前趋结点，则称这样边为关键边
      * @param fromBlock 源节点
@@ -32,6 +30,8 @@ public class SSADestruction implements CompilePass<IceFunction> {
      * 将所有有必要的关键边进行分裂以便插入复制指令
      */
     private void splitCriticalEdge(List<IceBlock> blocks) {
+        var criticalEdges = new HashMap<IceBlock, Set<IceBlock>>();
+
         // 标记所有关键边，只有存在phi节点时才标记
         for (var block : blocks) {
             for (var inst: block) {
@@ -98,43 +98,14 @@ public class SSADestruction implements CompilePass<IceFunction> {
 
                 }
                 phiNode.setEliminated(true);
-            };
-        }
-    }
-
-    private void buildDepGraph(IceBlock block) {
-        var copyInstructions = new ArrayList<IceCopyInstruction>();
-        for (var inst : block) {
-            if (inst instanceof IceCopyInstruction copyInst) {
-                copyInstructions.add(copyInst);
             }
         }
-
-        assert copyInstructions.size() > 1;
-
-        // 创建依赖图
-
-
-    }
-
-    private boolean containsMoreThanOneCopy(IceBlock block) {
-        int copyCount = 0;
-        for (var inst : block) {
-            if (inst instanceof IceCopyInstruction) {
-                copyCount++;
-                if (copyCount > 1) return true; // 如果超过一个Phi节点，直接返回true
-            } else {
-                break; // 遇到非Phi指令，停止计数
-            }
-        }
-        return false; // 如果只有一个或没有Phi节点，返回false
     }
 
     @Override
     public boolean run(IceFunction target) {
         var isChanged = false;
         var blocks = target.blocks();
-
         // Phase 1: 分裂关键边
         splitCriticalEdge(blocks);
 
@@ -145,13 +116,6 @@ public class SSADestruction implements CompilePass<IceFunction> {
                 isChanged = true;
             }
         }
-
-        // Phase 3: 分析Copy依赖图
-//        for (var block : blocks) {
-//            if (containsMoreThanOneCopy(block)) {
-//                buildDepGraph(block);
-//            }
-//        }
         return isChanged;
     }
 }

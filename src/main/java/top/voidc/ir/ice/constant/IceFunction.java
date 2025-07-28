@@ -9,6 +9,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.interfaces.IceAlignable;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.misc.ds.ChilletGraph;
 
 import java.util.*;
 
@@ -243,5 +244,17 @@ public class IceFunction extends IceConstant implements Iterable<IceBlock>, IceA
     @Override
     public int getAlignment() {
         return 4; // 默认对齐方式到4字节
+    }
+
+    public ChilletGraph<IceBlock> getControlFlowGraph() {
+        var blocks = blocks();
+        var graph = new ChilletGraph<IceBlock>(blocks.size());
+        graph.createNewNodes(blocks);
+        
+
+        for (var block : blocks) {
+            graph.addEdges(block, block.successors());
+        }
+        return graph;
     }
 }

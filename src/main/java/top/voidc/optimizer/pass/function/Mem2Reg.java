@@ -42,7 +42,7 @@ public class Mem2Reg implements CompilePass<IceFunction> {
      * @param domTree the dominator tree of the function
      * @return the dominance frontier table
      */
-    private static Hashtable<IceBlock, ArrayList<IceBlock>> createDominanceFrontierTable(IceFunction function, DominatorTree domTree) {
+    private static Hashtable<IceBlock, ArrayList<IceBlock>> createDominanceFrontierTable(IceFunction function, DominatorTree<IceBlock> domTree) {
         Hashtable<IceBlock, ArrayList<IceBlock>> result = new Hashtable<>();
         for (IceBlock x : function.getBlocks()) {
             result.put(x, new ArrayList<>());
@@ -144,7 +144,7 @@ public class Mem2Reg implements CompilePass<IceFunction> {
         return new IceValue(newName, type);
     }
 
-    private static void rename(IceBlock block, Hashtable<IceValue, Stack<IceValue>> valueStack, DominatorTree domTree) {
+    private static void rename(IceBlock block, Hashtable<IceValue, Stack<IceValue>> valueStack, DominatorTree<IceBlock> domTree) {
         // 本层递归中，每种变量历史版本的计数器用于恢复栈
         final var defCounter = new HashMap<IceValue, Integer>();
         valueStack.forEach((key, value) -> defCounter.put(key, value.size()));
@@ -237,7 +237,9 @@ public class Mem2Reg implements CompilePass<IceFunction> {
     @Override
     public boolean run(IceFunction target) {
         final var promotableValues = createPromotableList(target);
-        DominatorTree domTree = new DominatorTree(target);
+        var graph = target.getControlFlowGraph();
+        var entryNodeId = graph.getNodeId(target.getEntryBlock());
+        var domTree = new DominatorTree<>(graph, entryNodeId);
         Hashtable<IceBlock, ArrayList<IceBlock>> dfTable = createDominanceFrontierTable(target, domTree);
 
         Hashtable<IceValue, Stack<IceValue>> valueStack = new Hashtable<>();
