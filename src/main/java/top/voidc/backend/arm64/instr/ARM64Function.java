@@ -21,12 +21,48 @@ public class ARM64Function extends IceMachineFunction {
         setReturnType(function.getReturnType());
         initMachineBlocks(function);
         setEntryBlock(getMachineBlock("entry"));
-        initParameters(function);
-
     }
 
-    // IceValue 和存放寄存器(视图)的关系
-    private final Map<IceValue, IceMachineValue> valueToMachineValue = new HashMap<>();
+    /**
+     * 根据 AAPCS64 生成函数参数
+     */
+    @Override
+    public void initParameters(Map<IceValue, IceMachineValue> machineValueMap, IceFunction function) {
+        var parameters = function.getParameters();
+        final AtomicInteger intParamReg = new AtomicInteger(); // x0 - x7
+        AtomicInteger floatParamReg = new AtomicInteger(); // s0 - s7
+
+        parameters.forEach(parameter -> {
+            switch (parameter.getType().getTypeEnum()) {
+                case ARRAY, PTR -> {
+                    if (intParamReg.get() < 8) {
+                        var reg = getPhysicalRegister("x" + intParamReg.get()).createView(IceType.I64);
+                        var vreg = allocateVirtualRegister(IceType.I64);
+                        getEntryBlock().addInstruction(new ARM64Instruction("MOV {dst}, {src}", vreg, reg));
+                        machineValueMap.put(parameter, vreg);
+                        intParamReg.getAndIncrement();
+                    } else {
+                        Tool.TODO("ARM64Function.initParameters: 处理参数超过8个的情况");
+                        // TODO: emit一个store在prologue里面
+                    }
+                }
+                case I32 -> {
+                    if (intParamReg.get() < 8) {
+                        var reg = getPhysicalRegister("x" + intParamReg.get()).createView(IceType.I32);
+                        var vreg = allocateVirtualRegister(IceType.I32);
+                        getEntryBlock().addInstruction(new ARM64Instruction("MOV {dst}, {src}", vreg, reg));
+                        machineValueMap.put(parameter, vreg);
+                        intParamReg.getAndIncrement();
+                    } else {
+                        Tool.TODO("ARM64Function.initParameters: 处理参数超过8个的情况");
+                    }
+                }
+                case F32 -> {
+                    throw new UnsupportedOperationException();
+                }
+            }
+        });
+    }
 
     // 所有分配出去的物理寄存器
     private final Map<String, IceMachineRegister> physicalRegisters = new HashMap<>();
@@ -42,49 +78,6 @@ public class ARM64Function extends IceMachineFunction {
     private final IceMachineRegister returnRegister = allocatePhysicalRegister("0", IceType.I64);
 
     private final List<IceStackSlot> stackFrame = new ArrayList<>();
-
-    /**
-     * 根据 AAPCS64 生成函数参数
-     */
-    private void initParameters(IceFunction function) {
-        var parameters = function.getParameters();
-        final AtomicInteger intParamReg = new AtomicInteger(); // x0 - x7
-        AtomicInteger floatParamReg = new AtomicInteger(); // s0 - s7
-
-        parameters.forEach(parameter -> {
-            switch (parameter.getType().getTypeEnum()) {
-                case ARRAY, PTR -> {
-                    if (intParamReg.get() < 8) {
-                        var reg = allocatePhysicalRegister(String.valueOf(intParamReg.get()), IceType.I64).createView(IceType.I64);
-                        var vreg = allocateVirtualRegister(IceType.I64);
-                        getEntryBlock().addInstruction(new ARM64Instruction("MOV {dst}, {src}", vreg, reg));
-                        bindVirtualRegisterToValue(parameter, vreg);
-                        intParamReg.getAndIncrement();
-                    } else {
-                        Tool.TODO("ARM64Function.initParameters: 处理参数超过8个的情况");
-                        // TODO: emit一个store在prologue里面
-                    }
-                }
-                case I32 -> {
-                    if (intParamReg.get() < 8) {
-                        var reg = allocatePhysicalRegister(String.valueOf(intParamReg.get()), IceType.I64).createView(IceType.I32);
-                        var vreg = allocateVirtualRegister(IceType.I32);
-                        getEntryBlock().addInstruction(new ARM64Instruction("MOV {dst}, {src}", vreg, reg));
-                        bindVirtualRegisterToValue(parameter, vreg);
-                        intParamReg.getAndIncrement();
-                    } else {
-                        Tool.TODO("ARM64Function.initParameters: 处理参数超过8个的情况");
-                    }
-                }
-                case F32 -> {
-                    if (floatParamReg.get() < 8) {
-                        throw new UnsupportedOperationException();
-                    }
-                }
-            }
-        });
-
-    }
 
     private void initMachineBlocks(IceFunction function) {
         AtomicInteger blockCount = new AtomicInteger();
@@ -113,32 +106,6 @@ public class ARM64Function extends IceMachineFunction {
         var slot = new IceStackSlot.ArgumentStackSlot(this, callInstruction, argumentIndex, type);
         stackFrame.add(slot);
         return slot;
-    }
-
-    @Override
-    public void bindMachineValueToValue(IceValue value, IceMachineValue machineValue) {
-        valueToMachineValue.put(value, machineValue);
-    }
-
-    @Override
-    public void bindVirtualRegisterToValue(IceValue value, IceMachineRegister.RegisterView view) {
-        if (!virtualRegisters.containsKey(view.getRegister().getName())) {
-            throw new IllegalArgumentException("Wrong use!");
-        }
-        valueToMachineValue.put(value, view);
-    }
-
-    @Override
-    public void bindPhysicalRegisterToValue(IceValue value, IceMachineRegister.RegisterView view) {
-        if (!physicalRegisters.containsKey(view.getRegister().getName())) {
-            throw new IllegalArgumentException("Wrong use!");
-        }
-        valueToMachineValue.put(value, view);
-    }
-
-    @Override
-    public Optional<IceMachineValue> getRegisterForValue(IceValue value) {
-        return Optional.ofNullable(valueToMachineValue.get(value));
     }
 
     @Override

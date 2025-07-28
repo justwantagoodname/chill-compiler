@@ -118,7 +118,7 @@ public class GlobalValueNumbering implements CompilePass<IceFunction> {
         return h;
     }
 
-    private DominatorTree dominatorTree = null;
+    private DominatorTree<IceBlock> dominatorTree = null;
     private ArrayList<IceInstruction> deletedExprs = null;
     ExpressionTableStack exprTable = null;
 
@@ -148,7 +148,9 @@ public class GlobalValueNumbering implements CompilePass<IceFunction> {
 
     @Override
     public boolean run(IceFunction target) {
-        dominatorTree = new DominatorTree(target);
+        var graph = target.getControlFlowGraph();
+        var entryNodeId = graph.getNodeId(target.getEntryBlock());
+        dominatorTree = new DominatorTree<>(graph, entryNodeId);
         // 哈希值到指令的映射
         exprTable = new ExpressionTableStack();
         // 经过这次 GVN 之后可以被替换的表达式

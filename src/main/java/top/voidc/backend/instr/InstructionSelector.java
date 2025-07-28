@@ -1,6 +1,5 @@
 package top.voidc.backend.instr;
 
-import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
@@ -9,7 +8,6 @@ import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
 import top.voidc.ir.machine.IceMachineInstructionComment;
-import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.misc.Flag;
 
 import java.util.*;
@@ -31,11 +29,20 @@ public class InstructionSelector {
     private final IceBlock block;
     private final List<IceMachineInstruction> emittedInstructions = new ArrayList<>();
 
-    public InstructionSelector(IceFunction function, IceMachineFunction machineFunction, IceBlock block, Collection<InstructionPattern<?>> patternPack) {
+    // IceValue 和存放寄存器(视图)的关系
+    private final Map<IceValue, IceMachineValue> valueToMachineValue;
+    private final List<IceValue> computedValues = new ArrayList<>(); // 本次选择中新选择的值
+
+    public InstructionSelector(IceFunction function,
+                               IceMachineFunction machineFunction,
+                               Map<IceValue, IceMachineValue> valueToMachineValue,
+                               IceBlock block,
+                               Collection<InstructionPattern<?>> patternPack) {
         this.patternPack = patternPack;
         this.iceFunction = function;
         this.machineFunction = machineFunction;
         this.block = block;
+        this.valueToMachineValue = valueToMachineValue;
     }
 
     public IceFunction getIceFunction() {
@@ -44,6 +51,10 @@ public class InstructionSelector {
 
     public IceMachineFunction getMachineFunction() {
         return machineFunction;
+    }
+
+    public List<IceValue> getComputedValues() {
+        return computedValues;
     }
 
     /**
@@ -133,7 +144,7 @@ public class InstructionSelector {
      */
     public IceMachineValue emit(IceValue value) {
         // 如果这个值已经计算过并存放在某个虚拟寄存器中，直接返回该寄存器
-        return machineFunction.getRegisterForValue(value).orElseGet(() -> {
+        return getRegisterForValue(value).orElseGet(() -> {
             MatchResult match = costCache.get(value);
             // 从cache中获取为该值选择的最佳模式
             if (match == null) {
@@ -147,17 +158,8 @@ public class InstructionSelector {
 
             // 将IR值和它的虚拟寄存器关联起来
             if (result != null) {
-                if (result instanceof IceMachineRegister.RegisterView resultReg) {
-                    if (resultReg.getRegister().isVirtualize()) {
-                        // 如果是虚拟寄存器，绑定到虚拟寄存器
-                        machineFunction.bindVirtualRegisterToValue(value, resultReg);
-                    } else {
-                        // 如果是物理寄存器，直接绑定
-                        machineFunction.bindPhysicalRegisterToValue(value, resultReg);
-                    }
-                } else {
-                    machineFunction.bindMachineValueToValue(value, result);
-                }
+                bindMachineValueToValue(value, result);
+                computedValues.add(value); // 记录这个值已经被计算过
             }
             return result;
         });
@@ -177,5 +179,13 @@ public class InstructionSelector {
      */
     public List<IceMachineInstruction> getResult() {
         return emittedInstructions;
+    }
+
+    public void bindMachineValueToValue(IceValue value, IceMachineValue machineValue) {
+        valueToMachineValue.put(value, machineValue);
+    }
+
+    public Optional<IceMachineValue> getRegisterForValue(IceValue value) {
+        return Optional.ofNullable(valueToMachineValue.get(value));
     }
 }
