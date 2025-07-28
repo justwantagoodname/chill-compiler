@@ -5,6 +5,7 @@ import top.voidc.ir.IceUnit;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.instruction.IceAllocaInstruction;
 import top.voidc.ir.ice.instruction.IcePHINode;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.machine.IceMachineFunction;
@@ -71,7 +72,7 @@ public class InstructionSelectionPass implements CompilePass<IceUnit> {
 
             // 已经选择完所有支配的块了，清除本次选择中新选择的值
             for (var computedValue : selector.getComputedValues()) {
-                if (computedValue instanceof IcePHINode) continue; // 跳过PHI节点，因为它们在SSA中是特殊的前向引用仅用选择一次分配一个虚拟寄存器即可
+                if (computedValue instanceof IcePHINode || computedValue instanceof IceAllocaInstruction) continue; // 跳过PHI和alloca节点，因为它们在SSA中是特殊的前向引用仅用选择一次分配一个虚拟寄存器即可或者只用分配一次
                 valueToMachineValue.remove(computedValue); // 清除本次选择中新选择的值
             }
         }
@@ -87,9 +88,9 @@ public class InstructionSelectionPass implements CompilePass<IceUnit> {
             var entryNodeId = graph.getNodeId(target.getEntryBlock());
             var dominatorTree = new DominatorTree<>(graph, entryNodeId);
 
-            for (var block : target) {
-                Log.d(block + " - " + dominatorTree.getDominatees(block));
-            }
+//            for (var block : target) {
+//                Log.d(block + " - " + dominatorTree.getDominatees(block));
+//            }
 
             var machineFunction = instructionPack.createMachineFunction(target);
 
