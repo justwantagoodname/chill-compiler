@@ -26,7 +26,7 @@ public class LoadAndStorePattern {
 
         @Override
         public int getCost(InstructionSelector selector, IceFunction.IceFunctionParameter value) {
-            final var paramReg = selector.getMachineFunction().getRegisterForValue(value)
+            final var paramReg = selector.getRegisterForValue(value)
                     .orElseThrow(UnsupportedOperationException::new); // TODO: 内存参数的需要load
             return 0;
         }
@@ -34,7 +34,7 @@ public class LoadAndStorePattern {
         @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceFunction.IceFunctionParameter value) {
             // TODO: 内存参数的需要load
-            return (IceMachineRegister.RegisterView) selector.getMachineFunction().getRegisterForValue(value)
+            return (IceMachineRegister.RegisterView) selector.getRegisterForValue(value)
                     .orElseThrow(UnsupportedOperationException::new);
         }
 

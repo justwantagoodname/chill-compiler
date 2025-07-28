@@ -1,7 +1,9 @@
 package top.voidc.ir.ice.constant;
 
+import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.misc.ds.ChilletGraph;
 
 import java.util.List;
 
@@ -36,5 +38,10 @@ public class IceExternFunction extends IceFunction {
         builder.append("declare ")
                 .append(getReturnType())
                 .append(" ").append(getReferenceName());
+    }
+
+    @Override
+    public ChilletGraph<IceBlock> getControlFlowGraph() {
+        throw new UnsupportedOperationException("Extern functions do not have a control flow graph.");
     }
 }
