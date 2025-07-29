@@ -268,7 +268,7 @@ public class ArithmaticInstructionPattern {
             var zReg = selector.emit(mulNode.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             return selector.addEmittedInstruction(
-                    new ARM64Instruction("MSUB {dst}, {x}, {y}, {z}", dstReg, xReg, yReg, zReg)).getResultReg();
+                    new ARM64Instruction("MSUB {dst}, {x}, {y}, {z}", dstReg, yReg, zReg, xReg)).getResultReg();
         }
 
         @Override
