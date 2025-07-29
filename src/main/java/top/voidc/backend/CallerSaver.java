@@ -19,7 +19,9 @@ import java.util.*;
 public class CallerSaver implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
 
     private static boolean isCallerSaved(IceMachineRegister reg) {
-        int id = Integer.parseInt(reg.getName());
+        String name = reg.getName();
+        if (name.equals("zr")) return false;
+        int id = Integer.parseInt(name);
         return switch (id) {
             case 9, 10, 11, 12, 13, 14, 15 -> true; // Caller-saved registers
             default -> false; // Other registers are callee-saved
