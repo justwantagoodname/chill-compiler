@@ -34,27 +34,16 @@ public class ARM64Function extends IceMachineFunction {
 
         parameters.forEach(parameter -> {
             switch (parameter.getType().getTypeEnum()) {
-                case ARRAY, PTR -> {
+                case ARRAY, PTR, I32 -> {
                     if (intParamReg.get() < 8) {
-                        var reg = getPhysicalRegister("x" + intParamReg.get()).createView(IceType.I64);
-                        var vreg = allocateVirtualRegister(IceType.I64);
+                        var reg = getPhysicalRegister("x" + intParamReg.get()).createView(parameter.getType());
+                        var vreg = allocateVirtualRegister(parameter.getType());
                         getEntryBlock().addInstruction(new ARM64Instruction("MOV {dst}, {src}", vreg, reg));
                         machineValueMap.put(parameter, vreg);
                         intParamReg.getAndIncrement();
                     } else {
                         Tool.TODO("ARM64Function.initParameters: 处理参数超过8个的情况");
                         // TODO: emit一个store在prologue里面
-                    }
-                }
-                case I32 -> {
-                    if (intParamReg.get() < 8) {
-                        var reg = getPhysicalRegister("x" + intParamReg.get()).createView(IceType.I32);
-                        var vreg = allocateVirtualRegister(IceType.I32);
-                        getEntryBlock().addInstruction(new ARM64Instruction("MOV {dst}, {src}", vreg, reg));
-                        machineValueMap.put(parameter, vreg);
-                        intParamReg.getAndIncrement();
-                    } else {
-                        Tool.TODO("ARM64Function.initParameters: 处理参数超过8个的情况");
                     }
                 }
                 case F32 -> {
