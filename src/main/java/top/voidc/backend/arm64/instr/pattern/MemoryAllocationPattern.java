@@ -7,6 +7,7 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceGlobalVariable;
 import top.voidc.ir.ice.instruction.IceIntrinsicInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
+import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.machine.*;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.instruction.IceAllocaInstruction;
@@ -40,7 +41,7 @@ public class MemoryAllocationPattern {
             var slot = selector.getMachineFunction().allocateVariableStackSlot(allocatedType);
 
             // 设置栈槽的对齐要求
-            slot.setAlignment(allocatedType.getByteSize());
+            slot.setAlignment(Math.max(4, allocatedType.getByteSize())); // 至少4字节对齐
 
             return slot;
         }
@@ -67,13 +68,13 @@ public class MemoryAllocationPattern {
         @Override
         public IceStackSlot emit(InstructionSelector selector, IceAllocaInstruction alloca) {
             // 获取数组类型
-            IceType allocatedType = alloca.getType().getPointTo();
+            var allocatedType = (IceArrayType) alloca.getType().getPointTo();
 
             // 在machine function中创建栈槽
             IceStackSlot slot = selector.getMachineFunction().allocateVariableStackSlot(allocatedType);
 
-            // 数组需要更高的对齐要求（至少8字节）
-            slot.setAlignment(Math.max(allocatedType.getByteSize(), 8));
+            // 数组需要更高的对齐要求（至少4字节）
+            slot.setAlignment(Math.max(4, allocatedType.getInsideElementType().getByteSize()));
 
             return slot;
         }
