@@ -1,6 +1,7 @@
 package top.voidc.ir.machine;
 
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceConstantByte;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
@@ -111,8 +112,8 @@ public abstract class IceMachineInstruction extends IceInstruction {
                     yield "#" + (intValue & 0xFFF);
                 }
                 case "imm8" -> {
-                    assert operand instanceof IceConstantInt;
-                    var intValue = ((IceConstantInt) operand).getValue();
+                    assert operand instanceof IceConstantByte;
+                    var intValue = ((IceConstantByte) operand).getValue();
                     yield "#" + (intValue & 0xFF);
                 }
                 case "local" -> {
