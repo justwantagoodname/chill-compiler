@@ -4,6 +4,7 @@ import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.backend.instr.InstructionPattern;
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceConstantByte;
 import top.voidc.ir.ice.constant.IceGlobalVariable;
 import top.voidc.ir.ice.instruction.IceIntrinsicInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
@@ -106,12 +107,11 @@ public class MemoryAllocationPattern {
 
             // TODO 先想办法保存原来的寄存器值
             var x0 = selector.getMachineFunction().getPhysicalRegister("x0").createView(IceType.I64); // 第一个参数是地址
-            var x1 = selector.getMachineFunction().getPhysicalRegister("x1").createView(IceType.I32); // 第二个参数是值
+            var x1 = selector.getMachineFunction().getPhysicalRegister("x1").createView(IceType.I8); // 第二个参数是值
             var x2 = selector.getMachineFunction().getPhysicalRegister("x2").createView(IceType.I32); // 第三个参数是长度
-            var slot = (IceStackSlot) selector.emit(value.getParameters().getFirst());
+            var slot = (IceStackSlot) selector.emit(value.getParameters().get(0));
             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", x0, slot));
-            var val = (IceMachineRegister.RegisterView) selector.emit(value.getParameters().get(1)); // 支持常量其他不管了
-            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x1, val));
+            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm8:val}", x1, (IceConstantByte) value.getParameters().get(1))); // 仅仅支持常量其他不管了
             var len = (IceMachineRegister.RegisterView) selector.emit(value.getParameters().get(2));
             selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x2, len));
             selector.addEmittedInstruction(new ARM64Instruction("BL memset"));
@@ -163,6 +163,7 @@ public class MemoryAllocationPattern {
 
             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", x0, slot)); // dst
 
+            // TODO 使用已经有的模式
             selector.addEmittedInstruction(new ARM64Instruction("ADRP {dst}, " + src.getName(), addrReg));
             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {addr}, :lo12:" + src.getName(), addrReg, addrReg));
             selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x1, addrReg)); // src
