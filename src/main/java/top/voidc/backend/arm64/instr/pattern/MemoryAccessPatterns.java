@@ -257,19 +257,42 @@ public class MemoryAccessPatterns {
                     // 生成加入动态下标的指令
                     var indexReg = (IceMachineRegister.RegisterView) selector.emit(currentIndexValue);
                     // 先乘内部数组的大小
-                    if (currentIndexArraySize > 1) {
-                        var currentArraySizeValue = IceConstantData.create(currentIndexArraySize);
-                        selector.select(currentArraySizeValue);
-                        var sizeReg = selector.emit(currentArraySizeValue);
-                        selector.addEmittedInstruction(new ARM64Instruction("MUL {index}, {index}, {size}", indexReg, indexReg, sizeReg));
-                    }
-                    // 单个大小 等于乘 1
-                    // 累加到偏移寄存器
-                    if (!indexReg.getType().equals(IceType.I64)) {
-                        selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, uxtw", dstReg, dstReg, indexReg));
+                    if (currentIndexArraySize == 1) {
+                        // 单个大小 等于乘 1
+                        // 累加到偏移寄存器
+                        if (!indexReg.getType().equals(IceType.I64)) {
+                            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, uxtw", dstReg, dstReg, indexReg));
+                        } else {
+                            // 如果是64位寄存器
+                            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}", dstReg, dstReg, indexReg));
+                        }
                     } else {
-                        // 如果是64位寄存器
-                        selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}", dstReg, dstReg, indexReg));
+                        // 先乘内部数组的大小
+                        assert currentIndexArraySize > 1;
+                        if (Tool.isPowerOfTwo(currentIndexArraySize)) {
+                            if (indexReg.getType().equals(IceType.I64)) {
+                                selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, lsl {imm:size}",
+                                        dstReg, dstReg, indexReg, IceConstantData.create(Tool.log2(currentIndexArraySize))));
+                            } else {
+                                selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, uxtw {imm:size}",
+                                        dstReg, dstReg, indexReg, IceConstantData.create(Tool.log2(currentIndexArraySize))));
+                            }
+                        } else {
+                            // PS: 没有立即数乘法
+                            // 先加载立即数寄存器
+                            var currentArraySizeValue = IceConstantData.create((long) currentIndexArraySize);
+                            selector.select(currentArraySizeValue); // 先选择
+                            var sizeReg = (IceMachineRegister.RegisterView) selector.emit(currentArraySizeValue);
+                            assert sizeReg.getType().equals(IceType.I64);
+
+                            if (indexReg.getType().equals(IceType.I64)) {
+                                selector.addEmittedInstruction(new ARM64Instruction("MADD {dst}, {index}, {size}, {base}", dstReg, indexReg, sizeReg, dstReg));
+                            } else {
+                                var indexReg64 = indexReg.getRegister().createView(IceType.I64);
+                                selector.addEmittedInstruction(new ARM64Instruction("UXTW {dst}, {orign}", indexReg64, indexReg));
+                                selector.addEmittedInstruction(new ARM64Instruction("MADD {dst}, {size}, {index}, {base}", dstReg, indexReg64, sizeReg, dstReg));
+                            }
+                        }
                     }
                 }
 
@@ -384,19 +407,42 @@ public class MemoryAccessPatterns {
                     // 生成加入动态下标的指令
                     var indexReg = (IceMachineRegister.RegisterView) selector.emit(currentIndexValue);
                     // 先乘内部数组的大小
-                    if (currentIndexArraySize > 1) {
-                        var currentArraySizeValue = IceConstantData.create(currentIndexArraySize);
-                        selector.select(currentArraySizeValue);
-                        var sizeReg = selector.emit(currentArraySizeValue);
-                        selector.addEmittedInstruction(new ARM64Instruction("MUL {index}, {index}, {size}", indexReg, indexReg, sizeReg));
-                    }
-                    // 单个大小 等于乘 1
-                    // 累加到偏移寄存器
-                    if (!indexReg.getType().equals(IceType.I64)) {
-                        selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, uxtw", dstReg, dstReg, indexReg));
+                    if (currentIndexArraySize == 1) {
+                        // 单个大小 等于乘 1
+                        // 累加到偏移寄存器
+                        if (!indexReg.getType().equals(IceType.I64)) {
+                            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, uxtw", dstReg, dstReg, indexReg));
+                        } else {
+                            // 如果是64位寄存器
+                            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}", dstReg, dstReg, indexReg));
+                        }
                     } else {
-                        // 如果是64位寄存器
-                        selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}", dstReg, dstReg, indexReg));
+                        // 先乘内部数组的大小
+                        assert currentIndexArraySize > 1;
+                        if (Tool.isPowerOfTwo(currentIndexArraySize)) {
+                            if (indexReg.getType().equals(IceType.I64)) {
+                                selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, lsl {imm:size}",
+                                        dstReg, dstReg, indexReg, IceConstantData.create(Tool.log2(currentIndexArraySize))));
+                            } else {
+                                selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, uxtw {imm:size}",
+                                        dstReg, dstReg, indexReg, IceConstantData.create(Tool.log2(currentIndexArraySize))));
+                            }
+                        } else {
+                            // PS: 没有立即数乘法
+                            // 先加载立即数寄存器
+                            var currentArraySizeValue = IceConstantData.create((long) currentIndexArraySize);
+                            selector.select(currentArraySizeValue); // 先选择
+                            var sizeReg = (IceMachineRegister.RegisterView) selector.emit(currentArraySizeValue);
+                            assert sizeReg.getType().equals(IceType.I64);
+
+                            if (indexReg.getType().equals(IceType.I64)) {
+                                selector.addEmittedInstruction(new ARM64Instruction("MADD {dst}, {index}, {size}, {base}", dstReg, indexReg, sizeReg, dstReg));
+                            } else {
+                                var indexReg64 = indexReg.getRegister().createView(IceType.I64);
+                                selector.addEmittedInstruction(new ARM64Instruction("UXTW {dst}, {orign}", indexReg64, indexReg));
+                                selector.addEmittedInstruction(new ARM64Instruction("MADD {dst}, {size}, {index}, {base}", dstReg, indexReg64, sizeReg, dstReg));
+                            }
+                        }
                     }
                 }
 
@@ -439,7 +485,7 @@ public class MemoryAccessPatterns {
             }
 
 
-            // 获取全局变量
+            // 获取局部变量地址
             var slot = (IceStackSlot) selector.emit(gep.getBasePtr());
             var basePtrReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", basePtrReg, slot));
@@ -517,21 +563,45 @@ public class MemoryAccessPatterns {
                         accumulatedOffset = IceConstantData.create(0); // 清空累加
                     }
                     // 生成加入动态下标的指令
-                    var indexReg = selector.emit(currentIndexValue);
+                    var indexReg = (IceMachineRegister.RegisterView) selector.emit(currentIndexValue);
                     // 先乘内部数组的大小
-                    if (currentIndexArraySize > 1) {
-                        var currentArraySizeValue = IceConstantData.create(currentIndexArraySize);
-                        selector.select(currentArraySizeValue);
-                        var sizeReg = selector.emit(currentArraySizeValue);
-                        selector.addEmittedInstruction(new ARM64Instruction("MUL {index}, {index}, {size}", indexReg, indexReg, sizeReg));
-                    }
-                    // 单个大小 等于乘 1
-                    // 累加到偏移寄存器
-                    if (!indexReg.getType().equals(IceType.I64)) {
-                        selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, uxtw", dstReg, dstReg, indexReg));
+                    // 先乘内部数组的大小
+                    if (currentIndexArraySize == 1) {
+                        // 单个大小 等于乘 1
+                        // 累加到偏移寄存器
+                        if (!indexReg.getType().equals(IceType.I64)) {
+                            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, uxtw", dstReg, dstReg, indexReg));
+                        } else {
+                            // 如果是64位寄存器
+                            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}", dstReg, dstReg, indexReg));
+                        }
                     } else {
-                        // 如果是64位寄存器
-                        selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}", dstReg, dstReg, indexReg));
+                        // 先乘内部数组的大小
+                        assert currentIndexArraySize > 1;
+                        if (Tool.isPowerOfTwo(currentIndexArraySize)) {
+                            if (indexReg.getType().equals(IceType.I64)) {
+                                selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, lsl {imm:size}",
+                                        dstReg, dstReg, indexReg, IceConstantData.create(Tool.log2(currentIndexArraySize))));
+                            } else {
+                                selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, uxtw {imm:size}",
+                                        dstReg, dstReg, indexReg, IceConstantData.create(Tool.log2(currentIndexArraySize))));
+                            }
+                        } else {
+                            // PS: 没有立即数乘法
+                            // 先加载立即数寄存器
+                            var currentArraySizeValue = IceConstantData.create((long) currentIndexArraySize);
+                            selector.select(currentArraySizeValue); // 先选择
+                            var sizeReg = (IceMachineRegister.RegisterView) selector.emit(currentArraySizeValue);
+                            assert sizeReg.getType().equals(IceType.I64);
+
+                            if (indexReg.getType().equals(IceType.I64)) {
+                                selector.addEmittedInstruction(new ARM64Instruction("MADD {dst}, {index}, {size}, {base}", dstReg, indexReg, sizeReg, dstReg));
+                            } else {
+                                var indexReg64 = indexReg.getRegister().createView(IceType.I64);
+                                selector.addEmittedInstruction(new ARM64Instruction("UXTW {dst}, {orign}", indexReg64, indexReg));
+                                selector.addEmittedInstruction(new ARM64Instruction("MADD {dst}, {size}, {index}, {base}", dstReg, indexReg64, sizeReg, dstReg));
+                            }
+                        }
                     }
                 }
 

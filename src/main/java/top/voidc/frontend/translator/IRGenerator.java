@@ -34,6 +34,7 @@ public class IRGenerator extends SysyBaseVisitor<Void> {
                 " 的 " + e.getContext().getStart().getLine() +
                 " 行 " + e.getContext().getStart().getCharPositionInLine() + " 列");
         Log.e("Code: " + e.getContext().getText());
+        throw e;
     }
 
     @Override

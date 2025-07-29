@@ -35,7 +35,8 @@ public class ARM64InstructionPatternPack implements InstructionPack {
 
         patternSet.add(new LoadAndStorePattern.LoadRegFuncParam());
         patternSet.add(new LoadAndStorePattern.LoadIntImmediateToReg());
-        patternSet.add(new LoadAndStorePattern.LoadIntZeroToReg());
+        patternSet.add(new LoadAndStorePattern.LoadLongImmediateToReg());
+        patternSet.add(new LoadAndStorePattern.LoadZeroToReg());
         patternSet.add(new LoadAndStorePattern.CopyImm());
         patternSet.add(new LoadAndStorePattern.CopyInst());
         patternSet.add(new LoadAndStorePattern.DummyPHI());
