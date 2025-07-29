@@ -2,8 +2,8 @@ package top.voidc.backend;
 
 import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
-import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.*;
+import top.voidc.misc.Flag;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
 
@@ -20,6 +20,7 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
 
     @Override
     public boolean run(IceMachineFunction target) {
+        var showDebug = Boolean.TRUE.equals(Flag.get("-fshow-trace-info"));
         var changed = false;
         // Phase 1: 分配栈帧
         final var slotMap = new HashMap<IceMachineRegister, IceStackSlot>();
@@ -73,7 +74,7 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                         // 如果是虚拟寄存器，先加载到临时寄存器中
                         var slot = slotMap.get(registerView.getRegister());
                         // 生成ldr指令
-                        var load = new ARM64Instruction("LDR {dst}, {local:src} // " + registerView.getRegister().getReferenceName(),
+                        var load = new ARM64Instruction("LDR {dst}, {local:src}" + (showDebug ? " //" + registerView.getRegister().getReferenceName() : ""),
                                 regPool.get(phyRegisterIndex++).createView(registerView.getType()), slot);
                         loadSourceOperandsInstructions.add(load);
                         instruction.replaceOperand(operand, load.getResultReg().getRegister().createView(registerView.getType())); // 替换原指令的虚拟寄存器操作数为实际的寄存器
@@ -103,7 +104,7 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                         var phyView = phyReg.createView(dstReg.getType());
                         instruction.replaceOperand(dstReg, phyReg.createView(dstReg.getType()));
                         // 生成str指令
-                        var store = new ARM64Instruction("STR {src}, {local:target} // " + dstReg.getRegister().getReferenceName(),
+                        var store = new ARM64Instruction("STR {src}, {local:target}" + (showDebug ? " //" + dstReg.getRegister().getReferenceName() : ""),
                                 phyView, slot);
                         store.setParent(block);
                         block.add(i + 1, store); // 在原指令后插入存储指令
