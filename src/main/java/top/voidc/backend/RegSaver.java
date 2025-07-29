@@ -2,21 +2,19 @@ package top.voidc.backend;
 
 import top.voidc.backend.arm64.instr.ARM64Function;
 import top.voidc.backend.arm64.instr.ARM64Instruction;
-import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
 import top.voidc.ir.machine.IceMachineRegister;
 
 import top.voidc.ir.machine.IceStackSlot;
-import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
 
 import java.util.*;
 
 @Pass(group = {"O0", "backend"})
-public class CallerSaver implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
+public class RegSaver implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
 
     private static boolean isCallerSaved(IceMachineRegister reg) {
         String name = reg.getName();
