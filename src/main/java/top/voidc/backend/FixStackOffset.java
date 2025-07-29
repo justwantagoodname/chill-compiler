@@ -51,10 +51,10 @@ public class FixStackOffset implements CompilePass<IceMachineFunction>, IceArchi
         if (!isImm16(value)) {
             var lowBit = value & 0xFFFF;
             var highBit = value >> 16;
-            movList.add(new ARM64Instruction("MOVZ {dst}, {imm16:x}", scratchRegister.createView(IceType.I32), IceConstantData.create(lowBit)));
-            movList.add(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #16", scratchRegister.createView(IceType.I32), IceConstantData.create(highBit)));
+            movList.add(new ARM64Instruction("MOVZ {dst}, {imm16:x}", scratchRegister.createView(IceType.I64), IceConstantData.create(lowBit)));
+            movList.add(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #16", scratchRegister.createView(IceType.I64), IceConstantData.create(highBit)));
         } else {
-            movList.add(new ARM64Instruction("MOVZ {dst}, {imm16:x}", scratchRegister.createView(IceType.I32), IceConstantData.create(value)));
+            movList.add(new ARM64Instruction("MOVZ {dst}, {imm16:x}", scratchRegister.createView(IceType.I64), IceConstantData.create(value)));
         }
         movList.forEach(instr -> instr.setParent(block));
         return movList;
@@ -81,11 +81,15 @@ public class FixStackOffset implements CompilePass<IceMachineFunction>, IceArchi
                                 // 偏移不能作为立即数需要调整
                                 loadImms = loadIntToScratchRegister(machineInstruction.getParent(), scratchRegister, stackSlot.getOffset());
 
+                                // 计算实际地址
+
+                                loadImms.add(new ARM64Instruction("ADD {dst}, sp, {offset}",
+                                        scratchRegister.createView(IceType.I64), scratchRegister.createView(IceType.I64)));
                                 newInstr = switch (opcode) {
                                     case "LDR" ->
-                                            new ARM64Instruction("LDR {dst}, [sp, {offset}]", machineInstruction.getResultReg(), scratchRegister.createView(IceType.I32));
-                                    case "STR" -> new ARM64Instruction("STR {src}, [sp, {offset}]",
-                                            (IceMachineRegister.RegisterView) machineInstruction.getSourceOperands().getFirst(), scratchRegister.createView(IceType.I32));
+                                            new ARM64Instruction("LDR {dst}, [{offset}]", machineInstruction.getResultReg(), scratchRegister.createView(IceType.I64));
+                                    case "STR" -> new ARM64Instruction("STR {src}, [{offset}]",
+                                            (IceMachineRegister.RegisterView) machineInstruction.getSourceOperands().getFirst(), scratchRegister.createView(IceType.I64));
                                     default -> throw new IllegalStateException("Unexpected value: " + opcode);
                                 };
 
@@ -98,7 +102,7 @@ public class FixStackOffset implements CompilePass<IceMachineFunction>, IceArchi
                                 break;
                             } else if (opcode.equals("ADD") && !isImm12(stackSlot.getOffset())) {
                                 loadImms = loadIntToScratchRegister(machineInstruction.getParent(), scratchRegister, stackSlot.getOffset());
-                                newInstr = new ARM64Instruction("ADD {dst}, sp, {offset}", machineInstruction.getResultReg(), scratchRegister.createView(IceType.I32));
+                                newInstr = new ARM64Instruction("ADD {dst}, sp, {offset}", machineInstruction.getResultReg(), scratchRegister.createView(IceType.I64));
 
                                 // 替换原有指令
                                 block.addAll(i, loadImms);
