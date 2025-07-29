@@ -257,12 +257,12 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
     /**
      * 替换指令中的寄存器，必要时插入溢出代码
+     *
      * @param block
      * @param inst
      * @param regMapping
-     * @return 插入了多少条溢出代码
      */
-    private int replaceRegisters(IceBlock block, int pos, IceMachineInstruction inst, Map<IceMachineRegister, IceMachineRegister> regMapping) {
+    private void replaceRegisters(IceBlock block, int pos, IceMachineInstruction inst, Map<IceMachineRegister, IceMachineRegister> regMapping) {
         int result = 0;
         for (int i = 0; i < inst.getOperands().size(); i++) {
             IceValue operand = inst.getOperand(i);
@@ -283,7 +283,6 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             }
         }
 
-        return result;
     }
 
 
