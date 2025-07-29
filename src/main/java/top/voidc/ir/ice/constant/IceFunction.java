@@ -127,6 +127,10 @@ public class IceFunction extends IceConstant implements Iterable<IceBlock>, IceA
         this.entryBlock = block;
     }
 
+    /**
+     * java 没有友元 此函数仅仅供前端使用 <b>不要用这个块</b>
+     * @return 抽象意义上的退出块，并不会真的从这个块退出
+     */
     public IceBlock getExitBlock() {
         return exitBlock;
     }
