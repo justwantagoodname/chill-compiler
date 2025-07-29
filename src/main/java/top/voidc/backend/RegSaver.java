@@ -2,6 +2,7 @@ package top.voidc.backend;
 
 import top.voidc.backend.arm64.instr.ARM64Function;
 import top.voidc.backend.arm64.instr.ARM64Instruction;
+import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
@@ -44,7 +45,7 @@ public class RegSaver implements CompilePass<IceMachineFunction>, IceArchitectur
         }
 
         saveCallerSavedRegs(mf);
-//        saveCalleeSavedRegs(mf);
+        saveCalleeSavedRegs(mf);
 
         return true;
     }
@@ -109,7 +110,7 @@ public class RegSaver implements CompilePass<IceMachineFunction>, IceArchitectur
                     if (operand instanceof IceMachineRegister.RegisterView rv) {
                         IceMachineRegister reg = rv.getRegister();
                         assert !reg.isVirtualize() : "Virtual registers should not be present in machine instructions after register allocation.";
-                        if (!isCalleeSaved(reg)) {
+                        if (isCalleeSaved(reg)) {
                             // 如果是 callee-saved 寄存器，记录下来
                             usedRegs.add(reg);
                             regSlots.putIfAbsent(reg, mf.allocateVariableStackSlot(reg.getType()));
@@ -120,7 +121,7 @@ public class RegSaver implements CompilePass<IceMachineFunction>, IceArchitectur
         }
 
         var entryBlock = mf.getEntryBlock();
-        var exitBlock = mf.getExitBlock();
+        var exitBlock = findExitBlock(mf);
 
         for (var reg : usedRegs) {
             IceMachineInstruction str = new ARM64Instruction("STR {src}, {local:dst}", reg.createView(reg.getType()), regSlots.get(reg));
@@ -129,6 +130,16 @@ public class RegSaver implements CompilePass<IceMachineFunction>, IceArchitectur
             Log.d(exitBlock.getTextIR());
             exitBlock.add(exitBlock.size() - 1, ldr);
         }
+    }
+
+    private static IceBlock findExitBlock(IceMachineFunction mf) {
+        for (var block : mf) {
+            if (block.getSuccessors().isEmpty()) {
+                return block; // 找到没有后继的块，作为退出块
+            }
+        }
+
+        throw new IllegalStateException("No exit block found in the machine function.");
     }
 
     @Override
