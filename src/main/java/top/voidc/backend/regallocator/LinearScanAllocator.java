@@ -178,6 +178,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             regPool.add(mf.getPhysicalRegister("x" + i));
         }
 
+//        for (int i = 19; i <= 28; ++i) {
+//            regPool.add(mf.getPhysicalRegister("x" + i));
+//        }
+
         return regPool;
     }
 
