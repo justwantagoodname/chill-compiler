@@ -6,7 +6,7 @@ import top.voidc.misc.Flag;
 
 import java.util.List;
 
-public class IcePtrType<T extends IceType> extends IceType {
+public class IcePtrType <T extends IceType> extends IceType {
 
     private boolean isConst = false;
     private final T pointTo;
@@ -40,5 +40,13 @@ public class IcePtrType<T extends IceType> extends IceType {
 
     public void setConst(boolean aConst) {
         isConst = aConst;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (isConst ? 1 : 0);
+        result = 31 * result + pointTo.hashCode();
+        return result;
     }
 }
