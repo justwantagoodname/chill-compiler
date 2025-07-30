@@ -4,7 +4,6 @@ import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.backend.instr.InstructionPattern;
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceCallInstruction;
@@ -250,6 +249,29 @@ public class ControlInstructionPattern {
         @Override
         protected boolean testReturnType(IceCallInstruction call) {
             return call.getType().isInteger();
+        }
+    }
+
+    /**
+     * 处理返回整数的函数调用
+     */
+    public static class FloatCall extends AbstractCallPattern {
+        public FloatCall() {
+            super(0);
+        }
+
+        @Override
+        protected IceMachineValue handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
+            var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
+            var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
+            return selector
+                    .addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", virtualReg, resultReg))
+                    .getResultReg();
+        }
+
+        @Override
+        protected boolean testReturnType(IceCallInstruction call) {
+            return call.getType().isFloat();
         }
     }
 }
