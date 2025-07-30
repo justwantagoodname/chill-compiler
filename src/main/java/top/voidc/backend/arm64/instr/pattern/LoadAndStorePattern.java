@@ -12,6 +12,7 @@ import top.voidc.ir.ice.instruction.IceCopyInstruction;
 import top.voidc.ir.ice.instruction.IcePHINode;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
+import top.voidc.ir.machine.IceStackSlot;
 
 import static top.voidc.ir.machine.InstructionSelectUtil.*;
 
@@ -20,16 +21,13 @@ public class LoadAndStorePattern {
         /**
          * 匹配函数参数 然后从物理寄存器移动到虚拟寄存器
          */
-        // TODO 测试一下后面需要改
         public LoadRegFuncParam() {
             super(1);
         }
 
         @Override
         public int getCost(InstructionSelector selector, IceFunction.IceFunctionParameter value) {
-            final var paramReg = selector.getRegisterForValue(value)
-                    .orElseThrow(UnsupportedOperationException::new); // TODO: 内存参数的需要load
-            return 0;
+            return getIntrinsicCost();
         }
 
         @Override
