@@ -257,7 +257,7 @@ public class MemoryAccessPatterns {
                         }
                     } else {
                         assert currentIndexArraySize > 1;
-                        if (Tool.isPowerOfTwo(currentIndexArraySize)) {
+                        if (Tool.isPowerOfTwo(currentIndexArraySize) && Tool.log2(currentIndexArraySize) <= 4) { // 范围是 0 - 4
                             if (indexReg.getType().equals(IceType.I64)) {
                                 selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {base}, {index}, lsl {imm:size}",
                                     dstReg, dstReg, indexReg, IceConstantData.create(Tool.log2(currentIndexArraySize))));
