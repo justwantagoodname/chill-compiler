@@ -109,4 +109,12 @@ public class IceArrayType extends IceType {
     public boolean equals(Object obj) {
         return super.equals(obj) && elementType.equals(((IceArrayType) obj).elementType) && numElements == ((IceArrayType) obj).numElements;
     }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + elementType.hashCode();
+        result = 31 * result + numElements;
+        return result;
+    }
 }
