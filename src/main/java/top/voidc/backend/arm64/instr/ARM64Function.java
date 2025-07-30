@@ -5,6 +5,7 @@ import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceCallInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.ir.ice.type.IceVecType;
 import top.voidc.ir.machine.IceMachineBlock;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineRegister;
@@ -50,8 +51,20 @@ public class ARM64Function extends IceMachineFunction {
                         machineValueMap.put(parameter, vreg);
                     }
                 }
-                case F32 -> {
-                    throw new UnsupportedOperationException();
+                case F32, F64 -> {
+                    if (floatParamReg < 8) {
+                        var reg = getPhysicalRegister("v" + floatParamReg).createView(parameter.getType());
+                        var vreg = allocateVirtualRegister(parameter.getType());
+                        getEntryBlock().addInstruction(new ARM64Instruction("FMOV {dst}, {src}", vreg, reg));
+                        machineValueMap.put(parameter, vreg);
+                        floatParamReg++;
+                    } else {
+                        var slot = allocateParameterStackSlot(i, parameter.getType());
+                        var vreg = allocateVirtualRegister(parameter.getType());
+                        // 将参数从栈中加载到虚拟寄存器
+                        getEntryBlock().addInstruction(new ARM64Instruction("LDR {dst}, {local:src}", vreg, slot));
+                        machineValueMap.put(parameter, vreg);
+                    }
                 }
             }
         }
@@ -66,9 +79,15 @@ public class ARM64Function extends IceMachineFunction {
     // 所有机器指令块
     private final Map<String, IceMachineBlock> machineBlocks = new HashMap<>();
 
+    private int integerVRegCount = 0;
+
+    private int floatVRegCount = 0;
+
     private final IceMachineRegister zeroRegister = allocatePhysicalRegister("zr", IceType.I64);
 
     private final IceMachineRegister returnRegister = allocatePhysicalRegister("0", IceType.I64);
+
+    private final IceMachineRegister floatReturnRegister = allocatePhysicalRegister("0", IceVecType.VEC128);
 
     private final List<IceStackSlot> stackFrame = new ArrayList<>();
 
@@ -130,6 +149,7 @@ public class ARM64Function extends IceMachineFunction {
 
         IceType registerType = switch (name.substring(0, 1).toLowerCase()) {
             case "x" -> IceType.I64;
+            case "v" -> IceVecType.VEC128;
             default -> throw new IllegalArgumentException("Wrong use!");
         };
 
@@ -137,8 +157,8 @@ public class ARM64Function extends IceMachineFunction {
         return allocatePhysicalRegister(name.substring(1), registerType);
     }
 
-    public HashSet<IceMachineRegister> getAllVirtualRegisters() {
-        return new HashSet<>(virtualRegisters.values());
+    public Set<IceMachineRegister> getAllVirtualRegisters() {
+        return Set.copyOf(virtualRegisters.values());
     }
 
     @Override
@@ -146,21 +166,23 @@ public class ARM64Function extends IceMachineFunction {
         return virtualRegisters.computeIfAbsent(name, _ -> new ARM64Register(name, type));
     }
 
-    private int integerRegCount = 0;
-    private int floatRegCount = 0;
-
     @Override
     public IceMachineRegister.RegisterView allocateVirtualRegister(IceType type) {
         return switch (type.getTypeEnum()) {
-            case I32, I64, PTR -> allocateVirtualRegister(String.valueOf(integerRegCount++), IceType.I64).createView(type);
+            case I32, I64, PTR -> allocateVirtualRegister(String.valueOf(integerVRegCount++), IceType.I64).createView(type);
+            case F32, F64 -> allocateVirtualRegister(String.valueOf(floatVRegCount++), type).createView(type);
             default -> throw new IllegalArgumentException("Wrong type!");
         };
     }
 
     @Override
     public IceMachineRegister.RegisterView getReturnRegister(IceType type) {
-        // TODO: Fix this. 需要返回固定的内存地址，根据浮点类型返回对应寄存器
-        return returnRegister.createView(type);
+        if (type.isInteger()) {
+            return returnRegister.createView(type);
+        } else if (type.isFloat()) {
+            return floatReturnRegister.createView(type);
+        }
+        throw new IllegalArgumentException("Wrong type!");
     }
 
     @Override
