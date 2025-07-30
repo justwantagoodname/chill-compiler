@@ -11,7 +11,7 @@ import top.voidc.optimizer.pass.CompilePass;
 
 import java.util.*;
 
-@Pass(group = {"O0", "backend"})
+@Pass(group = {"O0", "backend"}, parallel = true)
 public class SSADestruction implements CompilePass<IceFunction> {
 
     /**
