@@ -110,7 +110,7 @@ public class ArithmaticInstructionPattern {
                         if (isImmediateNeedLSL(rhs)) {
                             // 如果立即数需要左移12位，则使用 ADD {dst}, {x}, {imm12:y} 的形式
                             return selector.addEmittedInstruction(
-                                    new ARM64Instruction("ADD {dst}, {x}, {imm12:y} lsl #12",
+                                    new ARM64Instruction("ADD {dst}, {x}, {imm12:y}, lsl #12",
                                             selector.getMachineFunction().allocateVirtualRegister(IceType.I32), selector.emit(lhs), rhs))
                                     .getResultReg();
                         } else {
@@ -178,7 +178,7 @@ public class ArithmaticInstructionPattern {
                         if (isImmediateNeedLSL(rhs)) {
                             // 如果立即数需要左移12位，则使用 ADD {dst}, {x}, {imm12:y} 的形式
                             return selector.addEmittedInstruction(
-                                    new ARM64Instruction("MUL {dst}, {x}, {imm12:y} lsl #12",
+                                    new ARM64Instruction("MUL {dst}, {x}, {imm12:y}, lsl #12",
                                             selector.getMachineFunction().allocateVirtualRegister(IceType.I32), selector.emit(lhs), rhs))
                                     .getResultReg();
                         } else {
@@ -268,7 +268,7 @@ public class ArithmaticInstructionPattern {
             var zReg = selector.emit(mulNode.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             return selector.addEmittedInstruction(
-                    new ARM64Instruction("MSUB {dst}, {x}, {y}, {z}", dstReg, xReg, yReg, zReg)).getResultReg();
+                    new ARM64Instruction("MSUB {dst}, {x}, {y}, {z}", dstReg, yReg, zReg, xReg)).getResultReg();
         }
 
         @Override

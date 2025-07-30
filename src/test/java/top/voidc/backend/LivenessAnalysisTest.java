@@ -3,7 +3,6 @@ package top.voidc.backend;
 import org.junit.jupiter.api.Test;
 import top.voidc.backend.arm64.instr.pattern.ARM64InstructionPatternPack;
 import top.voidc.backend.instr.InstructionSelectionPass;
-import top.voidc.backend.instr.SSADestruction;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.IceUnit;
 import top.voidc.ir.ice.constant.IceFunction;

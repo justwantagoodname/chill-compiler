@@ -4,9 +4,11 @@ import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.backend.instr.InstructionPattern;
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceConstantByte;
 import top.voidc.ir.ice.constant.IceGlobalVariable;
 import top.voidc.ir.ice.instruction.IceIntrinsicInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
+import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.machine.*;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.instruction.IceAllocaInstruction;
@@ -40,48 +42,9 @@ public class MemoryAllocationPattern {
             var slot = selector.getMachineFunction().allocateVariableStackSlot(allocatedType);
 
             // 设置栈槽的对齐要求
-            slot.setAlignment(allocatedType.getByteSize());
+            slot.setAlignment(Math.max(4, allocatedType.getByteSize())); // 至少4字节对齐
 
             return slot;
-        }
-
-        @Override
-        public boolean test(InstructionSelector selector, IceValue value) {
-            // 匹配基本类型的alloca
-            return value instanceof IceAllocaInstruction alloca && !alloca.getType().getPointTo().isArray();
-        }
-    }
-
-    // 返回存了偏移后地址的的寄存器
-    public static class SimpleAllocaPointer extends InstructionPattern<IceAllocaInstruction> {
-        public SimpleAllocaPointer() {
-            super(1);
-        }
-
-        @Override
-        public int getCost(InstructionSelector selector, IceAllocaInstruction value) {
-            return getIntrinsicCost();
-        }
-
-        @Override
-        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceAllocaInstruction alloca)  {
-            // 获取分配的类型
-            IceType allocatedType = alloca.getType().getPointTo();
-
-            // 在machine function中创建栈槽
-            var slot = selector.getMachineFunction().allocateVariableStackSlot(allocatedType);
-
-            // 设置栈槽的对齐要求
-            slot.setAlignment(allocatedType.getByteSize());
-
-            // 创建目标寄存器
-            var mf = selector.getMachineFunction();
-            var dstReg = mf.allocateVirtualRegister(IceType.I64);
-
-            // 生成指令
-            return selector.addEmittedInstruction(
-                    new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", dstReg, slot)
-            ).getResultReg();
         }
 
         @Override
@@ -106,55 +69,15 @@ public class MemoryAllocationPattern {
         @Override
         public IceStackSlot emit(InstructionSelector selector, IceAllocaInstruction alloca) {
             // 获取数组类型
-            IceType allocatedType = alloca.getType().getPointTo();
+            var allocatedType = (IceArrayType) alloca.getType().getPointTo();
 
             // 在machine function中创建栈槽
             IceStackSlot slot = selector.getMachineFunction().allocateVariableStackSlot(allocatedType);
 
-            // 数组需要更高的对齐要求（至少8字节）
-            slot.setAlignment(Math.max(allocatedType.getByteSize(), 8));
+            // 数组需要更高的对齐要求（至少4字节）
+            slot.setAlignment(Math.max(4, allocatedType.getInsideElementType().getByteSize()));
 
             return slot;
-        }
-
-        @Override
-        public boolean test(InstructionSelector selector, IceValue value) {
-            // 匹配数组类型的alloca
-            return value instanceof IceAllocaInstruction alloca && alloca.getType().getPointTo().isArray();
-        }
-    }
-
-    // 返回存了偏移后地址的的寄存器
-    public static class ArrayAllocaPointer extends InstructionPattern<IceAllocaInstruction> {
-
-        public ArrayAllocaPointer() {
-            super(1);
-        }
-
-        @Override
-        public int getCost(InstructionSelector selector, IceAllocaInstruction value) {
-            return getIntrinsicCost();
-        }
-
-        @Override
-        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceAllocaInstruction alloca) {
-            // 获取数组类型
-            IceType allocatedType = alloca.getType().getPointTo();
-
-            // 在machine function中创建栈槽
-            IceStackSlot slot = selector.getMachineFunction().allocateVariableStackSlot(allocatedType);
-
-            // 数组需要更高的对齐要求（至少8字节）
-            slot.setAlignment(Math.max(allocatedType.getByteSize(), 8));
-
-            // 创建目标寄存器
-            var mf = selector.getMachineFunction();
-            var dstReg = mf.allocateVirtualRegister(IceType.I64);
-
-            // 生成指令
-            return selector.addEmittedInstruction(
-                    new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", dstReg, slot)
-            ).getResultReg();
         }
 
         @Override
@@ -184,12 +107,11 @@ public class MemoryAllocationPattern {
 
             // TODO 先想办法保存原来的寄存器值
             var x0 = selector.getMachineFunction().getPhysicalRegister("x0").createView(IceType.I64); // 第一个参数是地址
-            var x1 = selector.getMachineFunction().getPhysicalRegister("x1").createView(IceType.I32); // 第二个参数是值
+            var x1 = selector.getMachineFunction().getPhysicalRegister("x1").createView(IceType.I8); // 第二个参数是值
             var x2 = selector.getMachineFunction().getPhysicalRegister("x2").createView(IceType.I32); // 第三个参数是长度
-            var slot = (IceStackSlot) selector.emit(value.getParameters().getFirst());
+            var slot = (IceStackSlot) selector.emit(value.getParameters().get(0));
             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", x0, slot));
-            var val = (IceMachineRegister.RegisterView) selector.emit(value.getParameters().get(1)); // 支持常量其他不管了
-            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x1, val));
+            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm8:val}", x1, (IceConstantByte) value.getParameters().get(1))); // 仅仅支持常量其他不管了
             var len = (IceMachineRegister.RegisterView) selector.emit(value.getParameters().get(2));
             selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x2, len));
             selector.addEmittedInstruction(new ARM64Instruction("BL memset"));
@@ -241,6 +163,7 @@ public class MemoryAllocationPattern {
 
             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", x0, slot)); // dst
 
+            // TODO 使用已经有的模式
             selector.addEmittedInstruction(new ARM64Instruction("ADRP {dst}, " + src.getName(), addrReg));
             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, {addr}, :lo12:" + src.getName(), addrReg, addrReg));
             selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x1, addrReg)); // src

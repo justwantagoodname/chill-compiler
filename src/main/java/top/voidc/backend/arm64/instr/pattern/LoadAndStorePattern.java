@@ -6,6 +6,7 @@ import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
+import top.voidc.ir.ice.constant.IceConstantLong;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceCopyInstruction;
 import top.voidc.ir.ice.instruction.IcePHINode;
@@ -26,7 +27,7 @@ public class LoadAndStorePattern {
 
         @Override
         public int getCost(InstructionSelector selector, IceFunction.IceFunctionParameter value) {
-            final var paramReg = selector.getMachineFunction().getRegisterForValue(value)
+            final var paramReg = selector.getRegisterForValue(value)
                     .orElseThrow(UnsupportedOperationException::new); // TODO: 内存参数的需要load
             return 0;
         }
@@ -34,7 +35,7 @@ public class LoadAndStorePattern {
         @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceFunction.IceFunctionParameter value) {
             // TODO: 内存参数的需要load
-            return (IceMachineRegister.RegisterView) selector.getMachineFunction().getRegisterForValue(value)
+            return (IceMachineRegister.RegisterView) selector.getRegisterForValue(value)
                     .orElseThrow(UnsupportedOperationException::new);
         }
 
@@ -85,24 +86,60 @@ public class LoadAndStorePattern {
         }
     }
 
-    public static class LoadIntZeroToReg extends InstructionPattern<IceConstantInt> {
-        public LoadIntZeroToReg() {
-            super(0);
+    public static class LoadLongImmediateToReg extends InstructionPattern<IceConstantData> {
+
+        public LoadLongImmediateToReg() {
+            super(3);
         }
 
         @Override
-        public int getCost(InstructionSelector selector, IceConstantInt value) {
-            return 0;
+        public int getCost(InstructionSelector selector, IceConstantData value) {
+            return getIntrinsicCost();
         }
 
         @Override
-        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConstantInt value) {
-            return selector.getMachineFunction().getZeroRegister(IceType.I32);
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConstantData value) {
+            final var constValue = ((IceConstantLong) value.castTo(IceType.I64)).getValue();
+            final var dstRegView = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
+
+            for (int i = 0; i < 4; i++) {
+                int part = Math.toIntExact((constValue >> (i * 16)) & 0xFFFF);
+                if (part != 0) {
+                    if (i == 0) {
+                        selector.addEmittedInstruction(new ARM64Instruction("MOVZ {dst}, {imm16:x}", dstRegView, IceConstantData.create(part)));
+                    } else {
+                        selector.addEmittedInstruction(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #16", dstRegView, IceConstantData.create(part)));
+                    }
+                }
+            }
+            return dstRegView;
         }
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            return value instanceof IceConstantInt val && val.equals(IceConstantData.create(0));
+            return value instanceof IceConstantData
+                    && value.getType().equals(IceType.I64);
+        }
+    }
+
+    public static class LoadZeroToReg extends InstructionPattern<IceConstantData> {
+        public LoadZeroToReg() {
+            super(0);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceConstantData value) {
+            return 0;
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConstantData value) {
+            return selector.getMachineFunction().getZeroRegister(value.getType());
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return (value instanceof IceConstantData) && value.equals(IceConstantData.create(0));
         }
     }
 

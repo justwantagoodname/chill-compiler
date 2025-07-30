@@ -19,19 +19,13 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
         super(name);
     }
 
+    public abstract void initParameters(Map<IceValue, IceMachineValue> machineValueMap, IceFunction function);
+
     public abstract List<IceStackSlot> getStackFrame();
 
     public abstract IceStackSlot.VariableStackSlot allocateVariableStackSlot(IceType type);
 
     public abstract IceStackSlot.ArgumentStackSlot allocateArgumentStackSlot(IceCallInstruction callInstruction, int argumentIndex, IceType type);
-
-    public abstract void bindMachineValueToValue(IceValue value, IceMachineValue machineValue);
-
-    public abstract void bindVirtualRegisterToValue(IceValue value, IceMachineRegister.RegisterView register);
-
-    public abstract void bindPhysicalRegisterToValue(IceValue value, IceMachineRegister.RegisterView register);
-
-    public abstract Optional<IceMachineValue> getRegisterForValue(IceValue value);
 
     /**
      * 给 MachineFunction 分配物理寄存器单元，仅供寄存器分配器使用

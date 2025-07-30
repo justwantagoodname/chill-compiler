@@ -1,10 +1,10 @@
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import top.voidc.backend.*;
-import top.voidc.backend.regallocator.GraphColoringRegisterAllocator;
+import top.voidc.backend.regallocator.*;
 import top.voidc.backend.arm64.instr.pattern.ARM64InstructionPatternPack;
 import top.voidc.backend.instr.InstructionSelectionPass;
-import top.voidc.backend.instr.SSADestruction;
+import top.voidc.backend.SSADestruction;
 import top.voidc.frontend.parser.SysyLexer;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.frontend.translator.IRGenerator;
@@ -62,10 +62,10 @@ public class Compiler {
         context.addPassResult(new ARM64InstructionPatternPack());
 
         // TODO: 后续添加O0 O1的组
-        passManager.addDisableGroup("needfix");
+//        passManager.addDisableGroup("needfix");
         Boolean hasO1 = Flag.get("-O1");
         if (Boolean.FALSE.equals(hasO1)) {
-            passManager.addDisableGroup("O1");
+//            passManager.addDisableGroup("O1");
         }
         String disableGroups = Flag.get("-fdisable-group");
         if (disableGroups != null && !disableGroups.isBlank()) {
@@ -102,14 +102,16 @@ public class Compiler {
 
             // 后端相关
             pm.runPass(SSADestruction.class);
-            pm.runPass(ShowIR.class);
             pm.runPass(InstructionSelectionPass.class);
             pm.runPass(LivenessAnalysis.class);
             pm.runPass(ShowIR.class);
-            pm.runPass(GraphColoringRegisterAllocator.class);
+            pm.runPass(LinearScanAllocator.class);
 //            pm.runPass(ShowIR.class);
+            pm.runPass(ShowIR.class);
+            pm.runPass(RegSaver.class);
             pm.runPass(AlignFramePass.class);
             pm.runPass(ShowIR.class);
+            pm.runPass(FixStackOffset.class);
             pm.runPass(OutputARMASM.class);
         });
         return passManager;

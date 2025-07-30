@@ -1,11 +1,12 @@
 package top.voidc.backend.arm64.instr;
 
+import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.machine.IceMachineInstruction;
 
 import java.util.Set;
 
-public class ARM64Instruction extends IceMachineInstruction {
+public class ARM64Instruction extends IceMachineInstruction implements IceArchitectureSpecification {
     public ARM64Instruction(String renderTemplate) {
         super(renderTemplate);
     }
@@ -37,11 +38,8 @@ public class ARM64Instruction extends IceMachineInstruction {
 
     @Override
     public IceMachineInstruction clone() {
-        var clone = new ARM64Instruction(this.renderTemplate);
+        var clone = new ARM64Instruction(this.renderTemplate, getOperands().toArray(new IceMachineValue[0]));
         clone.setName(getName());
-        for (var operand : getOperands()) {
-            clone.addOperand(operand);
-        }
         return clone;
     }
 }

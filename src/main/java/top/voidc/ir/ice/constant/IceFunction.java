@@ -9,6 +9,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.interfaces.IceAlignable;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.misc.ds.ChilletGraph;
 
 import java.util.*;
 
@@ -126,12 +127,37 @@ public class IceFunction extends IceConstant implements Iterable<IceBlock>, IceA
         this.entryBlock = block;
     }
 
+    /**
+     * java 没有友元 此函数仅仅供前端使用 <b>不要用这个块</b>
+     * @return 抽象意义上的退出块，并不会真的从这个块退出
+     */
     public IceBlock getExitBlock() {
         return exitBlock;
     }
 
     public List<IceBlock> getBlocks() {
         return blocks();
+    }
+
+    public List<IceBlock> getBFSBlocks() {
+        ArrayList<IceBlock> result = new ArrayList<>();
+        Set<IceBlock> visited = new HashSet<>();
+
+        Queue<IceBlock> queue = new LinkedList<>();
+        queue.add(getEntryBlock());
+        while (!queue.isEmpty()) {
+            IceBlock current = queue.poll();
+            if (visited.contains(current)) continue;
+            visited.add(current);
+            result.add(current);
+            for (IceBlock successor : current.successors()) {
+                if (!visited.contains(successor)) {
+                    queue.add(successor);
+                }
+            }
+        }
+
+        return result;
     }
 
     @Override
@@ -222,5 +248,17 @@ public class IceFunction extends IceConstant implements Iterable<IceBlock>, IceA
     @Override
     public int getAlignment() {
         return 4; // 默认对齐方式到4字节
+    }
+
+    public ChilletGraph<IceBlock> getControlFlowGraph() {
+        var blocks = blocks();
+        var graph = new ChilletGraph<IceBlock>(blocks.size());
+        graph.createNewNodes(blocks);
+        
+
+        for (var block : blocks) {
+            graph.addEdges(block, block.successors());
+        }
+        return graph;
     }
 }
