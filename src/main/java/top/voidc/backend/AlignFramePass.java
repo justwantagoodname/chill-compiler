@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  * <br>
  * <a href="https://blog.csdn.net/anyegongjuezjd/article/details/107173140">AArch 64 栈帧</a>
  */
-@Pass(group = {"O0", "backend"})
+@Pass(group = {"O0", "backend"}, parallel = true)
 public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
 
     public static class AlignedStackFrame {

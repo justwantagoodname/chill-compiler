@@ -15,7 +15,7 @@ import java.util.List;
  * 笨蛋疾旋鼬寄存器分配器
  * 蠢鼬脑容量不够只能给所有变量全部溢出到栈上
  */
-@Pass(group = {"O0", "backend"})
+@Pass(group = {"O0", "backend"}, parallel = true)
 public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
 
     @Override

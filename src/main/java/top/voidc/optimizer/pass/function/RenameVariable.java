@@ -7,7 +7,7 @@ import top.voidc.optimizer.pass.CompilePass;
 /**
  * 按顺序重命名函数内的匿名寄存器，确保递增
  */
-@Pass
+@Pass(group = {"O0"}, parallel = true)
 public class RenameVariable implements CompilePass<IceFunction> {
     private int variableCount = 0;
 
