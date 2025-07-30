@@ -140,11 +140,82 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
         if (iterationInfo == null) return false;
         Log.d("最终值为：" + iterationInfo.finalValue.getTextIR() + ", 迭代次数: " + iterationInfo.iterations);
 
-        // 执行优化：替换循环为计算结果
-        return replaceLoopWithResult(header, body, exit, iv,
-                iterationInfo.finalValue, iterationInfo.iterations,
-                (IceConstantData) initial, (IceConstantData) step
-        );
+        boolean falg = false;
+
+        // TODO 1.将除了循环控制变量之外的在循环中修改过的变量都存储在一个数组里
+        // 1. 创建数据结构存储循环变量
+        Map<IcePHINode, IceInstruction> loopVarUpdateMap = new HashMap<>(); // PHI节点 -> 更新指令
+        Set<IceValue> modifiedVars = new HashSet<>(); // 所有在循环中被修改的变量
+
+        // 2. 收集循环头中的PHI节点及其更新指令
+        for (IceInstruction inst : header) {
+            if (inst instanceof IcePHINode phi) {
+                // 获取来自回边块(latch)的值
+                IceValue latchValue = null;
+                for (IcePHINode.IcePHIBranch branch2 : phi.getBranches()) {
+                    if (branch2.block() == latch) {
+                        latchValue = branch2.value();
+                        break;
+                    }
+                }
+                if (latchValue == null) continue;
+
+                // 检查值是否在循环体内定义
+                if (latchValue instanceof IceInstruction updateInst) {
+                    if (updateInst.getParent() == body) {
+                        loopVarUpdateMap.put(phi, updateInst);
+                        modifiedVars.add(phi); // PHI节点本身是被修改的变量
+                    }
+                }
+            }
+        }
+
+        // 3. 遍历循环体指令，识别所有被修改的变量
+        for (IceInstruction inst : body) {
+            // 跳过非赋值指令（如分支、比较等）
+            if (!(inst instanceof IceBinaryInstruction)) {
+                continue;
+            }
+
+            // 获取指令定义的目标变量
+            modifiedVars.add(inst);
+
+            // 4. 检查自环依赖：目标变量是否在操作数中出现
+            for (IceValue operand : inst.getOperands()) {
+                if (operand == inst) {
+                    Log.d("发现自环运算变量: " + inst.getTextIR() +
+                            " 指令: " + inst.getTextIR());
+                }
+            }
+        }
+
+        // 打印收集结果
+        Log.d("===== 循环变量收集结果 =====");
+        Log.d("循环变量更新映射:");
+        for (Map.Entry<IcePHINode, IceInstruction> entry : loopVarUpdateMap.entrySet()) {
+            Log.d("  PHI节点: " + entry.getKey().getTextIR() +
+                    " -> 更新指令: " + entry.getValue().getTextIR());
+        }
+
+        Log.d("所有被修改的变量:");
+        for (IceValue var : modifiedVars) {
+            Log.d("  " + var.getTextIR());
+        }
+
+        // TODO 2.获取每个循环变量的计算环，产生
+
+        // TODO 3.获得每个变量在一次循环中的计算式，注意计算顺序（如j = j + i;i++;与i++;j = j + i;是不一样的，j = j + i;i++;j = j + i;实际为j = j + 2*i + 1这样（请考虑更加通用和复杂的情况））
+
+        // TODO 4.通过计算式计算循环结束时的值，线性计算式（如加常量，乘常量）通过求和公式之间计算，复杂计算式通过统一模拟得出结果
+
+        // TODO 5.将计算出来的结果带入block中对应的变量
+
+
+
+        body.clear();
+        body.destroy();
+
+        return falg;
     }
 
     private boolean isLoopHeader(IceBlock block) {
@@ -309,221 +380,6 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
                 n,
                 IceConstantData.create(finalValue)
         );
-    }
-
-    private boolean replaceLoopWithResult(
-            IceBlock header,
-            IceBlock body,
-            IceBlock exit,
-            IcePHINode iv,
-            IceConstantData ivFinalValue,
-            int iterations,
-            IceConstantData ivInitial,
-            IceConstantData ivStep
-    ) {
-        // 1. 替换归纳变量iv
-        List<IceUser> ivUsers = new ArrayList<>(iv.getUsers());
-        for (IceUser user : ivUsers) {
-            user.replaceOperand(iv, ivFinalValue);
-        }
-
-        // 2. 查找所有累积变量（在循环头有PHI节点）
-        Map<IcePHINode, AccumulatorInfo> accumulators = new HashMap<>();
-        for (IceInstruction inst : header) {
-            if (inst instanceof IcePHINode phi && phi != iv) {
-                // 查找来自前驱的初始值
-                for (IcePHINode.IcePHIBranch branchInfo : phi.getBranches()) {
-                    if (branchInfo.block() != body) { // 来自前驱的初始值
-                        accumulators.put(phi, new AccumulatorInfo(branchInfo.value()));
-                        break;
-                    }
-                }
-            }
-        }
-
-        // 3. 在循环体中查找累积变量的更新（通过PHI节点的回边分支）
-        for (IcePHINode phi : accumulators.keySet()) {
-            AccumulatorInfo info = accumulators.get(phi);
-
-            // 查找来自回边分支的值
-            for (IcePHINode.IcePHIBranch branch : phi.getBranches()) {
-                if (branch.block() == body) {
-                    IceValue updateValue = branch.value();
-
-                    // 如果更新值是一条指令，且在循环体内
-                    if (updateValue instanceof IceInstruction) {
-                        IceInstruction updateInst = (IceInstruction) updateValue;
-                        if (body.contains(updateInst) && updateInst instanceof IceBinaryInstruction updatebranch) {
-                            info.updateInstruction = updatebranch;
-                        }
-                    }
-                    break; // 找到回边分支后退出
-                }
-            }
-        }
-
-        // 4. 计算每个累积变量的闭式表达式
-        for (Map.Entry<IcePHINode, AccumulatorInfo> entry : accumulators.entrySet()) {
-            IcePHINode phi = entry.getKey();
-            AccumulatorInfo info = entry.getValue();
-
-            if (info.updateInstruction != null) {
-                IceConstantData finalValue = calculateAccumulatorFinalValue(
-                        info.initialValue,
-                        info.updateInstruction,
-                        ivInitial,
-                        ivStep,
-                        iterations
-                );
-
-                if (finalValue != null) {
-                    // 替换所有使用点
-                    List<IceUser> users = new ArrayList<>(phi.getUsers());
-                    for (IceUser user : users) {
-                        user.replaceOperand(phi, finalValue);
-                    }
-                }
-            }
-        }
-
-        // 5. 删除循环体
-        body.clear();
-        body.destroy();
-        return true;
-    }
-
-    private static class AccumulatorInfo {
-        public IceValue initialValue;
-        public IceBinaryInstruction updateInstruction;
-
-        public AccumulatorInfo(IceValue initialValue) {
-            this.initialValue = initialValue;
-        }
-    }
-
-    private IceConstantData calculateAccumulatorFinalValue(
-            IceValue initialValue,
-            IceBinaryInstruction updateInst,
-            IceConstantData ivInitial,
-            IceConstantData ivStep,
-            int iterations
-    ) {
-        // 只支持常量计算
-        if (!(initialValue instanceof IceConstantData) ||
-                !(ivInitial instanceof IceConstantInt) ||
-                !(ivStep instanceof IceConstantInt)) {
-            return null;
-        }
-
-        int initVal = ((IceConstantInt) initialValue).getValue();
-        int ivInit = ((IceConstantInt) ivInitial).getValue();
-        int step = ((IceConstantInt) ivStep).getValue();
-
-        // 根据操作类型计算
-        if (updateInst instanceof IceBinaryInstruction.Add) {
-            return calculateAddAccumulator(updateInst, initVal, ivInit, step, iterations);
-        } else if (updateInst instanceof IceBinaryInstruction.Sub) {
-            return calculateSubAccumulator(updateInst, initVal, ivInit, step, iterations);
-        } else if (updateInst instanceof IceBinaryInstruction.Mul) {
-            return calculateMulAccumulator(updateInst, initVal, ivInit, step, iterations);
-        }
-
-        return null;
-    }
-
-    private IceConstantData calculateAddAccumulator(
-            IceBinaryInstruction addInst,
-            int initVal,
-            int ivInit,
-            int step,
-            int iterations
-    ) {
-        int sum = 0;
-        IceValue op0 = addInst.getOperand(0);
-        IceValue op1 = addInst.getOperand(1);
-
-        // 检查是否包含归纳变量
-        if (op0 instanceof IceBinaryInstruction) {
-            sum = calculateExpressionSum((IceBinaryInstruction) op0, ivInit, step, iterations);
-        } else if (op1 instanceof IceBinaryInstruction) {
-            sum = calculateExpressionSum((IceBinaryInstruction) op1, ivInit, step, iterations);
-        } else if (op0 instanceof IceConstantData) {
-            sum = iterations * ((IceConstantInt) op0).getValue();
-        } else if (op1 instanceof IceConstantData) {
-            sum = iterations * ((IceConstantInt) op1).getValue();
-        }
-
-        return IceConstantData.create(initVal + sum);
-    }
-
-    private int calculateExpressionSum(
-            IceBinaryInstruction expr,
-            int ivInit,
-            int step,
-            int iterations
-    ) {
-        // 计算表达式的累加和
-        if (expr instanceof IceBinaryInstruction.Mul) {
-            IceValue op0 = expr.getOperand(0);
-            IceValue op1 = expr.getOperand(1);
-
-            // 检查是否包含归纳变量
-            if (op0 instanceof IceConstantData && op1 instanceof IceConstantData) {
-                int val0 = ((IceConstantInt) op0).getValue();
-                int val1 = ((IceConstantInt) op1).getValue();
-                return iterations * val0 * val1;
-            } else if (op0 instanceof IceConstantData) {
-                int constant = ((IceConstantInt) op0).getValue();
-                return constant * sumArithmeticSeries(ivInit, step, iterations);
-            } else if (op1 instanceof IceConstantData) {
-                int constant = ((IceConstantInt) op1).getValue();
-                return constant * sumArithmeticSeries(ivInit, step, iterations);
-            }
-        }
-        // 简单算术级数求和
-        return sumArithmeticSeries(ivInit, step, iterations);
-    }
-
-    private int sumArithmeticSeries(int a, int d, int n) {
-        // 等差数列求和公式: S = n/2 * (2a + (n-1)d)
-        return n * (2 * a + (n - 1) * d) / 2;
-    }
-
-    private IceConstantData calculateSubAccumulator(
-            IceBinaryInstruction subInst,
-            int initVal,
-            int ivInit,
-            int step,
-            int iterations
-    ) {
-        // 减法处理：只支持常数减法
-        IceValue op0 = subInst.getOperand(0);
-        IceValue op1 = subInst.getOperand(1);
-
-        if (op1 instanceof IceConstantData) {
-            int subVal = ((IceConstantInt) op1).getValue();
-            return IceConstantData.create(initVal - iterations * subVal);
-        }
-        return null;
-    }
-
-    private IceConstantData calculateMulAccumulator(
-            IceBinaryInstruction mulInst,
-            int initVal,
-            int ivInit,
-            int step,
-            int iterations
-    ) {
-        // 乘法处理：只支持常数乘法
-        IceValue op0 = mulInst.getOperand(0);
-        IceValue op1 = mulInst.getOperand(1);
-
-        if (op0 instanceof IceConstantData && op1 instanceof IceConstantData) {
-            int val0 = ((IceConstantInt) op0).getValue();
-            int val1 = ((IceConstantInt) op1).getValue();
-            return IceConstantData.create(initVal * (int)Math.pow(val0 * val1, iterations));
-        }
-        return null;
     }
 
     @Override
