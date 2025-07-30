@@ -105,12 +105,10 @@ public class Compiler {
             pm.runPass(InstructionSelectionPass.class);
             pm.runPass(LivenessAnalysis.class);
             pm.runPass(ShowIR.class);
-            pm.runPass(LinearScanAllocator.class);
-//            pm.runPass(ShowIR.class);
-            pm.runPass(ShowIR.class);
-            pm.runPass(RegSaver.class);
+            pm.runPass(SillyChilletAllocateRegister.class);
+//            pm.runPass(LinearScanAllocator.class);
+//            pm.runPass(CallerSaver.class);
             pm.runPass(AlignFramePass.class);
-            pm.runPass(ShowIR.class);
             pm.runPass(FixStackOffset.class);
             pm.runPass(OutputARMASM.class);
         });
