@@ -79,7 +79,7 @@ public class PrologueEpilogueGenerator {
      * - 只需要分配栈空间
      * - 不需要保存返回地址
      */
-    private class LeafFunctionGenerator extends InstructionGenerator {
+    private static class LeafFunctionGenerator extends InstructionGenerator {
         @Override
         public List<IceMachineInstruction> generatePrologue(AlignFramePass.AlignedStackFrame frame) {
             List<IceMachineInstruction> instructions = new ArrayList<>();
@@ -116,7 +116,7 @@ public class PrologueEpilogueGenerator {
      * - 需要保存返回地址
      * - 无需处理参数区
      */
-    private class NoArgsCallFunctionGenerator extends InstructionGenerator {
+    private static class NoArgsCallFunctionGenerator extends InstructionGenerator {
         @Override
         public List<IceMachineInstruction> generatePrologue(AlignFramePass.AlignedStackFrame frame) {
             List<IceMachineInstruction> instructions = new ArrayList<>();
@@ -167,26 +167,40 @@ public class PrologueEpilogueGenerator {
      * - 需要保存返回地址
      * - 需要处理参数区
      */
-    private class WithArgsCallFunctionGenerator extends InstructionGenerator {
+    private static class WithArgsCallFunctionGenerator extends InstructionGenerator {
         @Override
         public List<IceMachineInstruction> generatePrologue(AlignFramePass.AlignedStackFrame frame) {
             List<IceMachineInstruction> instructions = new ArrayList<>();
-            // 有函数调用且有栈上参数
-            if (isArithmeticImmediate(frame.getStackSize())) {
-                // 小栈帧：直接使用立即数
-                instructions.add(new ARM64Instruction("SUB sp, sp, {imm:stack}", 
-                        IceConstantData.create(frame.getStackSize())));
-                instructions.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]", 
-                        IceConstantData.create(frame.getArgumentSize())));
-                instructions.add(new ARM64Instruction("ADD x29, sp, {imm:stack}", 
-                        IceConstantData.create(frame.getArgumentSize())));
+            var argSize = frame.getArgumentSize();
+            var remainSize = frame.getStackSize() - argSize;
+
+            if (isSTPImmediate(frame.getArgumentSize())) {
+                // 参数区在STP范围内：保持原有逻辑
+                if (isArithmeticImmediate(frame.getStackSize())) {
+                    // 小栈帧：直接使用立即数
+                    instructions.add(new ARM64Instruction("SUB sp, sp, {imm:stack}", 
+                            IceConstantData.create(frame.getStackSize())));
+                    instructions.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]", 
+                            IceConstantData.create(frame.getArgumentSize())));
+                    instructions.add(new ARM64Instruction("ADD x29, sp, {imm:stack}", 
+                            IceConstantData.create(frame.getArgumentSize())));
+                } else {
+                    // 大栈帧：使用循环调整
+                    instructions.addAll(generateStackAdjustment(frame.getStackSize(), true));
+                    instructions.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]", 
+                            IceConstantData.create(frame.getArgumentSize())));
+                    instructions.add(new ARM64Instruction("ADD x29, sp, {imm:stack}", 
+                            IceConstantData.create(frame.getArgumentSize())));
+                }
             } else {
-                // 大栈帧：循环调整
-                instructions.addAll(generateStackAdjustment(frame.getStackSize(), true));
-                instructions.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]", 
-                        IceConstantData.create(frame.getArgumentSize())));
-                instructions.add(new ARM64Instruction("ADD x29, sp, {imm:stack}", 
-                        IceConstantData.create(frame.getArgumentSize())));
+                // 参数区超出范围时的处理
+                // 1. 分配变量区和返回地址区
+                instructions.addAll(generateStackAdjustment(remainSize, true));
+                // 2. 保存帧指针和返回地址
+                instructions.add(new ARM64Instruction("STP x29, x30, [sp]"));
+                instructions.add(new ARM64Instruction("MOV x29, sp"));
+                // 3. 分配参数区
+                instructions.addAll(generateStackAdjustment(argSize, true));
             }
             return instructions;
         }
@@ -194,16 +208,29 @@ public class PrologueEpilogueGenerator {
         @Override
         public List<IceMachineInstruction> generateEpilogue(AlignFramePass.AlignedStackFrame frame) {
             List<IceMachineInstruction> instructions = new ArrayList<>();
-            // 有函数调用且有栈上参数
-            instructions.add(new ARM64Instruction("LDP x29, x30, [sp, {imm:stack}]", 
-                    IceConstantData.create(frame.getArgumentSize())));
-            if (isArithmeticImmediate(frame.getStackSize())) {
-                // 小栈帧：直接使用立即数
-                instructions.add(new ARM64Instruction("ADD sp, sp, {imm:stack}", 
-                        IceConstantData.create(frame.getStackSize())));
+            var argSize = frame.getArgumentSize();
+            var remainSize = frame.getStackSize() - argSize;
+
+            if (isSTPImmediate(frame.getArgumentSize())) {
+                // 参数区在STP范围内：保持原有逻辑
+                instructions.add(new ARM64Instruction("LDP x29, x30, [sp, {imm:stack}]", 
+                        IceConstantData.create(frame.getArgumentSize())));
+                if (isArithmeticImmediate(frame.getStackSize())) {
+                    // 小栈帧：直接使用立即数
+                    instructions.add(new ARM64Instruction("ADD sp, sp, {imm:stack}", 
+                            IceConstantData.create(frame.getStackSize())));
+                } else {
+                    // 大栈帧：使用循环调整
+                    instructions.addAll(generateStackAdjustment(frame.getStackSize(), false));
+                }
             } else {
-                // 大栈帧：循环调整
-                instructions.addAll(generateStackAdjustment(frame.getStackSize(), false));
+                // 参数区超出范围时的处理
+                // 1. 回收参数区
+                instructions.addAll(generateStackAdjustment(argSize, false));
+                // 2. 恢复帧指针和返回地址
+                instructions.add(new ARM64Instruction("LDP x29, x30, [sp]"));
+                // 3. 回收变量区和返回地址区
+                instructions.addAll(generateStackAdjustment(remainSize, false));
             }
             return instructions;
         }
