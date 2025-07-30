@@ -143,7 +143,6 @@ public class ControlInstructionPattern {
                         selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm12:src}", paramReg, argInt));
                     } else {
                         // 对于超过 8 个参数的情况，需要将其存储到栈上
-                        selector.select(argInt);
                         var valueReg = selector.emit(argInt);
                         var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, curArg, value.getType());
                         selector.addEmittedInstruction(
@@ -158,7 +157,6 @@ public class ControlInstructionPattern {
                             selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
                         } else {
                             // 对于超过 8 个参数的情况，需要将其存储到栈上
-                            selector.select(argReg);
                             var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, curArg, value.getType());
                             selector.addEmittedInstruction(
                                     new ARM64Instruction("STR {src}, {local:slot}", argReg, argStackSlot));
@@ -222,7 +220,6 @@ public class ControlInstructionPattern {
                         selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm12:src}", paramReg, argInt));
                     } else {
                         // 对于超过 8 个参数的情况，需要将其存储到栈上
-                        selector.select(argInt);
                         var valueReg = selector.emit(argInt);
                         var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, curArg, value.getType());
                         selector.addEmittedInstruction(
@@ -237,7 +234,6 @@ public class ControlInstructionPattern {
                             selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
                         } else {
                             // 对于超过 8 个参数的情况，需要将其存储到栈上
-                            selector.select(argReg);
                             var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, curArg, value.getType());
                             selector.addEmittedInstruction(
                                     new ARM64Instruction("STR {src}, {local:slot}", argReg, argStackSlot));
