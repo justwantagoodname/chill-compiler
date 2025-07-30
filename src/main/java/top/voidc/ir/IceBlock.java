@@ -54,6 +54,7 @@ public class IceBlock extends IceUser implements List<IceInstruction> {
      */
     public void addInstruction(IceInstruction instruction) {
         instructions.add(instruction);
+        instruction.setParent(this);
         if (instruction.isTerminal()) removeAfterInstruction(instructions.size() - 1);
     }
 
@@ -63,19 +64,11 @@ public class IceBlock extends IceUser implements List<IceInstruction> {
      */
     public void addInstructionAtFront(IceInstruction instruction) {
         this.instructions.addFirst(instruction);
+        instruction.setParent(this);
         if (instruction.isTerminal()) {
             Log.w("在基本块最前面插入了终止指令，确定这是想要的吗？");
             removeAfterInstruction(0);
         }
-    }
-
-    public void addInstructionAfter(IceInstruction instruction, IceInstruction after) {
-        int index = instructions.indexOf(after);
-        if (index == -1) {
-            throw new IllegalArgumentException("指令不在基本块中");
-        }
-        instructions.add(index + 1, instruction);
-        if (instruction.isTerminal()) removeAfterInstruction(index);
     }
 
     @Deprecated
@@ -331,7 +324,7 @@ public class IceBlock extends IceUser implements List<IceInstruction> {
     public boolean addAll(Collection<? extends IceInstruction> c) {
         boolean modified = false;
         for (IceInstruction instruction : c) {
-            add(instruction);
+            addInstruction(instruction);
             modified = true;
         }
         return modified;

@@ -1,9 +1,10 @@
 package top.voidc.backend.instr;
 
-import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
+import top.voidc.ir.machine.IceMachineInstructionComment;
+import top.voidc.misc.Flag;
 
 import java.util.Arrays;
 
@@ -57,7 +58,9 @@ public abstract class InstructionPattern <T extends IceValue> {
     }
 
     public final IceMachineValue emitForValue(InstructionSelector selector, IceValue value) {
-        selector.addEmittedInstruction(new ARM64Instruction("// " + value.toString()));
+        if (Boolean.TRUE.equals(Flag.get("-fshow-trace-info"))) {
+            selector.addEmittedInstruction(new IceMachineInstructionComment("// " + value.toString()));
+        }
         @SuppressWarnings("unchecked") final var target = (T) value;
         return this.emit(selector, target);
     }

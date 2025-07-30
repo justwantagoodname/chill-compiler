@@ -35,7 +35,8 @@ public class ARM64InstructionPatternPack implements InstructionPack {
 
         patternSet.add(new LoadAndStorePattern.LoadRegFuncParam());
         patternSet.add(new LoadAndStorePattern.LoadIntImmediateToReg());
-        patternSet.add(new LoadAndStorePattern.LoadIntZeroToReg());
+        patternSet.add(new LoadAndStorePattern.LoadLongImmediateToReg());
+        patternSet.add(new LoadAndStorePattern.LoadZeroToReg());
         patternSet.add(new LoadAndStorePattern.CopyImm());
         patternSet.add(new LoadAndStorePattern.CopyInst());
         patternSet.add(new LoadAndStorePattern.DummyPHI());
@@ -51,9 +52,9 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ConditionPatterns.CondBranch());
 
         patternSet.add(new MemoryAllocationPattern.SimpleAlloca());
-        patternSet.add(new MemoryAllocationPattern.SimpleAllocaPointer());
+//        patternSet.add(new MemoryAllocationPattern.SimpleAllocaPointer());
         patternSet.add(new MemoryAllocationPattern.ArrayAlloca());
-        patternSet.add(new MemoryAllocationPattern.ArrayAllocaPointer());
+//        patternSet.add(new MemoryAllocationPattern.ArrayAllocaPointer());
         patternSet.add(new MemoryAllocationPattern.MemsetIntrinsic());
         patternSet.add(new MemoryAllocationPattern.MemcpyIntrinsic());
 

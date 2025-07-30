@@ -1,4 +1,4 @@
-package top.voidc.backend.instr;
+package top.voidc.backend;
 
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.constant.IceFunction;
@@ -13,8 +13,6 @@ import java.util.*;
 
 @Pass(group = {"O0", "backend"})
 public class SSADestruction implements CompilePass<IceFunction> {
-
-    private final Map<IceBlock, Set<IceBlock>> criticalEdges = new HashMap<>();
 
     /**
      * 在CFG中，如果边的源结点具有多个后继结点，⽽边的⽬标结点具有多个前趋结点，则称这样边为关键边
@@ -32,6 +30,8 @@ public class SSADestruction implements CompilePass<IceFunction> {
      * 将所有有必要的关键边进行分裂以便插入复制指令
      */
     private void splitCriticalEdge(List<IceBlock> blocks) {
+        var criticalEdges = new HashMap<IceBlock, Set<IceBlock>>();
+
         // 标记所有关键边，只有存在phi节点时才标记
         for (var block : blocks) {
             for (var inst: block) {
@@ -98,7 +98,7 @@ public class SSADestruction implements CompilePass<IceFunction> {
 
                 }
                 phiNode.setEliminated(true);
-            };
+            }
         }
     }
 
@@ -106,7 +106,10 @@ public class SSADestruction implements CompilePass<IceFunction> {
     public boolean run(IceFunction target) {
         var isChanged = false;
         var blocks = target.blocks();
+        // Phase 1: 分裂关键边
         splitCriticalEdge(blocks);
+
+        // Phase 2: 移除Phi节点 (假删除)
         for (var block : blocks) {
             if (block.stream().anyMatch(inst -> inst instanceof IcePHINode)) {
                 removePhiNodes(block);

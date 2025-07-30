@@ -2,8 +2,8 @@ package top.voidc.backend;
 
 import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
-import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.*;
+import top.voidc.misc.Flag;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
 
@@ -20,6 +20,7 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
 
     @Override
     public boolean run(IceMachineFunction target) {
+        var showDebug = Boolean.TRUE.equals(Flag.get("-fshow-trace-info"));
         var changed = false;
         // Phase 1: 分配栈帧
         final var slotMap = new HashMap<IceMachineRegister, IceStackSlot>();
@@ -30,9 +31,15 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                 for (var operand : instruction.getOperands()) {
                     if (operand instanceof IceMachineRegister.RegisterView registerView) {
                         if (registerView.getRegister().isVirtualize()) {
+                            // Note: 按照虚拟寄存器来分配栈槽而不是其寄存器视图，但是访问的时候是按照视图大小访问
                             var slot = slotMap.computeIfAbsent(registerView.getRegister(), register ->
                                     target.allocateVariableStackSlot(register.getType()));
-                            slot.setAlignment(4); // TODO: 默认对齐到4字节，后续可以根据类型调整
+                            var alignment = switch (registerView.getRegister().getType().getTypeEnum()) {
+                                case I32 -> 4;
+                                case I64, PTR -> 8;
+                                default -> throw new IllegalArgumentException("Unsupported type: " + registerView.getRegister().getType());
+                            };
+                            slot.setAlignment(alignment);
                         }
                     }
                 }
@@ -41,13 +48,15 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
 
         // Phase 2: 重写指令
         final var regPool = List.of(
-                target.getPhysicalRegister("x9"),
-                target.getPhysicalRegister("x10"),
-                target.getPhysicalRegister("x11"),
-                target.getPhysicalRegister("x12"),
-                target.getPhysicalRegister("x13"),
-                target.getPhysicalRegister("x14"),
-                target.getPhysicalRegister("x15")
+                target.getPhysicalRegister("x19"),
+                target.getPhysicalRegister("x20"),
+                target.getPhysicalRegister("x21"),
+                target.getPhysicalRegister("x22"),
+                target.getPhysicalRegister("x23"),
+                target.getPhysicalRegister("x24"),
+                target.getPhysicalRegister("x25"),
+                target.getPhysicalRegister("x26"),
+                target.getPhysicalRegister("x27")
         );
         for (var block : target) {
             for (var i = 0; i < block.size(); i++) {
@@ -65,10 +74,10 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                         // 如果是虚拟寄存器，先加载到临时寄存器中
                         var slot = slotMap.get(registerView.getRegister());
                         // 生成ldr指令
-                        var load = new ARM64Instruction("LDR {dst}, {local:src}",
+                        var load = new ARM64Instruction("LDR {dst}, {local:src}" + (showDebug ? " //" + registerView.getRegister().getReferenceName() : ""),
                                 regPool.get(phyRegisterIndex++).createView(registerView.getType()), slot);
                         loadSourceOperandsInstructions.add(load);
-                        instruction.replaceOperand(operand, load.getResultReg()); // 替换原指令的虚拟寄存器操作数为实际的寄存器
+                        instruction.replaceOperand(operand, load.getResultReg().getRegister().createView(registerView.getType())); // 替换原指令的虚拟寄存器操作数为实际的寄存器
 
                         if (dstReg != null && dstReg.getRegister().equals(registerView.getRegister())) {
                             // 如果目标寄存器也是这个虚拟寄存器，记录下来 以便分配同一个物理寄存器
@@ -91,12 +100,12 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                     if (dstReg.getRegister().isVirtualize()) {
                         changed = true;
                         var phyReg = dstPhyReg == null ? regPool.get(phyRegisterIndex) : dstPhyReg; // 如果没有记录到物理寄存器，则使用下一个物理寄存器
-                        var phyView = phyReg.createView(dstReg.getType());
-                        instruction.replaceOperand(dstReg, phyView);
-
                         var slot = slotMap.get(dstReg.getRegister());
+                        var phyView = phyReg.createView(dstReg.getType());
+                        instruction.replaceOperand(dstReg, phyReg.createView(dstReg.getType()));
                         // 生成str指令
-                        var store = new ARM64Instruction("STR {src}, {local:target}", phyView, slot);
+                        var store = new ARM64Instruction("STR {src}, {local:target}" + (showDebug ? " //" + dstReg.getRegister().getReferenceName() : ""),
+                                phyView, slot);
                         store.setParent(block);
                         block.add(i + 1, store); // 在原指令后插入存储指令
                         i++; // 跳过存储指令

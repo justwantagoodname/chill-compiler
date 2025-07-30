@@ -16,8 +16,7 @@ import java.util.Comparator;
  */
 class DominatorTreeTest {
     private IceFunction function;
-    private IceBlock[] blocks;
-    private DominatorTree dominatorTree;
+    private DominatorTree<IceBlock> dominatorTree;
     private IceBlock[] expectedDominators;
 
     @Test
@@ -52,7 +51,9 @@ class DominatorTreeTest {
         // [entry, b2, b3, b4, b5, b6]
 
         expectedDominators = new IceBlock[]{null, blocks.getFirst(), blocks.get(1), blocks.get(1), blocks.get(1), blocks.get(4)};
-        dominatorTree = new DominatorTree(function);
+        var graph = function.getControlFlowGraph();
+        var entryNodeId = graph.getNodeId(function.getEntryBlock());
+        dominatorTree = new DominatorTree<>(graph, entryNodeId);
 
         for (int i = 0; i < blocks.size(); i++) {
             IceBlock actualDominator = dominatorTree.getDominator(blocks.get(i));
@@ -102,7 +103,9 @@ class DominatorTreeTest {
         // [entry, b1, b2, b3, b4, b5]
         
         expectedDominators = new IceBlock[]{null, blocks.get(0), blocks.get(0), blocks.get(1), blocks.get(1), blocks.get(0)};
-        dominatorTree = new DominatorTree(function);
+        var graph = function.getControlFlowGraph();
+        var entryNodeId = graph.getNodeId(function.getEntryBlock());
+        dominatorTree = new DominatorTree<>(graph, entryNodeId);
 
         for (int i = 0; i < blocks.size(); i++) {
             IceBlock actualDominator = dominatorTree.getDominator(blocks.get(i));
