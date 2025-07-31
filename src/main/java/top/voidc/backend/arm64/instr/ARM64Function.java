@@ -140,7 +140,7 @@ public class ARM64Function extends IceMachineFunction {
 
     @Override
     protected IceMachineRegister allocatePhysicalRegister(String name, IceType type) {
-        return physicalRegisters.computeIfAbsent(name, _ -> new ARM64Register(name, type, false));
+        return physicalRegisters.computeIfAbsent(type + "|" + name, _ -> new ARM64Register(name, type, false));
     }
 
     @Override
