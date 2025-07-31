@@ -29,6 +29,11 @@ public class ConditionPatterns {
         }
 
         @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCmpInstruction.Icmp value) {
             // CMP指令不产生结果寄存器，但设置标志寄存器
             var xReg = selector.emit(value.getLhs());
@@ -56,6 +61,11 @@ public class ConditionPatterns {
 
         public CMPImm() {
             super(1);
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
         }
 
         @Override
@@ -167,6 +177,11 @@ public class ConditionPatterns {
         }
 
         @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCmpInstruction.Fcmp value) {
             var xReg = selector.emit(value.getLhs());
             var yReg = selector.emit(value.getRhs());
@@ -191,6 +206,11 @@ public class ConditionPatterns {
 
         public FCMPZ() {
             super(1);
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
         }
 
         @Override
