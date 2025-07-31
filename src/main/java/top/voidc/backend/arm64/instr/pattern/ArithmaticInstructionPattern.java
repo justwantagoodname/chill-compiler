@@ -557,7 +557,7 @@ public class ArithmaticInstructionPattern {
 
             selector.select(value.getOperand()); // 确保操作数被选择
             selector.addEmittedInstruction(
-                    new ARM64Instruction("CSET {dst}, " + Tool.mapToArm64Condition(cmp), dstReg)
+                    new ARM64Instruction("CSET {dst}, " + Tool.mapToArm64Condition(cmp), tempIntReg)
             );
             selector.addEmittedInstruction(
                     new ARM64Instruction("SCVTF {dst}, {src}", dstReg, tempIntReg) // 将整数转换为浮点数
