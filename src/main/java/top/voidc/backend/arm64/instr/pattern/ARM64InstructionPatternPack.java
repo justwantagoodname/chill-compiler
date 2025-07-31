@@ -34,6 +34,7 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ArithmaticInstructionPattern.ZextCMPBoolToFloat());
         patternSet.add(new ArithmaticInstructionPattern.IntToFloat());
         patternSet.add(new ArithmaticInstructionPattern.FloatToInt());
+        patternSet.add(new ArithmaticInstructionPattern.FloatToDouble());
 
         patternSet.add(new ControlInstructionPattern.BranchUnconditional());
         patternSet.add(new ControlInstructionPattern.RetVoid());
@@ -47,6 +48,7 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new LoadAndStorePattern.LoadIntImmediateToReg());
         patternSet.add(new LoadAndStorePattern.LoadLongImmediateToReg());
         patternSet.add(new LoadAndStorePattern.LoadFloatImmediateToReg());
+        patternSet.add(new LoadAndStorePattern.LoadDoubleImmediateToReg());
         patternSet.add(new LoadAndStorePattern.LoadZeroToReg());
         patternSet.add(new LoadAndStorePattern.CopyImm());
         patternSet.add(new LoadAndStorePattern.DummyPHI());

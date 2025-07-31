@@ -2,6 +2,9 @@ package top.voidc.misc;
 
 import top.voidc.ir.ice.instruction.IceCmpInstruction;
 
+import java.util.Base64;
+import java.util.List;
+
 public class Tool {
     public static void TODO(String reason) {
         throw new UnsupportedOperationException("Not implemented yet: " + reason);
@@ -77,5 +80,13 @@ public class Tool {
             };
         }
         throw new IllegalArgumentException("Unsupported condition type");
+    }
+
+    public static String toGNUASCIIFormat(List<Byte> byteList) {
+        var sb = new StringBuilder();
+        for (Byte b : byteList) {
+            sb.append(String.format("\\%03o", b));
+        }
+        return sb.toString();
     }
 }

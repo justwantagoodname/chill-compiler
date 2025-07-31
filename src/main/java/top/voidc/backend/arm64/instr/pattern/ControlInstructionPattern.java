@@ -5,6 +5,7 @@ import top.voidc.backend.instr.InstructionPattern;
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantInt;
+import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceCallInstruction;
 import top.voidc.ir.ice.instruction.IceRetInstruction;
@@ -12,6 +13,7 @@ import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
+import top.voidc.ir.machine.IceMachineRegister.RegisterView;
 
 import static top.voidc.ir.machine.InstructionSelectUtil.*;
 
@@ -293,7 +295,7 @@ public class ControlInstructionPattern {
         }
 
         @Override
-        protected IceMachineValue handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
+        protected RegisterView handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
             var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
             var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
             return selector
@@ -316,7 +318,7 @@ public class ControlInstructionPattern {
         }
 
         @Override
-        protected IceMachineValue handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
+        protected RegisterView handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
             var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
             var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
             return selector
@@ -327,6 +329,34 @@ public class ControlInstructionPattern {
         @Override
         protected boolean testReturnType(IceCallInstruction call) {
             return call.getType().isFloat();
+        }
+    }
+
+    public static class VoidVACall extends AbstractCallPattern {
+        public VoidVACall() {
+            super(0);
+        }
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
+        protected IceMachineValue handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
+            return null; // Void call 不需要处理返回值
+        }
+
+        @Override
+        protected boolean testReturnType(IceCallInstruction call) {
+            return call.getType().isVoid();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceCallInstruction call
+                    && call.getType().isVoid()
+                    && call.getTarget() instanceof IceExternFunction externFunction
+                    && externFunction.isVArgs();
         }
     }
 }

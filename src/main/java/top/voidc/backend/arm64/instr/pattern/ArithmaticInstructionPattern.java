@@ -686,4 +686,26 @@ public class ArithmaticInstructionPattern {
                     && !convertInstruction.getType().isBoolean();
         }
     }
+
+    public static class FloatToDouble extends InstructionPattern<IceConvertInstruction> {
+        public FloatToDouble() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
+            var inner = selector.emit(value.getOperand());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.F64);
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("FCVT {dst}, {src}", dstReg, inner)
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConvertInstruction convertInstruction
+                    && convertInstruction.getOperand().getType().equals(IceType.F32)
+                    && convertInstruction.getType().equals(IceType.F64);
+        }
+    }
 }
