@@ -7,6 +7,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
+import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.*;
 
 import top.voidc.misc.Log;
@@ -34,9 +35,6 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     private List<LiveInterval> inactive; // 当前不占用寄存器但之后仍然活跃的区间
 
     private List<IceMachineRegister> freeRegisters; // 可用的物理寄存器
-
-    // preg -> vreg 记录目前某个物理寄存器上占用的虚拟寄存器
-    private Map<IceMachineRegister, IceMachineRegister> vregOnPreg;
 
     private static class LiveInterval {
         IceMachineRegister vreg, preg;
@@ -88,16 +86,20 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         vregSlotMap = new HashMap<>();
         vregSlotSet = new HashSet<>();
         active = new ArrayList<>();
-        vregOnPreg = new HashMap<>();
 
         functionLivenessData = livenessResult.getLivenessData(target);
 
-        BBs = target.getBFSBlocks();
+        BBs = target.getBlocks();
         freeRegisters = getPhysicalRegisters(mf);
 
         unhandled = buildLiveIntervals(mf);
         unhandled.sort(Comparator.comparingInt(i -> i.start));
         intervals = new ArrayList<>(unhandled);
+
+        Log.d("Initial live intervals: ");
+        for (var interval : intervals) {
+            Log.d("  " + interval.vreg + " [" + interval.start + ", " + interval.end + "]");
+        }
 
         linearScan(mf);
 
@@ -122,7 +124,13 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 for (IceValue operand : inst.getSourceOperands()) {
                     if (operand instanceof IceMachineRegister.RegisterView rv && rv.getRegister().isVirtualize()) {
                         IceMachineRegister reg = rv.getRegister();
-                        intervalMap.putIfAbsent(reg, new LiveInterval(reg, currentIndex, currentIndex + 1));
+                        if (intervalMap.containsKey(reg)) {
+                            // 如果已经存在这个寄存器的区间，更新结束位置
+                            intervalMap.get(reg).end = Math.max(intervalMap.get(reg).end, currentIndex + 1);
+                        } else {
+                            // 如果不存在，创建新的区间
+                            intervalMap.put(reg, new LiveInterval(reg, currentIndex, currentIndex + 1));
+                        }
                         intervalMap.get(reg).uses.add(currentIndex);
                     }
                 }
@@ -130,7 +138,13 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 IceMachineRegister.RegisterView rv = inst.getResultReg();
                 if (rv != null && rv.getRegister().isVirtualize()) {
                     IceMachineRegister reg = rv.getRegister();
-                    intervalMap.putIfAbsent(reg, new LiveInterval(reg, currentIndex, currentIndex + 1));
+                    if (intervalMap.containsKey(reg)) {
+                        // 如果已经存在这个寄存器的区间，更新结束位置
+                        intervalMap.get(reg).end = Math.max(intervalMap.get(reg).end, currentIndex + 1);
+                    } else {
+                        // 如果不存在，创建新的区间
+                        intervalMap.put(reg, new LiveInterval(reg, currentIndex, currentIndex + 1));
+                    }
                     intervalMap.get(reg).uses.add(currentIndex); // 记录使用位置
                 }
 
@@ -174,13 +188,13 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     private List<IceMachineRegister> getPhysicalRegisters(ARM64Function mf) {
         ArrayList<IceMachineRegister> regPool = new ArrayList<>();
 
-        for (int i = 9; i <= 15; ++i) {
+        for (int i = 20; i <= 27; ++i) {
             regPool.add(mf.getPhysicalRegister("x" + i));
         }
 
-//        for (int i = 19; i <= 28; ++i) {
-//            regPool.add(mf.getPhysicalRegister("x" + i));
-//        }
+        for (int i = 9; i <= 15; ++i) {
+            regPool.add(mf.getPhysicalRegister("x" + i));
+        }
 
         return regPool;
     }
@@ -208,7 +222,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
         LiveInterval old = active.getLast();
         LiveInterval newInterval;
-        if (old.end > current.end) {
+        if (old.nextUseAfter(current.start) > current.nextUseAfter(current.start)) {
             newInterval = old.splitAt(current.start);
             unhandled.add(newInterval);
 
@@ -236,6 +250,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 // 将虚拟寄存器映射到物理寄存器
                 regMapping.put(interval.vreg, interval.preg);
             } else {
+                if (vregSlotMap.containsKey(interval.vreg)) {
+                    // 如果已经有映射，跳过
+                    continue;
+                }
                 var slot = mf.allocateVariableStackSlot(interval.vreg.getType());
                 vregSlotMap.putIfAbsent(interval.vreg, slot);
                 vregSlotSet.add(slot);
@@ -248,7 +266,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                     throw new IllegalArgumentException("Why there is a non-machine instruction in a machine function???");
                 }
 
-                replaceRegisters(block, i, inst, regMapping);
+                replaceRegisters(inst, regMapping);
             }
         }
 
@@ -256,14 +274,12 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     }
 
     /**
-     * 替换指令中的寄存器，必要时插入溢出代码
+     * 替换指令中的虚拟寄存器为物理寄存器 / 栈槽
      *
-     * @param block
      * @param inst
      * @param regMapping
      */
-    private void replaceRegisters(IceBlock block, int pos, IceMachineInstruction inst, Map<IceMachineRegister, IceMachineRegister> regMapping) {
-        int result = 0;
+    private void replaceRegisters(IceMachineInstruction inst, Map<IceMachineRegister, IceMachineRegister> regMapping) {
         for (int i = 0; i < inst.getOperands().size(); i++) {
             IceValue operand = inst.getOperand(i);
             if (operand instanceof IceMachineRegister.RegisterView rv) {
@@ -273,8 +289,6 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                     IceMachineRegister mappedReg = regMapping.getOrDefault(reg, null);
                     if (mappedReg != null) {
                         inst.replaceOperand(operand, mappedReg.createView(operand.getType()));
-                        // 更新映射关系
-                        vregOnPreg.put(mappedReg, reg);
                     } else {
                         IceStackSlot slot = vregSlotMap.get(reg);
                         inst.replaceOperand(operand, slot);
@@ -287,14 +301,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
 
     private void insertSpillCode(ARM64Function mf) {
-        List<IceMachineInstruction> newInstructions = new ArrayList<>();
-
-        IceMachineRegister tempReg = mf.getPhysicalRegister("x8");
+        IceMachineRegister tempReg = mf.getPhysicalRegister("x19");
+        IceStackSlot slotOnTempReg = null;
 
         for (var block : BBs) {
-            List<IceMachineInstruction> loadInstructions = new ArrayList<>();
-
-
             for (int i = 0; i < block.size(); ++i) {
                 if (!(block.get(i) instanceof IceMachineInstruction inst)) {
                     throw new IllegalArgumentException("Why there is a non-machine instruction in a machine function?????");
@@ -305,13 +315,22 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 for (IceValue operand : inst.getSourceOperands()) {
                     if (operand instanceof IceStackSlot slot && vregSlotSet.contains(slot)) {
                         // 如果是栈槽，需要替换
+                        if (slotOnTempReg != null) {
+                            IceMachineInstruction storeInst = new ARM64Instruction("STR {src}, {local:dst}",
+                                    tempReg.createView(slotOnTempReg.getType()), slotOnTempReg);
+                            storeInst.setParent(block);
+                            block.add(i, storeInst);
+                            i++; // 插入后需要更新索引
+                        }
+
+                        var newOperand = tempReg.createView(slot.getType());
                         IceMachineInstruction loadInst = new ARM64Instruction("LDR {dst}, {local:src}",
-                                tempReg.createView(operand.getType()), slot);
+                                newOperand, slot);
                         loadInst.setParent(block);
                         block.add(i, loadInst);
                         i++; // 插入后需要更新索引
-                        loadInstructions.add(loadInst);
-                        replacements.put(operand, loadInst.getResultReg());
+                        replacements.put(operand, newOperand);
+                        slotOnTempReg = slot;
                     }
                 }
 
@@ -321,11 +340,12 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
                 IceMachineRegister.RegisterView resultReg = inst.getResultReg();
                 if (resultReg != null && vregSlotMap.containsKey(resultReg.getRegister())) {
-                    IceStackSlot slot = vregSlotMap.get(resultReg.getRegister());
+                    IceMachineRegister reg = resultReg.getRegister();
+                    IceStackSlot slot = vregSlotMap.get(reg);
 
                     // 创建存储指令
                     IceMachineInstruction storeInst = new ARM64Instruction("STR {src}, {local:dst}",
-                            resultReg, slot);
+                            reg.createView(slot.getType()), slot);
                     storeInst.setParent(block);
                     block.add(i, storeInst);
                     i++; // 插入后需要更新索引
