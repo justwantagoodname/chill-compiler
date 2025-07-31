@@ -98,11 +98,11 @@ public class LoadAndStorePattern {
 
             for (int i = 0; i < 4; i++) {
                 int part = Math.toIntExact((constValue >> (i * 16)) & 0xFFFF);
-                if (part != 0) {
+                if (part != 0 || i == 0) {
                     if (i == 0) {
                         selector.addEmittedInstruction(new ARM64Instruction("MOVZ {dst}, {imm16:x}", dstRegView, IceConstantData.create(part)));
                     } else {
-                        selector.addEmittedInstruction(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #16", dstRegView, IceConstantData.create(part)));
+                        selector.addEmittedInstruction(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #" + 16 * i, dstRegView, IceConstantData.create(part)));
                     }
                 }
             }
