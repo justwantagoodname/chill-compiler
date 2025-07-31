@@ -89,6 +89,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         public boolean isIntersecting(LiveInterval other) {
             return this.start < other.end && other.start < this.end;
         }
+
+        public boolean isInvalid() {
+            return start >= end || vreg == null;
+        }
     }
 
 
@@ -196,6 +200,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             Log.d("Processing interval: " + current.vreg + " [" + current.start + ", " + current.end + "]");
             expireOldIntervals(current);
 
+            if (current.isInvalid()) {
+                continue;
+            }
+
             if (!freeRegisters.isEmpty()) {
                 current.preg = freeRegisters.removeFirst();
                 active.add(current);
@@ -226,7 +234,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     private void expireOldIntervals(LiveInterval current) {
         // 过期的区间是那些结束位置小于当前区间开始位置的区间
         active.removeIf(interval -> {
-            if (interval.end >= current.start) {
+            if (interval.end > current.start) {
                 return false; // 这个区间还活跃
             }
             if (interval.preg != null) {
