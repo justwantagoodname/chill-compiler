@@ -259,6 +259,29 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
         }
     }
 
+    private static boolean removeUnusedPHINode(IceFunction function) {
+        boolean flag = false;
+        for (IceBlock block : function.getBlocks()) {
+            ArrayList<IcePHINode> list = new ArrayList<>();
+            for (IceInstruction instruction : block) {
+                if (!(instruction instanceof IcePHINode phi)) {
+                    continue;
+                }
+
+                if (phi.getUsers().isEmpty()) {
+                    list.add(phi);
+                    flag = true;
+                }
+            }
+
+            for (IcePHINode phi : list) {
+                // 如果 phi 节点没有使用者，则直接删除
+                phi.destroy();
+            }
+        }
+        return flag;
+    }
+
     @Override
     public boolean run(IceFunction target) {
         boolean flag = false;
@@ -269,6 +292,7 @@ public class SmartChilletSimplifyCFG implements CompilePass<IceFunction> {
         flag |= simplifyPHINode(target);
         flag |= mergeTrivialBlocks(new HashSet<>(), target.getEntryBlock());
         removeUnusedBinaryInstructions(target);
+        flag |= removeUnusedPHINode(target);
 
         return flag;
     }
