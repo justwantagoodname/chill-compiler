@@ -29,7 +29,6 @@ public class LoadAndStorePattern {
 
         @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceFunction.IceFunctionParameter value) {
-            // TODO: 内存参数的需要load
             return (IceMachineRegister.RegisterView) selector.getRegisterForValue(value)
                     .orElseThrow(UnsupportedOperationException::new);
         }
@@ -140,7 +139,7 @@ public class LoadAndStorePattern {
                     selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {fimm:f}", dstRegView, value));
                 }
             } else {
-                var intFloat = IceConstantInt.create(Float.floatToIntBits(floatValue));
+                var intFloat = IceConstantData.create(Float.floatToIntBits(floatValue));
                 selector.select(intFloat);
                 var intRegView = (IceMachineRegister.RegisterView) selector.emit(intFloat);
                 selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", dstRegView, intRegView));
@@ -152,6 +151,36 @@ public class LoadAndStorePattern {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             return value instanceof IceConstantFloat;
+        }
+    }
+
+    public static class LoadDoubleImmediateToReg extends InstructionPattern<IceConstantDouble> {
+
+        public LoadDoubleImmediateToReg() {
+            super(0);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceConstantDouble value) {
+            return getIntrinsicCost();
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConstantDouble value) {
+            final var floatValue = value.getValue();
+            final var dstRegView = selector.getMachineFunction().allocateVirtualRegister(IceType.F64);
+
+            var longDouble = IceConstantData.create(Double.doubleToRawLongBits(floatValue));
+            selector.select(longDouble);
+            var intRegView = (IceMachineRegister.RegisterView) selector.emit(longDouble);
+            selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", dstRegView, intRegView));
+
+            return dstRegView;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConstantDouble;
         }
     }
 
