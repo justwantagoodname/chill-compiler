@@ -62,10 +62,10 @@ public class Compiler {
         context.addPassResult(new ARM64InstructionPatternPack());
 
         // TODO: 后续添加O0 O1的组
-//        passManager.addDisableGroup("needfix");
+        passManager.addDisableGroup("needfix");
         Boolean hasO1 = Flag.get("-O1");
         if (Boolean.FALSE.equals(hasO1)) {
-//            passManager.addDisableGroup("O1");
+            passManager.addDisableGroup("O1");
         }
         String disableGroups = Flag.get("-fdisable-group");
         if (disableGroups != null && !disableGroups.isBlank()) {
