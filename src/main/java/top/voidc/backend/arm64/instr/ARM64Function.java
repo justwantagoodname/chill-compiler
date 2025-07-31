@@ -163,7 +163,7 @@ public class ARM64Function extends IceMachineFunction {
 
     @Override
     protected IceMachineRegister allocateVirtualRegister(String name, IceType type) {
-        return virtualRegisters.computeIfAbsent(name, _ -> new ARM64Register(name, type));
+        return virtualRegisters.computeIfAbsent(type + "|" + name, _ -> new ARM64Register(name, type));
     }
 
     @Override
