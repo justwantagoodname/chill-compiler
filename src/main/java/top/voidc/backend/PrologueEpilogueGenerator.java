@@ -45,6 +45,7 @@ public class PrologueEpilogueGenerator {
          * 生成调整栈指针的指令序列
          * @param size 调整的大小
          * @param isSub 是否是减法操作
+         * FIXME: 目前实现太慢汇编效率了想办法优化
          */
         protected List<IceMachineInstruction> generateStackAdjustment(int size, boolean isSub) {
             List<IceMachineInstruction> instructions = new ArrayList<>();
