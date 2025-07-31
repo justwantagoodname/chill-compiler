@@ -29,7 +29,6 @@ public class LoadAndStorePattern {
 
         @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceFunction.IceFunctionParameter value) {
-            // TODO: 内存参数的需要load
             return (IceMachineRegister.RegisterView) selector.getRegisterForValue(value)
                     .orElseThrow(UnsupportedOperationException::new);
         }
@@ -99,11 +98,11 @@ public class LoadAndStorePattern {
 
             for (int i = 0; i < 4; i++) {
                 int part = Math.toIntExact((constValue >> (i * 16)) & 0xFFFF);
-                if (part != 0) {
+                if (part != 0 || i == 0) {
                     if (i == 0) {
                         selector.addEmittedInstruction(new ARM64Instruction("MOVZ {dst}, {imm16:x}", dstRegView, IceConstantData.create(part)));
                     } else {
-                        selector.addEmittedInstruction(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #16", dstRegView, IceConstantData.create(part)));
+                        selector.addEmittedInstruction(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #" + 16 * i, dstRegView, IceConstantData.create(part)));
                     }
                 }
             }
@@ -133,9 +132,14 @@ public class LoadAndStorePattern {
             final var floatValue = value.getValue();
             final var dstRegView = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
             if (Tool.isArm64FloatImmediate(floatValue)) {
-                selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {fimm:f}", dstRegView, value));
+                if (floatValue == 0.0f) {
+                    var dView = dstRegView.getRegister().createView(IceType.F64);
+                    selector.addEmittedInstruction(new ARM64Instruction("MOVI {dst}, #0", dView));
+                } else {
+                    selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {fimm:f}", dstRegView, value));
+                }
             } else {
-                var intFloat = IceConstantInt.create(Float.floatToIntBits(floatValue));
+                var intFloat = IceConstantData.create(Float.floatToIntBits(floatValue));
                 selector.select(intFloat);
                 var intRegView = (IceMachineRegister.RegisterView) selector.emit(intFloat);
                 selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", dstRegView, intRegView));
@@ -147,6 +151,36 @@ public class LoadAndStorePattern {
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             return value instanceof IceConstantFloat;
+        }
+    }
+
+    public static class LoadDoubleImmediateToReg extends InstructionPattern<IceConstantDouble> {
+
+        public LoadDoubleImmediateToReg() {
+            super(0);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceConstantDouble value) {
+            return getIntrinsicCost();
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConstantDouble value) {
+            final var floatValue = value.getValue();
+            final var dstRegView = selector.getMachineFunction().allocateVirtualRegister(IceType.F64);
+
+            var longDouble = IceConstantData.create(Double.doubleToRawLongBits(floatValue));
+            selector.select(longDouble);
+            var intRegView = (IceMachineRegister.RegisterView) selector.emit(longDouble);
+            selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", dstRegView, intRegView));
+
+            return dstRegView;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConstantDouble;
         }
     }
 
@@ -171,8 +205,8 @@ public class LoadAndStorePattern {
         }
     }
 
-    public static class CopyInst extends InstructionPattern<IceCopyInstruction> {
-        public CopyInst() {
+    public static class IntCopyInst extends InstructionPattern<IceCopyInstruction> {
+        public IntCopyInst() {
             super(1);
         }
 
@@ -191,7 +225,71 @@ public class LoadAndStorePattern {
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            return value instanceof IceCopyInstruction copy && canBeReg(selector, copy.getSource());
+            return value instanceof IceCopyInstruction copy && copy.getDestination().getType().isInteger() && canBeReg(selector, copy.getSource());
+        }
+    }
+
+    public static class FloatCopyInst extends InstructionPattern<IceCopyInstruction> {
+        public FloatCopyInst() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCopyInstruction value) {
+            var srcReg = selector.emit(value.getSource());
+            assert value.getDestination() instanceof IcePHINode;// 一般目标是PHINode
+            // 目标寄存器一般是PHINode，为了防止没有被选择过，先选择一下
+            if (selector.select(value.getDestination()) == null) {
+                throw new IllegalStateException("phi指令应该可以被选择");
+            }
+            var dstReg = selector.emit(value.getDestination());
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("FMOV {dst}, {src}", dstReg, srcReg)).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceCopyInstruction copy && copy.getDestination().getType().isFloat() && canBeReg(selector, copy.getSource());
+        }
+    }
+
+    public static class FloatCopyImm extends InstructionPattern<IceCopyInstruction> {
+        public FloatCopyImm() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCopyInstruction value) {
+            assert value.getDestination() instanceof IcePHINode;// 一般目标是PHINode
+            // 目标寄存器一般是PHINode，为了防止没有被选择过，先选择一下
+            if (selector.select(value.getDestination()) == null) {
+                throw new IllegalStateException("phi指令应该可以被选择");
+            }
+            var dstReg =(IceMachineRegister.RegisterView) selector.emit(value.getDestination());
+            var imm = (IceConstantFloat) value.getSource();
+            final var floatValue = imm.getValue();
+
+            if (Tool.isArm64FloatImmediate(floatValue)) {
+                if (floatValue == 0.0f) {
+                    var dView = dstReg.getRegister().createView(IceType.F64);
+                    selector.addEmittedInstruction(new ARM64Instruction("MOVI {dst}, #0", dView));
+                } else {
+                    selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {fimm:f}", dstReg, imm));
+                }
+            } else {
+                var intFloat = IceConstantInt.create(Float.floatToIntBits(floatValue));
+                selector.select(intFloat);
+                var intRegView = (IceMachineRegister.RegisterView) selector.emit(intFloat);
+                selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", dstReg, intRegView));
+            }
+            return dstReg;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceCopyInstruction copy
+                    && copy.getDestination().getType().isFloat()
+                    && copy.getSource() instanceof IceConstantFloat;
         }
     }
 
@@ -215,7 +313,9 @@ public class LoadAndStorePattern {
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            return value instanceof IceCopyInstruction copy && isImm12(copy.getSource())
+            return value instanceof IceCopyInstruction copy 
+                    && copy.getDestination().getType().isInteger()
+                    && isImm12(copy.getSource())
                     && !(copy.getSource().equals(IceConstantData.create(0)));
         }
     }

@@ -52,16 +52,18 @@ public abstract class InstructionPattern <T extends IceValue> {
 
     public abstract boolean test(InstructionSelector selector, IceValue value);
 
+    @SuppressWarnings("unchecked")
     public final int getCostForValue(InstructionSelector selector, IceValue value) {
-        @SuppressWarnings("unchecked") final var target = (T) value;
+        final var target = (T) value;
         return this.getCost(selector, target);
     }
 
+    @SuppressWarnings("unchecked")
     public final IceMachineValue emitForValue(InstructionSelector selector, IceValue value) {
         if (Boolean.TRUE.equals(Flag.get("-fshow-trace-info"))) {
             selector.addEmittedInstruction(new IceMachineInstructionComment("// " + value.toString()));
         }
-        @SuppressWarnings("unchecked") final var target = (T) value;
+        final var target = (T) value;
         return this.emit(selector, target);
     }
 }
