@@ -127,7 +127,7 @@ public class RegSaver implements CompilePass<IceMachineFunction>, IceArchitectur
             IceMachineInstruction str = new ARM64Instruction("STR {src}, {local:dst}", reg.createView(reg.getType()), regSlots.get(reg));
             IceMachineInstruction ldr = new ARM64Instruction("LDR {src}, {local:dst}", reg.createView(reg.getType()), regSlots.get(reg));
             entryBlock.add(0, str);
-            Log.d(exitBlock.getTextIR());
+//            Log.d(exitBlock.getTextIR());
             exitBlock.add(exitBlock.size() - 1, ldr);
         }
     }
