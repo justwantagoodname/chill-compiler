@@ -173,50 +173,70 @@ public class ControlInstructionPattern {
          */
         protected void emitArguments(InstructionSelector selector, IceCallInstruction value) {
             var arguments = value.getArguments();
-            var curArg = 0;
-            for (; curArg < arguments.size(); curArg++) {
-                var arg = arguments.get(curArg);
+            int intArgCount = 0;
+            int floatArgCount = 0;
+            
+            for (int i = 0; i < arguments.size(); i++) {
+                var arg = arguments.get(i);
+                boolean isFloat = arg.getType().isFloat();
+                
                 if (arg instanceof IceConstantInt argInt && isImm12(argInt)) {
-                    // 立即数参数
-                    var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
-                            .createView(IceType.I32);
-                    if (curArg < 8) {
+                    // 立即数参数 (只能是整数)
+                    if (intArgCount < 8) {
+                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount)
+                                .createView(IceType.I32);
                         selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm12:src}", paramReg, argInt));
                     } else {
-                        // 对于超过 8 个参数的情况，需要将其存储到栈上
                         var valueReg = selector.emit(argInt);
-                        var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, curArg, value.getType());
+                        var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
                         selector.addEmittedInstruction(
                                 new ARM64Instruction("STR {src}, {local:slot}", valueReg, argStackSlot));
                     }
+                    intArgCount++;
                 } else {
                     var resultArg = selector.emit(arg);
                     if (resultArg instanceof IceMachineRegister.RegisterView argReg) {
-                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
-                                .createView(argReg.getType());
-                        if (curArg < 8) {
-                            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
+                        if (isFloat) {
+                            // 浮点数参数使用s寄存器
+                            if (floatArgCount < 8) {
+                                var paramReg = selector.getMachineFunction().getPhysicalRegister("v" + floatArgCount)
+                                        .createView(argReg.getType());
+                                selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", paramReg, argReg));
+                            } else {
+                                var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
+                                selector.addEmittedInstruction(
+                                        new ARM64Instruction("STR {src}, {local:slot}", argReg, argStackSlot));
+                            }
+                            floatArgCount++;
                         } else {
-                            // 对于超过 8 个参数的情况，需要将其存储到栈上
-                            var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, curArg, value.getType());
-                            selector.addEmittedInstruction(
-                                    new ARM64Instruction("STR {src}, {local:slot}", argReg, argStackSlot));
+                            // 整数参数使用x寄存器
+                            if (intArgCount < 8) {
+                                var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount)
+                                        .createView(argReg.getType());
+                                selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
+                            } else {
+                                var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
+                                selector.addEmittedInstruction(
+                                        new ARM64Instruction("STR {src}, {local:slot}", argReg, argStackSlot));
+                            }
+                            intArgCount++;
                         }
                     } else if (resultArg instanceof IceStackSlot argStackSlotPointer) {
-                        // 是栈上的参数需要作为指针加载
-                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
-                                .createView(IceType.I64);
-                        var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
-                        selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlotPointer));
-
-                        if (curArg < 8) {
+                        // 栈上的参数作为指针加载到x寄存器
+                        if (intArgCount < 8) {
+                            var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount)
+                                    .createView(IceType.I64);
+                            var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
+                            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlotPointer));
                             selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, tmpReg));
                         } else {
-                            // 对于超过 8 个参数的情况，需要将其存储到栈上
-                            var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, curArg, value.getType());
+                            var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
+                            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlotPointer));
+                            var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
                             selector.addEmittedInstruction(
                                     new ARM64Instruction("STR {src}, {local:slot}", tmpReg, argStackSlot));
                         }
+                        intArgCount++;
                     } else {
                         throw new IllegalStateException();
                     }
