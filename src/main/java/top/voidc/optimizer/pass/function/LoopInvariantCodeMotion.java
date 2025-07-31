@@ -11,7 +11,7 @@ import top.voidc.misc.annotation.Pass;
 import java.util.*;
 
 @Pass(
-        group = {"O0"}
+        group = {"O0", "needfix"}
 )
 public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
 

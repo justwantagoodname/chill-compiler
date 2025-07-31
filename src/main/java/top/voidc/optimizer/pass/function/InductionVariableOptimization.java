@@ -13,7 +13,7 @@ import top.voidc.misc.annotation.Pass;
 import java.util.*;
 
 @Pass(
-        group = {"O0"}
+        group = {"O0", "needfix"}
 )
 public class InductionVariableOptimization implements CompilePass<IceFunction> {
 
@@ -274,7 +274,7 @@ public class InductionVariableOptimization implements CompilePass<IceFunction> {
                 }
 
                 // 将新指令插入到基本块中
-                block.addInstructionAfter(newCmp, cmp);
+//                block.addInstructionAfter(newCmp, cmp);
 
                 // 替换原比较指令
                 cmp.replaceAllUsesWith(newCmp);
