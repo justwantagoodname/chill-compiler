@@ -94,11 +94,12 @@ public class Compiler {
                     SmartChilletSimplifyCFG.class
             );
             pm.runPass(RenameVariable.class);
-            pm.runPass(LoopInvariantCodeMotion.class);
-            pm.runPass(InductionVariableOptimization.class);
-            pm.runPass(LoopClosedFormOptimization.class);
-            pm.runPass(RenameVariable.class);
+//            pm.runPass(LoopInvariantCodeMotion.class);
+//            pm.runPass(InductionVariableOptimization.class);
+//            pm.runPass(LoopClosedFormOptimization.class);
+//            pm.runPass(RenameVariable.class);
             pm.runPass(DumpIR.class);
+            pm.runPass(ShowIR.class);
 
             // 后端相关
             pm.runPass(SSADestruction.class);
