@@ -23,6 +23,7 @@ import java.util.List;
  * 标量替换聚合
  * 将 聚合类型 的变量（数组）替换为多个标量变量
  * 收益好像不是很大？还需要修复吗？
+ * TODO: 这玩意会导致前端测试 RE 60，开了 GVN mem2reg RV SROA SCSCFG SCCP
  */
 @Pass(
         group = {"O1", "needfix"}

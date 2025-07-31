@@ -85,7 +85,7 @@ public class Compiler {
         final var passManager = new PassManager(context);
         passManager.setPipeline(pm -> {
             pm.runPass(RenameVariable.class);
-            pm.runPass(ScalarReplacementOfAggregates.class);
+//            pm.runPass(ScalarReplacementOfAggregates.class);
             pm.runPass(Mem2Reg.class);
             pm.runPass(SmartChilletSimplifyCFG.class);
             pm.untilStable(
