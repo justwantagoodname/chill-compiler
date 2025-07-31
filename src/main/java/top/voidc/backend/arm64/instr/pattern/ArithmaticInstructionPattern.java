@@ -537,7 +537,8 @@ public class ArithmaticInstructionPattern {
             return value instanceof IceConvertInstruction convertInstruction
                     && convertInstruction.getOperand().getType().isBoolean()
                     && !(convertInstruction.getOperand() instanceof IceConstantData)
-                    && convertInstruction.getType().equals(IceType.I32);
+                    && convertInstruction.getType().equals(IceType.I32)
+                    && canBeReg(selector, convertInstruction.getOperand());
         }
     }
 
