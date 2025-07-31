@@ -24,10 +24,12 @@ public class IceConstantLong extends IceConstantData {
     @Override
     public IceConstantData castTo(IceType targetType) {
         return switch (targetType.getTypeEnum()) {
-            case I32 -> new IceConstantInt((int) value);
             case I1 -> IceConstantData.create(value != 0);
-            case F32 -> new IceConstantFloat((float) value);
+            case I8 -> IceConstantData.create((byte)value);
+            case I32 -> IceConstantData.create((int) value);
             case I64 -> this.clone();
+            case F32 -> IceConstantData.create((float)  value);
+            case F64 -> IceConstantData.create((double) value);
             default -> throw new IllegalStateException("Unexpected value: " + type);
         };
     }
