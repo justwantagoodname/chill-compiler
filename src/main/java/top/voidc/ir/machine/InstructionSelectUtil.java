@@ -2,10 +2,14 @@ package top.voidc.ir.machine;
 
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
+import top.voidc.ir.ice.constant.IceConstantLong;
 import top.voidc.ir.ice.instruction.IceAllocaInstruction;
 import top.voidc.ir.ice.instruction.IceBinaryInstruction;
 import top.voidc.ir.ice.instruction.IceInstruction;
+import top.voidc.ir.ice.type.IceType;
+import top.voidc.misc.Tool;
 
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -13,11 +17,11 @@ import java.util.function.BiPredicate;
 
 public class InstructionSelectUtil {
     public static boolean isImm16(IceValue value) {
-        return value instanceof IceConstantInt intValue && (intValue.getValue() >> 16) == 0;
+        return value instanceof IceConstantInt intValue && Tool.isImm16(intValue.getValue());
     }
 
     public static boolean isImm12(IceValue value) {
-        return value instanceof IceConstantInt intValue && (intValue.getValue() >> 12) == 0;
+        return value instanceof IceConstantInt intValue && Tool.isImm12(intValue.getValue());
     }
 
     public static boolean isConstInt(IceValue value) {

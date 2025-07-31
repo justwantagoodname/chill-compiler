@@ -37,18 +37,9 @@ public class FixStackOffset implements CompilePass<IceMachineFunction>, IceArchi
         return Tool.inRange(scaled, 0, 4095);
     }
 
-    public static boolean isImm16(int value) {
-        // 检查是否是16位立即数
-        return (value & 0xFFFF) == value;
-    }
-
-    public static boolean isImm12(int value) {
-        return (value & 0xFFF) == value;
-    }
-
     private List<IceMachineInstruction> loadIntToScratchRegister(IceBlock block, IceMachineRegister scratchRegister, int value) {
         var movList = new ArrayList<IceMachineInstruction>();
-        if (!isImm16(value)) {
+        if (!Tool.isImm16(value)) {
             var lowBit = value & 0xFFFF;
             var highBit = value >> 16;
             movList.add(new ARM64Instruction("MOVZ {dst}, {imm16:x}", scratchRegister.createView(IceType.I64), IceConstantData.create(lowBit)));
@@ -100,7 +91,7 @@ public class FixStackOffset implements CompilePass<IceMachineFunction>, IceArchi
                                 block.set(i, newInstr); // 替换当前指令
                                 machineInstruction.destroy();
                                 break;
-                            } else if (opcode.equals("ADD") && !isImm12(stackSlot.getOffset())) {
+                            } else if (opcode.equals("ADD") && !Tool.isImm12(stackSlot.getOffset())) {
                                 loadImms = loadIntToScratchRegister(machineInstruction.getParent(), scratchRegister, stackSlot.getOffset());
                                 newInstr = new ARM64Instruction("ADD {dst}, sp, {offset}", machineInstruction.getResultReg(), scratchRegister.createView(IceType.I64));
 
