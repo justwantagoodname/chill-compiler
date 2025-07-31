@@ -30,6 +30,8 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ArithmaticInstructionPattern.FDIVTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.ZextBoolToInt());
         patternSet.add(new ArithmaticInstructionPattern.ZextBoolImmToInt());
+        patternSet.add(new ArithmaticInstructionPattern.ZextCMPBoolToInt());
+        patternSet.add(new ArithmaticInstructionPattern.ZextCMPBoolToFloat());
         patternSet.add(new ArithmaticInstructionPattern.IntToFloat());
         patternSet.add(new ArithmaticInstructionPattern.FloatToInt());
 
