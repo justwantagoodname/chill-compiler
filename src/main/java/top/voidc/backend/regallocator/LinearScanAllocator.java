@@ -56,9 +56,21 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             return Integer.MAX_VALUE; // 如果没有找到，返回一个很大的值
         }
 
+        /**
+         * 在指定位置分割当前区间
+         *
+         * @param pos 分割位置
+         * @return 新的区间，如果无法分割则返回 null
+         */
         public LiveInterval splitAt(int pos) {
-            if (pos <= start || pos >= end) {
-                throw new IllegalArgumentException("Cannot split interval at position: " + pos);
+            if (pos <= start || pos > end) {
+                throw new IllegalArgumentException("Cannot split interval at position: " + pos +
+                        ", vreg: " + vreg + " preg: " + preg + " interval: [" + start + ", " + end + "]");
+            }
+
+            if (end - start == 1) {
+                // 如果区间长度为1，不能再分割了
+                return null;
             }
             LiveInterval newInterval = new LiveInterval(vreg, pos, end);
             this.end = pos; // 更新当前区间的结束位置
@@ -169,8 +181,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     }
 
     private void linearScan(ARM64Function mf) {
+        Log.d("Starting linear scan register allocation...");
         while (!unhandled.isEmpty()) {
             LiveInterval current = unhandled.removeFirst();
+            Log.d("Processing interval: " + current.vreg + " [" + current.start + ", " + current.end + "]");
             expireOldIntervals(current);
 
             if (!freeRegisters.isEmpty()) {
@@ -226,23 +240,40 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         LiveInterval old = active.getLast();
         LiveInterval newInterval;
         if (old.nextUseAfter(current.start) > current.nextUseAfter(current.start)) {
-            newInterval = old.splitAt(current.start);
+            newInterval = old.splitAt(current.start + 1);
+
+            if (newInterval == null) {
+                // 若无法分割，则直接将当前区间添加到未处理列表
+                newInterval = old;
+            } else {
+                // 分割出新区间，加入总列表
+                intervals.add(newInterval);
+            }
+
             unhandled.add(newInterval);
 
             unhandled.sort(Comparator.comparingInt(i -> i.start));
             active.sort(Comparator.comparingInt(i -> i.end));
 
-            freeRegisters.add(newInterval.preg);
-            newInterval.preg = null;
-
+            if (newInterval.preg != null) {
+                freeRegisters.add(newInterval.preg);
+                newInterval.preg = null;
+            }
         } else {
-            newInterval = current.splitAt(current.nextUseAfter(current.start));
-            unhandled.add(current);
-            unhandled.add(newInterval);
+            newInterval = current.splitAt(current.start + 1);
+            if (newInterval == null) {
+                // 如果无法分割，则直接 spill 当前区间
+                Log.d("Spilling current interval: " + current.vreg + " [" + current.start + ", " + current.end + "]");
+                // 在这里的实现就是什么都不做
+            } else {
+                // 分割出新区间，加入总列表
+                intervals.add(newInterval);
+                unhandled.add(current);
+                unhandled.add(newInterval);
+            }
 
             unhandled.sort(Comparator.comparingInt(i -> i.start));
         }
-        intervals.add(newInterval);
     }
 
     private void applyRegisterAllocation(ARM64Function mf) {
@@ -315,7 +346,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
                 Map<IceValue, IceValue> replacements = new HashMap<>();
 
-                for (IceValue operand : inst.getSourceOperands()) {
+                for (IceValue operand : inst.getOperands()) {
                     if (operand instanceof IceStackSlot slot && vregSlotSet.contains(slot)) {
                         // 如果是栈槽，需要替换
                         if (slotOnTempReg != null) {
@@ -341,18 +372,18 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                     inst.replaceOperand(entry.getKey(), entry.getValue());
                 }
 
-                IceMachineRegister.RegisterView resultReg = inst.getResultReg();
-                if (resultReg != null && vregSlotMap.containsKey(resultReg.getRegister())) {
-                    IceMachineRegister reg = resultReg.getRegister();
-                    IceStackSlot slot = vregSlotMap.get(reg);
-
-                    // 创建存储指令
-                    IceMachineInstruction storeInst = new ARM64Instruction("STR {src}, {local:dst}",
-                            reg.createView(slot.getType()), slot);
-                    storeInst.setParent(block);
-                    block.add(i, storeInst);
-                    i++; // 插入后需要更新索引
-                }
+//                IceMachineRegister.RegisterView resultReg = inst.getResultReg();
+//                if (resultReg != null && vregSlotMap.containsKey(resultReg.getRegister())) {
+//                    IceMachineRegister reg = resultReg.getRegister();
+//                    IceStackSlot slot = vregSlotMap.get(reg);
+//
+//                    // 创建存储指令
+//                    IceMachineInstruction storeInst = new ARM64Instruction("STR {src}, {local:dst}",
+//                            reg.createView(slot.getType()), slot);
+//                    storeInst.setParent(block);
+//                    block.add(i, storeInst);
+//                    i++; // 插入后需要更新索引
+//                }
             }
 
 
