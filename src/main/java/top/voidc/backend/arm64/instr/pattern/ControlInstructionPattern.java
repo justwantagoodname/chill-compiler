@@ -81,6 +81,43 @@ public class ControlInstructionPattern {
         }
     }
 
+    public static class RetFloat extends InstructionPattern<IceRetInstruction> {
+
+        public RetFloat() {
+            super(2);
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceRetInstruction value) {
+            assert value.getReturnValue().isPresent();
+            var retMachineValue = selector.emit(value.getReturnValue().orElseThrow());
+            if (retMachineValue instanceof IceMachineRegister.RegisterView) {
+                selector.addEmittedInstruction(
+                        new ARM64Instruction("FMOV {dst}, {x}", selector.getMachineFunction().getReturnRegister(IceType.F32), retMachineValue));
+            } else {
+                selector.addEmittedInstruction(
+                        new ARM64Instruction("LDR {dst}, {local:src}", selector.getMachineFunction().getReturnRegister(IceType.F32), retMachineValue)
+                );
+            }
+
+            selector.addEmittedInstruction(new ARM64Instruction("RET"));
+            return null;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceRetInstruction ret
+                    && !ret.isReturnVoid()
+                    && ret.getReturnValue().isPresent()
+                    && ret.getReturnValue().get().getType().isFloat();
+        }
+    }
+
     public static class BranchUnconditional extends InstructionPattern<IceBranchInstruction> {
         public BranchUnconditional() {
             super(1);

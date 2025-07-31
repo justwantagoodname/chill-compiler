@@ -464,4 +464,54 @@ public class ArithmaticInstructionPattern {
                     && convertInstruction.getType().equals(IceType.I32);
         }
     }
+
+    /**
+     * 整数转浮点数模式
+     */
+    public static class IntToFloat extends InstructionPattern<IceConvertInstruction> {
+        public IntToFloat() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
+            var inner = selector.emit(value.getOperand());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("SCVTF {dst}, {src}", dstReg, inner)
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConvertInstruction convertInstruction
+                    && convertInstruction.getOperand().getType().isInteger()
+                    && convertInstruction.getType().isFloat();
+        }
+    }
+
+    /**
+     * 浮点数转整数模式
+     */
+    public static class FloatToInt extends InstructionPattern<IceConvertInstruction> {
+        public FloatToInt() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
+            var inner = selector.emit(value.getOperand());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("FCVTZS {dst}, {src}", dstReg, inner)
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConvertInstruction convertInstruction
+                    && convertInstruction.getOperand().getType().isFloat()
+                    && convertInstruction.getType().isInteger();
+        }
+    }
 }

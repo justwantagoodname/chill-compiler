@@ -8,6 +8,7 @@ import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceCmpInstruction;
 import top.voidc.ir.machine.IceMachineRegister;
+import top.voidc.ir.ice.constant.IceConstantFloat;
 
 import static top.voidc.ir.machine.InstructionSelectUtil.canBeReg;
 import static top.voidc.ir.machine.InstructionSelectUtil.isImm12;
@@ -21,9 +22,9 @@ public class ConditionPatterns {
      * 寄存器比较模式（CMP指令）
      * 用于设置条件标志：`cmp x, y`
      */
-    public static class CMPReg extends InstructionPattern<IceCmpInstruction.Icmp> {
+    public static class ICMPReg extends InstructionPattern<IceCmpInstruction.Icmp> {
 
-        public CMPReg() {
+        public ICMPReg() {
             super(1);
         }
 
@@ -41,9 +42,9 @@ public class ConditionPatterns {
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            return value instanceof IceCmpInstruction cmp
-                    && canBeReg(selector, cmp.getLhs())
-                    && canBeReg(selector, cmp.getRhs());
+            return value instanceof IceCmpInstruction.Icmp icmp
+                    && canBeReg(selector, icmp.getLhs())
+                    && canBeReg(selector, icmp.getRhs());
         }
     }
 
@@ -68,9 +69,9 @@ public class ConditionPatterns {
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            return value instanceof IceCmpInstruction cmp
-                    && canBeReg(selector, cmp.getLhs())
-                    && isImm12(cmp.getRhs());
+            return value instanceof IceCmpInstruction.Icmp icmp
+                    && canBeReg(selector, icmp.getLhs())
+                    && isImm12(icmp.getRhs());
         }
     }
 
@@ -155,4 +156,57 @@ public class ConditionPatterns {
       将`cmp x, 0`优化为`cbz/cbnz`指令
      */
 
+    /**
+     * 浮点寄存器比较模式（FCMP指令）
+     * 用于设置浮点条件标志：`fcmp d0, d1`
+     */
+    public static class FCMPReg extends InstructionPattern<IceCmpInstruction.Fcmp> {
+
+        public FCMPReg() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCmpInstruction.Fcmp value) {
+            var xReg = selector.emit(value.getLhs());
+            var yReg = selector.emit(value.getRhs());
+            var inst = new ARM64Instruction("FCMP {x}, {y}", xReg, yReg);
+            selector.addEmittedInstruction(inst);
+            return null;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceCmpInstruction.Fcmp fcmp
+                    && canBeReg(selector, fcmp.getLhs())
+                    && canBeReg(selector, fcmp.getRhs());
+        }
+    }
+
+    /**
+     * 浮点寄存器与0比较模式
+     * `fcmp d0, #0.0`
+     */
+    public static class FCMPZ extends InstructionPattern<IceCmpInstruction.Fcmp> {
+
+        public FCMPZ() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCmpInstruction.Fcmp value) {
+            var xReg = selector.emit(value.getLhs());
+            var inst = new ARM64Instruction("FCMP {x}, #0.0", xReg);
+            selector.addEmittedInstruction(inst);
+            return null;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceCmpInstruction.Fcmp fcmp
+                    && canBeReg(selector, fcmp.getLhs())
+                    && fcmp.getRhs() instanceof IceConstantFloat constantFloat
+                    && constantFloat.getValue() == 0.0f;
+        }
+    }
 }
