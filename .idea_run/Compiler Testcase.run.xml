@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Compiler Testcase" type="Application" factoryName="Application">
+    <option name="ALTERNATIVE_JRE_PATH" value="17" />
+    <option name="MAIN_CLASS_NAME" value="Compiler" />
+    <module name="chillcompiler" />
+    <option name="PROGRAM_PARAMETERS" value="testcase.sy -S -o testcase.s -emit-ir -fshow-trace-info" />
+    <option name="VM_PARAMETERS" value="-Xss8M -Ddebug=true -ea" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/testcases" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

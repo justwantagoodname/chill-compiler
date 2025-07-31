@@ -24,7 +24,7 @@ import java.util.*;
  * This pass will try to delete alloca instructions, and replace them with ice-ir registers.
  */
 @Pass(
-        group = {"O0"}
+        group = {"O0"}, parallel = true
 )
 public class Mem2Reg implements CompilePass<IceFunction> {
     /**
