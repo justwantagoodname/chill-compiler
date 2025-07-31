@@ -35,6 +35,15 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
     private List<IceMachineRegister> freeRegisters; // 可用的物理寄存器
 
+    private static class TempOperand extends IceValue {
+        public IceStackSlot slot;
+        public TempOperand(IceStackSlot slot, IceType type) {
+            super();
+            this.type = type;
+            this.slot = slot;
+        }
+    }
+
     private static class LiveInterval {
         IceMachineRegister vreg, preg;
         int start, end;
@@ -325,7 +334,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                         inst.replaceOperand(operand, mappedReg.createView(operand.getType()));
                     } else {
                         IceStackSlot slot = vregSlotMap.get(reg);
-                        inst.replaceOperand(operand, slot);
+                        inst.replaceOperand(operand, new TempOperand(slot, operand.getType()));
                     }
                 }
             }
@@ -347,7 +356,9 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 Map<IceValue, IceValue> replacements = new HashMap<>();
 
                 for (IceValue operand : inst.getOperands()) {
-                    if (operand instanceof IceStackSlot slot && vregSlotSet.contains(slot)) {
+                    if (operand instanceof TempOperand opr && vregSlotSet.contains(opr.slot)) {
+                        IceStackSlot slot = opr.slot;
+                        IceType type = opr.getType();
                         // 如果是栈槽，需要替换
                         if (slotOnTempReg != null) {
                             IceMachineInstruction storeInst = new ARM64Instruction("STR {src}, {local:dst}",
@@ -357,7 +368,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                             i++; // 插入后需要更新索引
                         }
 
-                        var newOperand = tempReg.createView(slot.getType());
+                        var newOperand = tempReg.createView(type);
                         IceMachineInstruction loadInst = new ARM64Instruction("LDR {dst}, {local:src}",
                                 newOperand, slot);
                         loadInst.setParent(block);
