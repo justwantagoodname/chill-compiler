@@ -35,8 +35,8 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                             var slot = slotMap.computeIfAbsent(registerView.getRegister(), register ->
                                     target.allocateVariableStackSlot(register.getType()));
                             var alignment = switch (registerView.getRegister().getType().getTypeEnum()) {
-                                case I32 -> 4;
-                                case I64, PTR -> 8;
+                                case I32, F32 -> 4;
+                                case I64, F64, PTR -> 8;
                                 default -> throw new IllegalArgumentException("Unsupported type: " + registerView.getRegister().getType());
                             };
                             slot.setAlignment(alignment);
