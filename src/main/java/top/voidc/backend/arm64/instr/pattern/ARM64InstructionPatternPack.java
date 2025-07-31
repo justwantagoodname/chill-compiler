@@ -32,10 +32,12 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ControlInstructionPattern.RetInteger());
         patternSet.add(new ControlInstructionPattern.VoidCall());
         patternSet.add(new ControlInstructionPattern.IntCall());
+        patternSet.add(new ControlInstructionPattern.FloatCall());
 
         patternSet.add(new LoadAndStorePattern.LoadRegFuncParam());
         patternSet.add(new LoadAndStorePattern.LoadIntImmediateToReg());
         patternSet.add(new LoadAndStorePattern.LoadLongImmediateToReg());
+        patternSet.add(new LoadAndStorePattern.LoadFloatImmediateToReg());
         patternSet.add(new LoadAndStorePattern.LoadZeroToReg());
         patternSet.add(new LoadAndStorePattern.CopyImm());
         patternSet.add(new LoadAndStorePattern.CopyInst());

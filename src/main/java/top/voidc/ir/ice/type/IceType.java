@@ -11,6 +11,7 @@ public class IceType implements Comparable<IceType> {
     public static final IceType F64 = new IceType(TypeEnum.F64);
     public static final IceType VOID = new IceType(TypeEnum.VOID);
     public static final IceType STRING = new IceType(TypeEnum.STRING);
+    public static final IceType ANY = new IceType(TypeEnum.ANY);
     public static final IceType FUNCTION = new IceType(TypeEnum.FUNCTION);
 
     @Override
@@ -20,16 +21,18 @@ public class IceType implements Comparable<IceType> {
 
     public enum TypeEnum {
         VOID,
+        FUNCTION,
         STRING,
         ARRAY, // 字面数组的值类型
-        FUNCTION,
         PTR,
         I1,
         I8,
         I32,
         F32,
         I64,
-        F64
+        F64,
+        VEC, // 向量类型 用于 SIMD 操作的向量类型 位宽不固定
+        ANY
     }
 
     private final TypeEnum typeEnum;
@@ -56,6 +59,8 @@ public class IceType implements Comparable<IceType> {
             case ARRAY -> "array";
             case FUNCTION -> "func";
             case PTR -> "ptr";
+            case VEC -> "vec";
+            case ANY -> "any";
         };
     }
 
@@ -67,7 +72,7 @@ public class IceType implements Comparable<IceType> {
             case "char" -> I8;
             case "void" -> VOID;
             case "string" -> STRING;
-            default -> throw new IllegalArgumentException("Unknown type: " + literal);
+            default -> throw new IllegalArgumentException("Unknown sysY type: " + literal);
         };
     }
 
@@ -78,6 +83,14 @@ public class IceType implements Comparable<IceType> {
         } else {
             return false;
         }
+    }
+
+    public boolean isAny() {
+        return this.getTypeEnum() == TypeEnum.ANY;
+    }
+
+    public boolean isVector() {
+        return this.getTypeEnum() == TypeEnum.VEC;
     }
 
     public boolean isBoolean() {
@@ -93,25 +106,6 @@ public class IceType implements Comparable<IceType> {
 
     public boolean isFloat() {
         return this.getTypeEnum() == TypeEnum.F32;
-    }
-
-    public boolean isConvertibleTo(IceType target) {
-        if (this.equals(target)) {
-            return true;
-        }
-        if (this.isInteger() && target.isFloat()) {
-            return true;
-        }
-        if (this.isFloat() && target.isInteger()) {
-            return true;
-        }
-        if (this.isInteger() && target.isInteger()) {
-            return true;
-        }
-        if (this.isFloat() && target.isFloat()) {
-            return true;
-        }
-        return this.isFloat() && target.isInteger();
     }
 
     public boolean isVoid() {
@@ -135,6 +129,29 @@ public class IceType implements Comparable<IceType> {
         return this.getTypeEnum() == TypeEnum.PTR;
     }
 
+    public boolean isConvertibleTo(IceType target) {
+        if (target.isAny()) {
+            return true; // 任何类型都可以转换为 Any
+        }
+
+        if (this.equals(target)) {
+            return true;
+        }
+        if (this.isInteger() && target.isFloat()) {
+            return true;
+        }
+        if (this.isFloat() && target.isInteger()) {
+            return true;
+        }
+        if (this.isInteger() && target.isInteger()) {
+            return true;
+        }
+        if (this.isFloat() && target.isFloat()) {
+            return true;
+        }
+        return this.isFloat() && target.isInteger();
+    }
+
     public int getByteSize() {
         return switch (this.getTypeEnum()) {
             case I1, I8 -> 1;
@@ -145,10 +162,20 @@ public class IceType implements Comparable<IceType> {
             case FUNCTION -> 4; // 指针大小
             case ARRAY -> 4; // 指针大小
             case PTR -> 4; // 指针大小
+            case ANY, VEC -> throw new IllegalStateException("Type does not have a fixed byte size");
         };
+    }
+
+    public int getBitSize() {
+        return this.getByteSize() * 8;
     }
 
     public IcePtrType<?> asPointer() {
         return (IcePtrType<?>) this;
+    }
+
+    @Override
+    public int hashCode() {
+        return typeEnum.hashCode();
     }
 }
