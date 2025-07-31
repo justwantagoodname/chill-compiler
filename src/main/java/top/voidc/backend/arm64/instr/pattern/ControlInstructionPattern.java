@@ -251,9 +251,7 @@ public class ControlInstructionPattern {
         
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            return value instanceof IceCallInstruction call &&
-                    call.getArguments().stream().allMatch(arg -> canBeReg(selector, arg) || isImm12(arg)) &&
-                    testReturnType(call);
+            return value instanceof IceCallInstruction call && testReturnType(call);
         }
 
         /**

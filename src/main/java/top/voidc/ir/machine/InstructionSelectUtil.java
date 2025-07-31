@@ -34,7 +34,7 @@ public class InstructionSelectUtil {
      */
     public static boolean canBeReg(InstructionSelector selector, IceValue value) {
         // 如果是一个instruction那一定是一个寄存器
-        if (value instanceof IceInstruction) return true;
+//        if (value instanceof IceInstruction) return true;
 
         try {
             // 如果指令选择器能够为该值选择一个模式，则认为它可以是寄存器
