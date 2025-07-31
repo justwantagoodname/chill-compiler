@@ -26,10 +26,13 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ArithmaticInstructionPattern.SMODTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.ZextBoolToInt());
         patternSet.add(new ArithmaticInstructionPattern.ZextBoolImmToInt());
+        patternSet.add(new ArithmaticInstructionPattern.IntToFloat());
+        patternSet.add(new ArithmaticInstructionPattern.FloatToInt());
 
         patternSet.add(new ControlInstructionPattern.BranchUnconditional());
         patternSet.add(new ControlInstructionPattern.RetVoid());
         patternSet.add(new ControlInstructionPattern.RetInteger());
+        patternSet.add(new ControlInstructionPattern.RetFloat());
         patternSet.add(new ControlInstructionPattern.VoidCall());
         patternSet.add(new ControlInstructionPattern.IntCall());
         patternSet.add(new ControlInstructionPattern.FloatCall());
@@ -49,8 +52,10 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new BitwisestructionPattern.ORRInstruction());
         patternSet.add(new BitwisestructionPattern.EORInstruction());
 
-        patternSet.add(new ConditionPatterns.CMPReg());
+        patternSet.add(new ConditionPatterns.ICMPReg());
         patternSet.add(new ConditionPatterns.CMPImm());
+        patternSet.add(new ConditionPatterns.FCMPReg());
+        patternSet.add(new ConditionPatterns.FCMPZ());
         patternSet.add(new ConditionPatterns.CondBranch());
 
         patternSet.add(new MemoryAllocationPattern.SimpleAlloca());
