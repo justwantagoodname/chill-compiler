@@ -14,6 +14,41 @@ public abstract class IceStackSlot extends IceValue implements IceAlignable, Ice
     private boolean isFinalized = false; // 是否已经分配了偏移量
     private int alignment;
 
+    public static class SavedRegisterStackSlot extends IceStackSlot {
+        private final IceMachineRegister register; // 保存的寄存器
+
+        public SavedRegisterStackSlot(IceMachineFunction parent, IceMachineRegister register) {
+            super(parent, register.getType());
+            assert !register.isVirtualize();
+            this.register = register;
+            setAlignment(parent.getAlignment());
+        }
+
+        public IceMachineRegister getRegister() {
+            return register;
+        }
+    }
+
+    /**
+     * parameter 是当前函数的参数
+     */
+    public static class ParameterStackSlot extends IceStackSlot {
+        private final int parameterIndex; // 参数在函数参数列表中的索引
+
+        public ParameterStackSlot(IceMachineFunction parent, int parameterIndex, IceType type) {
+            super(parent, type);
+            this.parameterIndex = parameterIndex;
+            setAlignment(parent.getAlignment());
+        }
+
+        public int getParameterIndex() {
+            return parameterIndex;
+        }
+    }
+
+    /**
+     * variable 是当前函数的局部变量
+     */
     public static class VariableStackSlot extends IceStackSlot {
         public VariableStackSlot(IceMachineFunction parent, IceType type) {
             super(parent, type);
@@ -21,6 +56,10 @@ public abstract class IceStackSlot extends IceValue implements IceAlignable, Ice
         }
     }
 
+    /**
+     * argument 是函数调用的参数
+     * 这个类用于表示函数调用时传递的参数在栈中的位置
+     */
     public static class ArgumentStackSlot extends IceStackSlot {
         private final IceCallInstruction callInstruction;
         private final int argumentIndex; // 参数在调用指令中的索引

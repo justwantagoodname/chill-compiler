@@ -24,22 +24,37 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ArithmaticInstructionPattern.SDIVTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.NEGReg());
         patternSet.add(new ArithmaticInstructionPattern.SMODTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.FADDTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.FSUBTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.FMULTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.FDIVTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.ZextBoolToInt());
         patternSet.add(new ArithmaticInstructionPattern.ZextBoolImmToInt());
+        patternSet.add(new ArithmaticInstructionPattern.ZextCMPBoolToInt());
+        patternSet.add(new ArithmaticInstructionPattern.ZextCMPBoolToFloat());
+        patternSet.add(new ArithmaticInstructionPattern.IntToFloat());
+        patternSet.add(new ArithmaticInstructionPattern.FloatToInt());
+        patternSet.add(new ArithmaticInstructionPattern.FloatToDouble());
 
         patternSet.add(new ControlInstructionPattern.BranchUnconditional());
         patternSet.add(new ControlInstructionPattern.RetVoid());
         patternSet.add(new ControlInstructionPattern.RetInteger());
+        patternSet.add(new ControlInstructionPattern.RetFloat());
         patternSet.add(new ControlInstructionPattern.VoidCall());
         patternSet.add(new ControlInstructionPattern.IntCall());
+        patternSet.add(new ControlInstructionPattern.FloatCall());
 
         patternSet.add(new LoadAndStorePattern.LoadRegFuncParam());
         patternSet.add(new LoadAndStorePattern.LoadIntImmediateToReg());
         patternSet.add(new LoadAndStorePattern.LoadLongImmediateToReg());
+        patternSet.add(new LoadAndStorePattern.LoadFloatImmediateToReg());
+        patternSet.add(new LoadAndStorePattern.LoadDoubleImmediateToReg());
         patternSet.add(new LoadAndStorePattern.LoadZeroToReg());
         patternSet.add(new LoadAndStorePattern.CopyImm());
-        patternSet.add(new LoadAndStorePattern.CopyInst());
         patternSet.add(new LoadAndStorePattern.DummyPHI());
+        patternSet.add(new LoadAndStorePattern.IntCopyInst());
+        patternSet.add(new LoadAndStorePattern.FloatCopyInst());
+        patternSet.add(new LoadAndStorePattern.FloatCopyImm());
 
         patternSet.add(new BitwisestructionPattern.LSLInstruction());
         patternSet.add(new BitwisestructionPattern.ASRInstruction());
@@ -47,8 +62,10 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new BitwisestructionPattern.ORRInstruction());
         patternSet.add(new BitwisestructionPattern.EORInstruction());
 
-        patternSet.add(new ConditionPatterns.CMPReg());
+        patternSet.add(new ConditionPatterns.ICMPReg());
         patternSet.add(new ConditionPatterns.CMPImm());
+        patternSet.add(new ConditionPatterns.FCMPReg());
+        patternSet.add(new ConditionPatterns.FCMPZ());
         patternSet.add(new ConditionPatterns.CondBranch());
 
         patternSet.add(new MemoryAllocationPattern.SimpleAlloca());
