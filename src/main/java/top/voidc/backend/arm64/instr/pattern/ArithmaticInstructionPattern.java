@@ -7,13 +7,11 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantBoolean;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
-import top.voidc.ir.ice.instruction.IceBinaryInstruction;
-import top.voidc.ir.ice.instruction.IceConvertInstruction;
-import top.voidc.ir.ice.instruction.IceInstruction;
-import top.voidc.ir.ice.instruction.IceNegInstruction;
+import top.voidc.ir.ice.instruction.*;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
+import top.voidc.misc.Tool;
 
 import static top.voidc.ir.machine.InstructionSelectUtil.*;
 
@@ -368,14 +366,128 @@ public class ArithmaticInstructionPattern {
 
         @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceNegInstruction value) {
-            return selector.addEmittedInstruction(new ARM64Instruction("NEG {dst}, {x}",
-                    selector.getMachineFunction().allocateVirtualRegister(IceType.I32),
-                    selector.emit(value.getOperand()))).getResultReg();
+            if (value.getType().isFloat()) {
+                return selector.addEmittedInstruction(new ARM64Instruction("FNEG {dst}, {x}",
+                        selector.getMachineFunction().allocateVirtualRegister(IceType.F32),
+                        selector.emit(value.getOperand()))).getResultReg();
+            } else {
+                return selector.addEmittedInstruction(new ARM64Instruction("NEG {dst}, {x}",
+                        selector.getMachineFunction().allocateVirtualRegister(IceType.I32),
+                        selector.emit(value.getOperand()))).getResultReg();
+            }
         }
 
         @Override
         public boolean test(InstructionSelector selector, IceValue value) {
             return value instanceof IceNegInstruction;
+        }
+    }
+
+    /**
+     * 浮点加法指令模式：`x + y -> dst`
+     */
+    public static class FADDTwoReg extends InstructionPattern<IceBinaryInstruction.FAdd> {
+
+        public FADDTwoReg() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.FAdd value) {
+            var xReg = selector.emit(value.getLhs());
+            var yReg = selector.emit(value.getRhs());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("FADD {dst}, {x}, {y}", dstReg, xReg, yReg)
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceBinaryInstruction.FAdd faddNode
+                    && canBeReg(selector, faddNode.getLhs())
+                    && canBeReg(selector, faddNode.getRhs());
+        }
+    }
+
+    /**
+     * 浮点减法指令模式：`x - y -> dst`
+     */
+    public static class FSUBTwoReg extends InstructionPattern<IceBinaryInstruction.FSub> {
+
+        public FSUBTwoReg() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.FSub value) {
+            var xReg = selector.emit(value.getLhs());
+            var yReg = selector.emit(value.getRhs());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("FSUB {dst}, {x}, {y}", dstReg, xReg, yReg)
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceBinaryInstruction.FSub fsubNode
+                    && canBeReg(selector, fsubNode.getLhs())
+                    && canBeReg(selector, fsubNode.getRhs());
+        }
+    }
+
+    /**
+     * 浮点乘法指令模式：`x * y -> dst`
+     */
+    public static class FMULTwoReg extends InstructionPattern<IceBinaryInstruction.FMul> {
+
+        public FMULTwoReg() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.FMul value) {
+            var xReg = selector.emit(value.getLhs());
+            var yReg = selector.emit(value.getRhs());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("FMUL {dst}, {x}, {y}", dstReg, xReg, yReg)
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceBinaryInstruction.FMul fmulNode
+                    && canBeReg(selector, fmulNode.getLhs())
+                    && canBeReg(selector, fmulNode.getRhs());
+        }
+    }
+
+    /**
+     * 浮点除法指令模式：`x / y -> dst`
+     */
+    public static class FDIVTwoReg extends InstructionPattern<IceBinaryInstruction.FDiv> {
+
+        public FDIVTwoReg() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.FDiv value) {
+            var xReg = selector.emit(value.getLhs());
+            var yReg = selector.emit(value.getRhs());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("FDIV {dst}, {x}, {y}", dstReg, xReg, yReg)
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceBinaryInstruction.FDiv fdivNode
+                    && canBeReg(selector, fdivNode.getLhs())
+                    && canBeReg(selector, fdivNode.getRhs());
         }
     }
 
@@ -407,6 +519,62 @@ public class ArithmaticInstructionPattern {
         }
     }
 
+    public static class ZextCMPBoolToInt extends InstructionPattern<IceConvertInstruction> {
+        public ZextCMPBoolToInt() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var cmp = (IceCmpInstruction) value.getOperand();
+            selector.select(value.getOperand()); // 确保操作数被选择
+            selector.addEmittedInstruction(
+                    new ARM64Instruction("CSET {dst}, " + Tool.mapToArm64Condition(cmp), dstReg)
+            );
+            return dstReg;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConvertInstruction convertInstruction
+                    && convertInstruction.getOperand().getType().isBoolean()
+                    && convertInstruction.getOperand() instanceof IceCmpInstruction
+                    && convertInstruction.getType().equals(IceType.I32);
+        }
+    }
+
+    public static class ZextCMPBoolToFloat extends InstructionPattern<IceConvertInstruction> {
+        public ZextCMPBoolToFloat() {
+            super(3);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
+            var tempIntReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var cmp = (IceCmpInstruction) value.getOperand();
+
+            selector.select(value.getOperand()); // 确保操作数被选择
+            selector.addEmittedInstruction(
+                    new ARM64Instruction("CSET {dst}, " + Tool.mapToArm64Condition(cmp), tempIntReg)
+            );
+            selector.addEmittedInstruction(
+                    new ARM64Instruction("SCVTF {dst}, {src}", dstReg, tempIntReg) // 将整数转换为浮点数
+            );
+            return dstReg;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConvertInstruction convertInstruction
+                    && convertInstruction.getOperand().getType().isBoolean()
+                    && convertInstruction.getOperand() instanceof IceCmpInstruction
+                    && convertInstruction.getType().equals(IceType.F32);
+        }
+    }
+
+
     public static class ZextBoolToInt extends InstructionPattern<IceConvertInstruction> {
         public ZextBoolToInt() {
             super(0);
@@ -423,7 +591,8 @@ public class ArithmaticInstructionPattern {
             return value instanceof IceConvertInstruction convertInstruction
                     && convertInstruction.getOperand().getType().isBoolean()
                     && !(convertInstruction.getOperand() instanceof IceConstantData)
-                    && convertInstruction.getType().equals(IceType.I32);
+                    && convertInstruction.getType().equals(IceType.I32)
+                    && canBeReg(selector, convertInstruction.getOperand());
         }
     }
 
@@ -462,6 +631,81 @@ public class ArithmaticInstructionPattern {
                     && convertInstruction.getOperand().getType().isBoolean()
                     && convertInstruction.getOperand() instanceof IceConstantBoolean
                     && convertInstruction.getType().equals(IceType.I32);
+        }
+    }
+
+    /**
+     * 整数转浮点数模式
+     */
+    public static class IntToFloat extends InstructionPattern<IceConvertInstruction> {
+        public IntToFloat() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
+            var inner = selector.emit(value.getOperand());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("SCVTF {dst}, {src}", dstReg, inner)
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConvertInstruction convertInstruction
+                    && convertInstruction.getOperand().getType().isInteger()
+                    && !convertInstruction.getOperand().getType().isBoolean()
+                    && canBeReg(selector, convertInstruction.getOperand())
+                    && convertInstruction.getType().isFloat();
+        }
+    }
+
+    /**
+     * 浮点数转整数模式
+     */
+    public static class FloatToInt extends InstructionPattern<IceConvertInstruction> {
+        public FloatToInt() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
+            var inner = selector.emit(value.getOperand());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("FCVTZS {dst}, {src}", dstReg, inner)
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConvertInstruction convertInstruction
+                    && convertInstruction.getOperand().getType().isFloat()
+                    && convertInstruction.getType().isInteger()
+                    && !convertInstruction.getType().isBoolean();
+        }
+    }
+
+    public static class FloatToDouble extends InstructionPattern<IceConvertInstruction> {
+        public FloatToDouble() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
+            var inner = selector.emit(value.getOperand());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.F64);
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("FCVT {dst}, {src}", dstReg, inner)
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConvertInstruction convertInstruction
+                    && convertInstruction.getOperand().getType().equals(IceType.F32)
+                    && convertInstruction.getType().equals(IceType.F64);
         }
     }
 }

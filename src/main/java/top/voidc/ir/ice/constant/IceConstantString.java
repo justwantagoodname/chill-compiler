@@ -1,19 +1,18 @@
 package top.voidc.ir.ice.constant;
 
 import top.voidc.ir.ice.type.IceArrayType;
-import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
+import top.voidc.misc.Tool;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class IceConstantString extends IceConstantArray {
     // 此 value 时经过转义处理的IR文本格式的字符串
     private final String value;
     // 此 value 时为原始的字符串数组
-    private final List<Byte> bytes;
+    private final List<Byte> rawBytes;
 
     public static List<DataArrayElement> createStringElement(List<Byte> bytes) {
         // convert value to byte ArrayList in UTF-8 encoding
@@ -26,7 +25,7 @@ public class IceConstantString extends IceConstantArray {
 
     private IceConstantString(List<Byte> codepoints, String escapedString) {
         super(new IceArrayType(IceType.I8, codepoints.size()), createStringElement(codepoints));
-        this.bytes = codepoints;
+        this.rawBytes = codepoints;
         this.value = escapedString;
     }
 
@@ -123,5 +122,9 @@ public class IceConstantString extends IceConstantArray {
     @Override
     public String getReferenceName(boolean withType) {
         return (withType ? getType() + " " : "") + "c\"" + value + "\"";
+    }
+
+    public List<Byte> getRawByte() {
+        return rawBytes;
     }
 }

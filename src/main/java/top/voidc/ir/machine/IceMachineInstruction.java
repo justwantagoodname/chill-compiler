@@ -2,6 +2,7 @@ package top.voidc.ir.machine;
 
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantByte;
+import top.voidc.ir.ice.constant.IceConstantFloat;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceInstruction;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
@@ -100,6 +101,11 @@ public abstract class IceMachineInstruction extends IceInstruction {
                     assert operand instanceof IceConstantInt;
                     var intValue = ((IceConstantInt) operand).getValue();
                     yield String.valueOf(intValue); // 直接输出整数值
+                }
+                case "fimm" -> {
+                    assert operand instanceof IceConstantFloat;
+                    var floatValue = ((IceConstantFloat) operand).getValue();
+                    yield "#" + floatValue; // 输出浮点数值
                 }
                 case "imm16" -> {
                     assert operand instanceof IceConstantInt;

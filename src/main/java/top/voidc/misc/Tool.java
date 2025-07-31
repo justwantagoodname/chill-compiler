@@ -1,5 +1,10 @@
 package top.voidc.misc;
 
+import top.voidc.ir.ice.instruction.IceCmpInstruction;
+
+import java.util.Base64;
+import java.util.List;
+
 public class Tool {
     public static void TODO(String reason) {
         throw new UnsupportedOperationException("Not implemented yet: " + reason);
@@ -29,5 +34,59 @@ public class Tool {
      */
     public static boolean isPowerOfTwo(int value) {
         return value > 0 && (value & (value - 1)) == 0;
+    }
+
+
+    /**
+     * 检查一个整数是否可以12位立即数的形式表示
+     * @param value 要检查的值
+     * @return 如果可以按12位立即数返回true，否则返回false
+     */
+    public static boolean isImm12(long value) {
+        return (value & 0xFFF) == value;
+    }
+
+
+    public static boolean isImm16(long value) {
+        // 检查是否是16位立即数
+        return (value & 0xFFFF) == value;
+    }
+
+    public static boolean isArm64FloatImmediate(float value) {
+        return Arm64FloatImmediateSet.canBeArm64Immediate(value);
+    }
+
+    /**
+     * 映射IR条件运算符到ARM64条件码
+     */
+    public static String mapToArm64Condition(IceCmpInstruction cond) {
+        if (cond instanceof IceCmpInstruction.Icmp cmp) {
+            return switch (cmp.getCmpType()) {
+                case EQ -> "EQ";
+                case NE -> "NE";
+                case SLT -> "LT";
+                case SLE -> "LE";
+                case SGT -> "GT";
+                case SGE -> "GE";
+            };
+        } else if(cond instanceof IceCmpInstruction.Fcmp cmp) {
+            return switch (cmp.getCmpType()) {
+                case OEQ -> "EQ";
+                case ONE -> "NE";
+                case OLT -> "LT";
+                case OLE -> "LE";
+                case OGT -> "GT";
+                case OGE -> "GE";
+            };
+        }
+        throw new IllegalArgumentException("Unsupported condition type");
+    }
+
+    public static String toGNUASCIIFormat(List<Byte> byteList) {
+        var sb = new StringBuilder();
+        for (Byte b : byteList) {
+            sb.append(String.format("\\%03o", b));
+        }
+        return sb.toString();
     }
 }

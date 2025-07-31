@@ -27,6 +27,10 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
 
     public abstract IceStackSlot.ArgumentStackSlot allocateArgumentStackSlot(IceCallInstruction callInstruction, int argumentIndex, IceType type);
 
+    public abstract IceStackSlot.ParameterStackSlot allocateParameterStackSlot(int parameterIndex, IceType type);
+
+    public abstract IceStackSlot.SavedRegisterStackSlot allocateSavedRegisterStackSlot(IceMachineRegister register);
+
     /**
      * 给 MachineFunction 分配物理寄存器单元，仅供寄存器分配器使用
      */
