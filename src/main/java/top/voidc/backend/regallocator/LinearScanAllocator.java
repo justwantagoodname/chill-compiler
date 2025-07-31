@@ -72,16 +72,15 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
          * @return 新的区间，如果无法分割则返回 null
          */
         public LiveInterval splitAt(int pos) {
-            if (end - start == 1) {
-                // 如果区间长度为1，不能再分割了
-                return null;
-            }
-
             if (pos <= start || pos > end) {
                 throw new IllegalArgumentException("Cannot split interval at position: " + pos +
                         ", vreg: " + vreg + " preg: " + preg + " interval: [" + start + ", " + end + "]");
             }
 
+            if (end - start == 1) {
+                // 如果区间长度为1，不能再分割了
+                return null;
+            }
             LiveInterval newInterval = new LiveInterval(vreg, pos, end);
             this.end = pos; // 更新当前区间的结束位置
             return newInterval; // 返回新的区间
@@ -89,10 +88,6 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
         public boolean isIntersecting(LiveInterval other) {
             return this.start < other.end && other.start < this.end;
-        }
-
-        public boolean isInvalid() {
-            return start >= end || vreg == null;
         }
     }
 
@@ -201,10 +196,6 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             Log.d("Processing interval: " + current.vreg + " [" + current.start + ", " + current.end + "]");
             expireOldIntervals(current);
 
-            if (current.isInvalid()) {
-                continue;
-            }
-
             if (!freeRegisters.isEmpty()) {
                 current.preg = freeRegisters.removeFirst();
                 active.add(current);
@@ -228,16 +219,14 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
         regPool.add(mf.getPhysicalRegister("x21"));
         regPool.add(mf.getPhysicalRegister("x22"));
-        regPool.add(mf.getPhysicalRegister("x23"));
 
         return regPool;
     }
 
     private void expireOldIntervals(LiveInterval current) {
-        active.removeIf(LiveInterval::isInvalid);
         // 过期的区间是那些结束位置小于当前区间开始位置的区间
         active.removeIf(interval -> {
-            if (interval.end > current.start) {
+            if (interval.end >= current.start) {
                 return false; // 这个区间还活跃
             }
             if (interval.preg != null) {
