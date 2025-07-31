@@ -133,7 +133,12 @@ public class LoadAndStorePattern {
             final var floatValue = value.getValue();
             final var dstRegView = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
             if (Tool.isArm64FloatImmediate(floatValue)) {
-                selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {fimm:f}", dstRegView, value));
+                if (floatValue == 0.0f) {
+                    var dView = dstRegView.getRegister().createView(IceType.F64);
+                    selector.addEmittedInstruction(new ARM64Instruction("MOVI {dst}, #0", dView));
+                } else {
+                    selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {fimm:f}", dstRegView, value));
+                }
             } else {
                 var intFloat = IceConstantInt.create(Float.floatToIntBits(floatValue));
                 selector.select(intFloat);
