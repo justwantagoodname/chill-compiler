@@ -22,6 +22,7 @@ import java.util.List;
 /**
  * 对函数中的每一个基本块进行指令选择
  * 然后替换掉原有指令
+ * 需要修改整体的编译单元所以 target 是 IceUnit
  */
 @Pass(group = {"O0", "backend"})
 public class InstructionSelectionPass implements CompilePass<IceUnit> {

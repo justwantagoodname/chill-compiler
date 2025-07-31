@@ -4,8 +4,8 @@ import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.backend.instr.InstructionPattern;
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
+import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceCallInstruction;
 import top.voidc.ir.ice.instruction.IceRetInstruction;
@@ -13,9 +13,9 @@ import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
+import top.voidc.ir.machine.IceMachineRegister.RegisterView;
 
-import static top.voidc.ir.machine.InstructionSelectUtil.canBeReg;
-import static top.voidc.ir.machine.InstructionSelectUtil.isImm12;
+import static top.voidc.ir.machine.InstructionSelectUtil.*;
 
 public class ControlInstructionPattern {
     public static class RetVoid extends InstructionPattern<IceRetInstruction> {
@@ -54,9 +54,22 @@ public class ControlInstructionPattern {
 
         @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceRetInstruction value) {
-            var resultReg = selector.emit(value.getReturnValue().orElseThrow());
-            selector.addEmittedInstruction(
-                    new ARM64Instruction("MOV {dst}, {x}", selector.getMachineFunction().getReturnRegister(IceType.I32), resultReg));
+            assert value.getReturnValue().isPresent();
+            if (isImm12(value.getReturnValue().get())) {
+                selector.addEmittedInstruction(
+                        new ARM64Instruction("MOV {dst}, {imm12:src}", selector.getMachineFunction().getReturnRegister(IceType.I32), (IceConstantInt) value.getReturnValue().get()));
+            } else {
+                var retMachineValue = selector.emit(value.getReturnValue().orElseThrow());
+                if (retMachineValue instanceof IceMachineRegister.RegisterView) {
+                    selector.addEmittedInstruction(
+                            new ARM64Instruction("MOV {dst}, {x}", selector.getMachineFunction().getReturnRegister(IceType.I32), retMachineValue));
+                } else {
+                    selector.addEmittedInstruction(
+                            new ARM64Instruction("LDR {dst}, {local:src}", selector.getMachineFunction().getReturnRegister(IceType.I32), retMachineValue)
+                    );
+                }
+            }
+
             selector.addEmittedInstruction(new ARM64Instruction("RET"));
             return null;
         }
@@ -67,6 +80,43 @@ public class ControlInstructionPattern {
                     && !ret.isReturnVoid()
                     && ret.getReturnValue().isPresent()
                     && ret.getReturnValue().get().getType().isInteger();
+        }
+    }
+
+    public static class RetFloat extends InstructionPattern<IceRetInstruction> {
+
+        public RetFloat() {
+            super(2);
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceRetInstruction value) {
+            assert value.getReturnValue().isPresent();
+            var retMachineValue = selector.emit(value.getReturnValue().orElseThrow());
+            if (retMachineValue instanceof IceMachineRegister.RegisterView) {
+                selector.addEmittedInstruction(
+                        new ARM64Instruction("FMOV {dst}, {x}", selector.getMachineFunction().getReturnRegister(IceType.F32), retMachineValue));
+            } else {
+                selector.addEmittedInstruction(
+                        new ARM64Instruction("LDR {dst}, {local:src}", selector.getMachineFunction().getReturnRegister(IceType.F32), retMachineValue)
+                );
+            }
+
+            selector.addEmittedInstruction(new ARM64Instruction("RET"));
+            return null;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceRetInstruction ret
+                    && !ret.isReturnVoid()
+                    && ret.getReturnValue().isPresent()
+                    && ret.getReturnValue().get().getType().isFloat();
         }
     }
 
@@ -98,16 +148,126 @@ public class ControlInstructionPattern {
         }
     }
 
-    public static class VoidCall extends InstructionPattern<IceCallInstruction> {
-
-        public VoidCall() {
-            super(0); // FIXME: 需要确定代价
+    /**
+     * 函数调用的抽象基类，处理共同的参数处理逻辑
+     */
+    public abstract static class AbstractCallPattern extends InstructionPattern<IceCallInstruction> {
+        protected AbstractCallPattern(int intrinsicCost) {
+            super(intrinsicCost);
         }
 
         @Override
         public int getCost(InstructionSelector selector, IceCallInstruction value) {
             return getIntrinsicCost() + value.getArguments()
                     .stream().map(selector::select).map(InstructionSelector.MatchResult::cost).reduce(0, Integer::sum);
+        }
+
+        @Override
+        public IceMachineValue emit(InstructionSelector selector, IceCallInstruction value) {
+            selector.getMachineFunction().setHasCall(true);
+            emitArguments(selector, value);
+            selector.addEmittedInstruction(new ARM64Instruction("BL " + value.getTarget().getName()));
+            return handleFunctionReturn(selector, value);
+        }
+
+        /**
+         * 处理函数参数的共同逻辑
+         */
+        protected void emitArguments(InstructionSelector selector, IceCallInstruction value) {
+            var arguments = value.getArguments();
+            int intArgCount = 0;
+            int floatArgCount = 0;
+            
+            for (int i = 0; i < arguments.size(); i++) {
+                var arg = arguments.get(i);
+                boolean isFloat = arg.getType().isFloat();
+                
+                if (arg instanceof IceConstantInt argInt && isImm12(argInt)) {
+                    // 立即数参数 (只能是整数)
+                    if (intArgCount < 8) {
+                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount)
+                                .createView(IceType.I32);
+                        selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm12:src}", paramReg, argInt));
+                    } else {
+                        var valueReg = selector.emit(argInt);
+                        var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
+                        selector.addEmittedInstruction(
+                                new ARM64Instruction("STR {src}, {local:slot}", valueReg, argStackSlot));
+                    }
+                    intArgCount++;
+                } else {
+                    var resultArg = selector.emit(arg);
+                    if (resultArg instanceof IceMachineRegister.RegisterView argReg) {
+                        if (isFloat) {
+                            // 浮点数参数使用s寄存器
+                            if (floatArgCount < 8) {
+                                var paramReg = selector.getMachineFunction().getPhysicalRegister("v" + floatArgCount)
+                                        .createView(argReg.getType());
+                                selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", paramReg, argReg));
+                            } else {
+                                var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
+                                selector.addEmittedInstruction(
+                                        new ARM64Instruction("STR {src}, {local:slot}", argReg, argStackSlot));
+                            }
+                            floatArgCount++;
+                        } else {
+                            // 整数参数使用x寄存器
+                            if (intArgCount < 8) {
+                                var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount)
+                                        .createView(argReg.getType());
+                                selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
+                            } else {
+                                var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
+                                selector.addEmittedInstruction(
+                                        new ARM64Instruction("STR {src}, {local:slot}", argReg, argStackSlot));
+                            }
+                            intArgCount++;
+                        }
+                    } else if (resultArg instanceof IceStackSlot argStackSlotPointer) {
+                        // 栈上的参数作为指针加载到x寄存器
+                        if (intArgCount < 8) {
+                            var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount)
+                                    .createView(IceType.I64);
+                            var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
+                            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlotPointer));
+                            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, tmpReg));
+                        } else {
+                            var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
+                            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlotPointer));
+                            var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
+                            selector.addEmittedInstruction(
+                                    new ARM64Instruction("STR {src}, {local:slot}", tmpReg, argStackSlot));
+                        }
+                        intArgCount++;
+                    } else {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
+        }
+
+        /**
+         * 子类实现的处理返回值的逻辑
+         */
+        protected abstract IceMachineValue handleFunctionReturn(InstructionSelector selector, IceCallInstruction value);
+        
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceCallInstruction call && testReturnType(call);
+        }
+
+        /**
+         * 子类实现的返回类型检查
+         */
+        protected abstract boolean testReturnType(IceCallInstruction call);
+    }
+
+    /**
+     * 处理无返回值的函数调用
+     */
+    public static class VoidCall extends AbstractCallPattern {
+        public VoidCall() {
+            super(0);
         }
 
         @Override
@@ -116,103 +276,26 @@ public class ControlInstructionPattern {
         }
 
         @Override
-        public IceMachineValue emit(InstructionSelector selector, IceCallInstruction value) {
-            selector.getMachineFunction().setHasCall(true);
-            // TODO: 处理浮点数参数
-            var arguments = value.getArguments();
-            var curArg = 0;
-            for (; curArg < arguments.size(); curArg++) {
-                if (curArg >= 8) {
-                    // ARM64 只支持前 8 个参数通过寄存器传递
-                    // TODO: 处理栈传递的参数
-                    throw new UnsupportedOperationException();
-                }
-                var arg = value.getArguments().get(curArg);
-                if (arg instanceof IceConstantInt argInt && isImm12(argInt)) {
-                    // 立即数参数
-                    var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
-                            .createView(IceType.I32);
-                    selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm12:src}", paramReg, argInt));
-                } else {
-                    var resultArg = selector.emit(arg);
-                    if (resultArg instanceof IceMachineRegister.RegisterView argReg) {
-                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
-                                .createView(argReg.getType());
-                        selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
-                    } else if (resultArg instanceof IceStackSlot argStackSlot) {
-                        // 是栈上的参数需要作为指针加载
-                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
-                                .createView(IceType.I64);
-                        var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
-                        selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlot));
-                        selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, tmpReg));
-                    } else {
-                        throw new IllegalStateException();
-                    }
-                }
-            }
-            // FIXME: 正确处理函数作为操作数的情况？
-            selector.addEmittedInstruction(new ARM64Instruction("BL " + value.getTarget().getName()));
-            return null; // Void call does not return a value
+        protected IceMachineValue handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
+            return null; // Void call 不需要处理返回值
         }
 
         @Override
-        public boolean test(InstructionSelector selector, IceValue value) {
-            return value instanceof IceCallInstruction call && call.getType().isVoid() &&
-                    call.getArguments().stream().allMatch(arg -> canBeReg(selector, arg) || isImm12(arg));
+        protected boolean testReturnType(IceCallInstruction call) {
+            return call.getType().isVoid();
         }
     }
 
-    public static class IntCall extends InstructionPattern<IceCallInstruction> {
-
+    /**
+     * 处理返回整数的函数调用
+     */
+    public static class IntCall extends AbstractCallPattern {
         public IntCall() {
-            super(0); // FIXME: 需要确定代价
+            super(0);
         }
 
         @Override
-        public int getCost(InstructionSelector selector, IceCallInstruction value) {
-            return getIntrinsicCost() + value.getArguments()
-                    .stream().map(selector::select).map(InstructionSelector.MatchResult::cost).reduce(0, Integer::sum);
-        }
-
-        @Override
-        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCallInstruction value) {
-            selector.getMachineFunction().setHasCall(true);
-            // TODO: 处理浮点数参数
-            var arguments = value.getArguments();
-            var curArg = 0;
-            for (; curArg < arguments.size(); curArg++) {
-                if (curArg >= 8) {
-                    // ARM64 只支持前 8 个参数通过寄存器传递
-                    // TODO: 处理栈传递的参数
-                    throw new UnsupportedOperationException();
-                }
-                var arg = value.getArguments().get(curArg);
-                if (arg instanceof IceConstantInt argInt && isImm12(argInt)) {
-                    // 立即数参数
-                    var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
-                            .createView(IceType.I32);
-                    selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm12:src}", paramReg, argInt));
-                } else {
-                    var resultArg = selector.emit(arg);
-                    if (resultArg instanceof IceMachineRegister.RegisterView argReg) {
-                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
-                                .createView(argReg.getType());
-                        selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
-                    } else if (resultArg instanceof IceStackSlot argStackSlot) {
-                        // 是栈上的参数需要作为指针加载
-                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + curArg)
-                                .createView(IceType.I64);
-                        var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
-                        selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlot));
-                        selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, tmpReg));
-                    } else {
-                        throw new IllegalStateException();
-                    }
-                }
-            }
-            // FIXME: 正确处理函数作为操作数的情况？
-            selector.addEmittedInstruction(new ARM64Instruction("BL " + value.getTarget().getName()));
+        protected RegisterView handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
             var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
             var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
             return selector
@@ -221,9 +304,59 @@ public class ControlInstructionPattern {
         }
 
         @Override
+        protected boolean testReturnType(IceCallInstruction call) {
+            return call.getType().isInteger();
+        }
+    }
+
+    /**
+     * 处理返回整数的函数调用
+     */
+    public static class FloatCall extends AbstractCallPattern {
+        public FloatCall() {
+            super(0);
+        }
+
+        @Override
+        protected RegisterView handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
+            var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
+            var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
+            return selector
+                    .addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", virtualReg, resultReg))
+                    .getResultReg();
+        }
+
+        @Override
+        protected boolean testReturnType(IceCallInstruction call) {
+            return call.getType().isFloat();
+        }
+    }
+
+    public static class VoidVACall extends AbstractCallPattern {
+        public VoidVACall() {
+            super(0);
+        }
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
+        protected IceMachineValue handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
+            return null; // Void call 不需要处理返回值
+        }
+
+        @Override
+        protected boolean testReturnType(IceCallInstruction call) {
+            return call.getType().isVoid();
+        }
+
+        @Override
         public boolean test(InstructionSelector selector, IceValue value) {
-            return value instanceof IceCallInstruction call && call.getType().isInteger() &&
-                    call.getArguments().stream().allMatch(arg -> canBeReg(selector, arg) || isImm12(arg));
+            return value instanceof IceCallInstruction call
+                    && call.getType().isVoid()
+                    && call.getTarget() instanceof IceExternFunction externFunction
+                    && externFunction.isVArgs();
         }
     }
 }
