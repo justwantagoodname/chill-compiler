@@ -16,6 +16,10 @@ public class ARM64Register extends IceMachineRegister {
 
     @Override
     public RegisterView createView(IceType type) {
+        if ((getType().isInteger() && type.isFloat()) || (getType().isVector() && type.isInteger())) {
+            throw new IllegalArgumentException("Cannot create a view with different type this: " + getType() + " want:  " + type);
+        }
+
         var registerPrefix = switch (type.getTypeEnum()) {
             case I8, I32 -> "w";
             case I64, PTR -> "x";
