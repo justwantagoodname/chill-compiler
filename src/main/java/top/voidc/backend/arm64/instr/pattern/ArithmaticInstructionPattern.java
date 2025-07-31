@@ -7,13 +7,11 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantBoolean;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
-import top.voidc.ir.ice.instruction.IceBinaryInstruction;
-import top.voidc.ir.ice.instruction.IceConvertInstruction;
-import top.voidc.ir.ice.instruction.IceInstruction;
-import top.voidc.ir.ice.instruction.IceNegInstruction;
+import top.voidc.ir.ice.instruction.*;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
+import top.voidc.misc.Tool;
 
 import static top.voidc.ir.machine.InstructionSelectUtil.*;
 
@@ -521,6 +519,62 @@ public class ArithmaticInstructionPattern {
         }
     }
 
+    public static class ZextCMPBoolToInt extends InstructionPattern<IceConvertInstruction> {
+        public ZextCMPBoolToInt() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var cmp = (IceCmpInstruction) value.getOperand();
+            selector.select(value.getOperand()); // 确保操作数被选择
+            selector.addEmittedInstruction(
+                    new ARM64Instruction("CSET {dst}, " + Tool.mapToArm64Condition(cmp), dstReg)
+            );
+            return dstReg;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConvertInstruction convertInstruction
+                    && convertInstruction.getOperand().getType().isBoolean()
+                    && convertInstruction.getOperand() instanceof IceCmpInstruction
+                    && convertInstruction.getType().equals(IceType.I32);
+        }
+    }
+
+    public static class ZextCMPBoolToFloat extends InstructionPattern<IceConvertInstruction> {
+        public ZextCMPBoolToFloat() {
+            super(3);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
+            var tempIntReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var cmp = (IceCmpInstruction) value.getOperand();
+
+            selector.select(value.getOperand()); // 确保操作数被选择
+            selector.addEmittedInstruction(
+                    new ARM64Instruction("CSET {dst}, " + Tool.mapToArm64Condition(cmp), dstReg)
+            );
+            selector.addEmittedInstruction(
+                    new ARM64Instruction("SCVTF {dst}, {src}", dstReg, tempIntReg) // 将整数转换为浮点数
+            );
+            return dstReg;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConvertInstruction convertInstruction
+                    && convertInstruction.getOperand().getType().isBoolean()
+                    && convertInstruction.getOperand() instanceof IceCmpInstruction
+                    && convertInstruction.getType().equals(IceType.F32);
+        }
+    }
+
+
     public static class ZextBoolToInt extends InstructionPattern<IceConvertInstruction> {
         public ZextBoolToInt() {
             super(0);
@@ -601,6 +655,8 @@ public class ArithmaticInstructionPattern {
         public boolean test(InstructionSelector selector, IceValue value) {
             return value instanceof IceConvertInstruction convertInstruction
                     && convertInstruction.getOperand().getType().isInteger()
+                    && !convertInstruction.getOperand().getType().isBoolean()
+                    && canBeReg(selector, convertInstruction.getOperand())
                     && convertInstruction.getType().isFloat();
         }
     }
@@ -626,7 +682,8 @@ public class ArithmaticInstructionPattern {
         public boolean test(InstructionSelector selector, IceValue value) {
             return value instanceof IceConvertInstruction convertInstruction
                     && convertInstruction.getOperand().getType().isFloat()
-                    && convertInstruction.getType().isInteger();
+                    && convertInstruction.getType().isInteger()
+                    && !convertInstruction.getType().isBoolean();
         }
     }
 }

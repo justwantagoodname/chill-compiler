@@ -9,6 +9,7 @@ import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceCmpInstruction;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.ice.constant.IceConstantFloat;
+import top.voidc.misc.Tool;
 
 import static top.voidc.ir.machine.InstructionSelectUtil.canBeReg;
 import static top.voidc.ir.machine.InstructionSelectUtil.isImm12;
@@ -111,7 +112,7 @@ public class ConditionPatterns {
             selector.emit(value.getCondition());
 
             // 映射IR条件到ARM64条件码
-            String condCode = mapCondition(value.getCondition());
+            String condCode = Tool.mapToArm64Condition((IceCmpInstruction) value.getCondition());
 
             // 获取目标基本块标签
             var trueLabel = selector.getMachineFunction().getMachineBlock(value.getTrueBlock().getName());
@@ -131,32 +132,6 @@ public class ConditionPatterns {
             return value instanceof IceBranchInstruction branch
                     && branch.isConditional()
                     && branch.getCondition() != null;
-        }
-
-        /**
-         * 映射IR条件运算符到ARM64条件码
-         */
-        private String mapCondition(IceValue cond) {
-            if (cond instanceof IceCmpInstruction.Icmp cmp) {
-                return switch (cmp.getCmpType()) {
-                    case EQ -> "EQ";
-                    case NE -> "NE";
-                    case SLT -> "LT";
-                    case SLE -> "LE";
-                    case SGT -> "GT";
-                    case SGE -> "GE";
-                };
-            } else if(cond instanceof IceCmpInstruction.Fcmp cmp) {
-                return switch (cmp.getCmpType()) {
-                    case OEQ -> "EQ";
-                    case ONE -> "NE";
-                    case OLT -> "LT";
-                    case OLE -> "LE";
-                    case OGT -> "GT";
-                    case OGE -> "GE";
-                };
-            }
-            throw new IllegalArgumentException("Unsupported condition type");
         }
     }
 

@@ -1,5 +1,7 @@
 package top.voidc.misc;
 
+import top.voidc.ir.ice.instruction.IceCmpInstruction;
+
 public class Tool {
     public static void TODO(String reason) {
         throw new UnsupportedOperationException("Not implemented yet: " + reason);
@@ -49,5 +51,31 @@ public class Tool {
 
     public static boolean isArm64FloatImmediate(float value) {
         return Arm64FloatImmediateSet.canBeArm64Immediate(value);
+    }
+
+    /**
+     * 映射IR条件运算符到ARM64条件码
+     */
+    public static String mapToArm64Condition(IceCmpInstruction cond) {
+        if (cond instanceof IceCmpInstruction.Icmp cmp) {
+            return switch (cmp.getCmpType()) {
+                case EQ -> "EQ";
+                case NE -> "NE";
+                case SLT -> "LT";
+                case SLE -> "LE";
+                case SGT -> "GT";
+                case SGE -> "GE";
+            };
+        } else if(cond instanceof IceCmpInstruction.Fcmp cmp) {
+            return switch (cmp.getCmpType()) {
+                case OEQ -> "EQ";
+                case ONE -> "NE";
+                case OLT -> "LT";
+                case OLE -> "LE";
+                case OGT -> "GT";
+                case OGE -> "GE";
+            };
+        }
+        throw new IllegalArgumentException("Unsupported condition type");
     }
 }
