@@ -105,7 +105,7 @@ public class IceType implements Comparable<IceType> {
     }
 
     public boolean isFloat() {
-        return this.getTypeEnum() == TypeEnum.F32;
+        return this.getTypeEnum() == TypeEnum.F32 || this.getTypeEnum() == TypeEnum.F64;
     }
 
     public boolean isVoid() {

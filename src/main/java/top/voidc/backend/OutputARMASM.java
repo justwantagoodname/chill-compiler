@@ -8,6 +8,7 @@ import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.misc.AssemblyBuilder;
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
+import top.voidc.misc.Tool;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.misc.annotation.Qualifier;
 import top.voidc.optimizer.pass.CompilePass;
@@ -57,6 +58,10 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
             // 跳过常量
             if (((IcePtrType<?>) global.getType()).isConst()) continue;
 
+            if (global instanceof IceGlobalVariable globalVariable && globalVariable.getInitializer() != null
+                    && globalVariable.getInitializer() instanceof IceConstantArray arrayInitializer
+                    && arrayInitializer instanceof IceConstantString) continue; // 跳过字符串
+
             if (global instanceof IceGlobalVariable globalVariable && !((IcePtrType<?>) global.getType()).getPointTo().isArray()) {
                 // 非数组类型
                 assemblyBuilder.writeLine("\t.global\t" + globalVariable.getName())
@@ -89,6 +94,20 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
                     var arrayType = ((IcePtrType<?>) globalVariable.getType()).getPointTo();
                     assemblyBuilder.writeLine("\t.zero\t" + arrayType.getByteSize());
                 }
+            }
+        }
+
+        assemblyBuilder.writeLine().writeLine("\t.section\t.rodata.str1.8,\"aMS\",@progbits,1");
+
+        for (var global : target.getGlobalVariables()) {
+            if (global instanceof IceGlobalVariable globalVariable && globalVariable.getInitializer() instanceof IceConstantString) {
+                // 字符串常量
+                assemblyBuilder
+                        .writeLine("\t.type\t" + globalVariable.getName() + ", @object")
+                        .writeLine("\t.align 3")
+                        .writeLine(globalVariable.getName() + ":");
+                var stringData = Tool.toGNUASCIIFormat(((IceConstantString) globalVariable.getInitializer()).getRawByte());
+                assemblyBuilder.writeLine("\t.ascii\t\"" + stringData + "\"");
             }
         }
     }

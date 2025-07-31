@@ -105,7 +105,7 @@ public abstract class IceMachineInstruction extends IceInstruction {
                 case "fimm" -> {
                     assert operand instanceof IceConstantFloat;
                     var floatValue = ((IceConstantFloat) operand).getValue();
-                    yield String.valueOf(Float.toHexString(floatValue)); // 输出浮点数值
+                    yield "#" + floatValue; // 输出浮点数值
                 }
                 case "imm16" -> {
                     assert operand instanceof IceConstantInt;
