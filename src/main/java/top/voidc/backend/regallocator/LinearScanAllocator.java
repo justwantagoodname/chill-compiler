@@ -21,7 +21,6 @@ import java.util.*;
 public class LinearScanAllocator implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
 
     private final LivenessAnalysis.LivenessResult livenessResult;
-    private final IceContext iceContext;
     private List<IceBlock> BBs;
     private Map<IceBlock, LivenessAnalysis.BlockLivenessData> functionLivenessData;
     private Map<IceMachineRegister, IceStackSlot> vregSlotMap;
@@ -72,9 +71,8 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     }
 
 
-    public LinearScanAllocator(IceContext context, LivenessAnalysis.LivenessResult livenessResult) {
+    public LinearScanAllocator(LivenessAnalysis.LivenessResult livenessResult) {
         this.livenessResult = livenessResult;
-        this.iceContext = context;
     }
 
     @Override
@@ -188,13 +186,16 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     private List<IceMachineRegister> getPhysicalRegisters(ARM64Function mf) {
         ArrayList<IceMachineRegister> regPool = new ArrayList<>();
 
-        for (int i = 20; i <= 27; ++i) {
-            regPool.add(mf.getPhysicalRegister("x" + i));
-        }
+//        for (int i = 20; i <= 27; ++i) {
+//            regPool.add(mf.getPhysicalRegister("x" + i));
+//        }
+//
+//        for (int i = 9; i <= 15; ++i) {
+//            regPool.add(mf.getPhysicalRegister("x" + i));
+//        }
 
-        for (int i = 9; i <= 15; ++i) {
-            regPool.add(mf.getPhysicalRegister("x" + i));
-        }
+        regPool.add(mf.getPhysicalRegister("x21"));
+        regPool.add(mf.getPhysicalRegister("x22"));
 
         return regPool;
     }
@@ -205,7 +206,9 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             if (interval.end >= current.start) {
                 return false; // 这个区间还活跃
             }
-            freeRegisters.add(interval.preg); // 将物理寄存器释放回寄存器池
+            if (interval.preg != null) {
+                freeRegisters.addLast(interval.preg); // 将物理寄存器释放回寄存器池
+            }
             return true; // 这个区间过期了
         });
     }
@@ -261,8 +264,8 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         }
 
         for (var block : BBs) {
-            for (int i = 0; i < block.size(); ++i) {
-                if (!(block.get(i) instanceof IceMachineInstruction inst)) {
+            for (var iceInstruction : block) {
+                if (!(iceInstruction instanceof IceMachineInstruction inst)) {
                     throw new IllegalArgumentException("Why there is a non-machine instruction in a machine function???");
                 }
 
@@ -276,8 +279,8 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     /**
      * 替换指令中的虚拟寄存器为物理寄存器 / 栈槽
      *
-     * @param inst
-     * @param regMapping
+     * @param inst 指令
+     * @param regMapping 寄存器映射表，将虚拟寄存器映射到物理寄存器或栈槽
      */
     private void replaceRegisters(IceMachineInstruction inst, Map<IceMachineRegister, IceMachineRegister> regMapping) {
         for (int i = 0; i < inst.getOperands().size(); i++) {
