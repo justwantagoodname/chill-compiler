@@ -29,7 +29,7 @@ public abstract class InstructionPattern <T extends IceValue> {
     public Class<?> getEmittedType() {
         var emitMethod = Arrays.stream(this.getClass().getMethods())
                 .filter(method -> method.getName().equals("emit") && !method.isBridge()).findFirst().orElseThrow();
-        return emitMethod.getReturnType();
+        return emitMethod.getReturnType().isAssignableFrom(Void.class) ? null : emitMethod.getReturnType();
     }
 
     public int getCost(InstructionSelector selector, T value) {

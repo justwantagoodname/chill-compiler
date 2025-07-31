@@ -47,8 +47,10 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new LoadAndStorePattern.LoadFloatImmediateToReg());
         patternSet.add(new LoadAndStorePattern.LoadZeroToReg());
         patternSet.add(new LoadAndStorePattern.CopyImm());
-        patternSet.add(new LoadAndStorePattern.CopyInst());
         patternSet.add(new LoadAndStorePattern.DummyPHI());
+        patternSet.add(new LoadAndStorePattern.IntCopyInst());
+        patternSet.add(new LoadAndStorePattern.FloatCopyInst());
+        patternSet.add(new LoadAndStorePattern.FloatCopyImm());
 
         patternSet.add(new BitwisestructionPattern.LSLInstruction());
         patternSet.add(new BitwisestructionPattern.ASRInstruction());
