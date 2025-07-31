@@ -4,15 +4,12 @@ import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.backend.instr.InstructionPattern;
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.constant.IceConstantData;
-import top.voidc.ir.ice.constant.IceConstantInt;
-import top.voidc.ir.ice.constant.IceConstantLong;
-import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.constant.*;
 import top.voidc.ir.ice.instruction.IceCopyInstruction;
 import top.voidc.ir.ice.instruction.IcePHINode;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
-import top.voidc.ir.machine.IceStackSlot;
+import top.voidc.misc.Tool;
 
 import static top.voidc.ir.machine.InstructionSelectUtil.*;
 
@@ -117,6 +114,39 @@ public class LoadAndStorePattern {
         public boolean test(InstructionSelector selector, IceValue value) {
             return value instanceof IceConstantData
                     && value.getType().equals(IceType.I64);
+        }
+    }
+
+    public static class LoadFloatImmediateToReg extends InstructionPattern<IceConstantFloat> {
+
+        public LoadFloatImmediateToReg() {
+            super(0);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceConstantFloat value) {
+            return getIntrinsicCost();
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConstantFloat value) {
+            final var floatValue = value.getValue();
+            final var dstRegView = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
+            if (Tool.isArm64FloatImmediate(floatValue)) {
+                selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {fimm:f}", dstRegView, value));
+            } else {
+                var intFloat = IceConstantInt.create(Float.floatToIntBits(floatValue));
+                selector.select(intFloat);
+                var intRegView = (IceMachineRegister.RegisterView) selector.emit(intFloat);
+                selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", dstRegView, intRegView));
+            }
+
+            return dstRegView;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceConstantFloat;
         }
     }
 
