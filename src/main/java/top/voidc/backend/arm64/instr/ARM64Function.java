@@ -134,6 +134,7 @@ public class ARM64Function extends IceMachineFunction {
             throw new IllegalArgumentException("Register " + register.getName() + " is not a physical register.");
         }
         var slot = new IceStackSlot.SavedRegisterStackSlot(this, register);
+        slot.setAlignment(Math.max(register.getBitwidth() / 8, 4)); // 最少按照 4 字节对齐
         stackFrame.add(slot);
         return slot;
     }
@@ -192,11 +193,11 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     @Override
-    public Set<IceMachineRegister> getAllRegisters() {
-        var allRegisters = new HashSet<IceMachineRegister>();
+    public Collection<IceMachineRegister> getAllRegisters() {
+        var allRegisters = new ArrayList<IceMachineRegister>();
         allRegisters.addAll(physicalRegisters.values());
         allRegisters.addAll(virtualRegisters.values());
-        return Set.copyOf(allRegisters); // 返回一个不可修改的集合
+        return List.copyOf(allRegisters); // 返回一个不可修改的集合
     }
 
     @Override

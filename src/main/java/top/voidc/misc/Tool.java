@@ -114,7 +114,7 @@ public class Tool {
             int id = Integer.parseInt(name);
             if (Tool.inRange(id, 0, 18)) { // x0 - x18
                 return RegisterType.CALLER_SAVED; // Caller-saved registers
-            } else if (Tool.inRange(id, 19, 27)) { // x19 - x28 x29(fp) x30(lr)
+            } else if (Tool.inRange(id, 19, 30)) { // x19 - x28 x29(fp) x30(lr)
                 return RegisterType.CALLEE_SAVED;
             } else {
                 throw new IllegalArgumentException("Unknown register: " + name);

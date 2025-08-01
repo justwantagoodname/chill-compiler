@@ -34,7 +34,7 @@ public class IceVecType extends IceType {
 
     @Override
     public int getByteSize() {
-        if (scalarType.isAny()) return vecBitWidth;
+        if (scalarType.isAny()) return vecBitWidth / 8;
         return width * scalarType.getByteSize();
     }
 
