@@ -27,7 +27,6 @@ import java.util.List;
  * </pre>
  */
 public class PrologueEpilogueGenerator {
-    private static final int ARITHMETIC_IMMEDIATE_UPPER_BOUND = 4096;
 
     private static boolean isSTPImmediate(int offset) {
         return offset >= -512 && offset <= 504;
@@ -50,16 +49,20 @@ public class PrologueEpilogueGenerator {
         protected List<IceMachineInstruction> generateStackAdjustment(int size, boolean isSub) {
             List<IceMachineInstruction> instructions = new ArrayList<>();
             String op = isSub ? "SUB" : "ADD";
-            
+            final int operationMaxSize = 0xFFFFFF; // 两条SUB或者 ADD指令的最大立即数范围
+
             int remainingSize = size;
-            while (remainingSize > ARITHMETIC_IMMEDIATE_UPPER_BOUND) {
-                instructions.add(new ARM64Instruction(op + " sp, sp, {imm:stack}", 
-                        IceConstantData.create(ARITHMETIC_IMMEDIATE_UPPER_BOUND)));
-                remainingSize -= ARITHMETIC_IMMEDIATE_UPPER_BOUND;
-            }
-            if (remainingSize > 0) {
-                instructions.add(new ARM64Instruction(op + " sp, sp, {imm:stack}", 
-                        IceConstantData.create(remainingSize)));
+            while (remainingSize > 0) {
+                int operationSize = Math.min(remainingSize, operationMaxSize);
+                int highBit = (operationSize >> 12) & 0xFFF;
+                int lowBit = operationSize & 0xFFF;
+                if (lowBit != 0) {
+                    instructions.add(new ARM64Instruction(op + " sp, sp, {imm:stack}", IceConstantData.create(lowBit)));
+                }
+                if (highBit != 0) {
+                    instructions.add(new ARM64Instruction(op + " sp, sp, {imm:stack}, lsl 12", IceConstantData.create(highBit)));
+                }
+                remainingSize -= operationSize;
             }
             return instructions;
         }
