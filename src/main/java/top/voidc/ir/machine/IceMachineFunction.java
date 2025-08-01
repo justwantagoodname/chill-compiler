@@ -29,6 +29,9 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
 
     public abstract IceStackSlot.ParameterStackSlot allocateParameterStackSlot(int parameterIndex, IceType type);
 
+    /**
+     * 分配一个寄存器栈槽，用于保存寄存器的值，通过此函数分配的寄存器栈槽不用手动设置 alignment
+     */
     public abstract IceStackSlot.SavedRegisterStackSlot allocateSavedRegisterStackSlot(IceMachineRegister register);
 
     /**
@@ -49,7 +52,7 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
 
     public abstract IceMachineRegister.RegisterView getZeroRegister(IceType type);
 
-    public abstract Set<IceMachineRegister> getAllRegisters();
+    public abstract Collection<IceMachineRegister> getAllRegisters();
 
     /**
      * 获取当前函数是否有调用外部函数

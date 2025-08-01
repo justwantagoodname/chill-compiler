@@ -3,6 +3,8 @@ package top.voidc.backend;
 import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.machine.IceMachineInstruction;
+import top.voidc.ir.machine.IceMachineRegister;
+import top.voidc.ir.machine.IceStackSlot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +46,6 @@ public class PrologueEpilogueGenerator {
          * 生成调整栈指针的指令序列
          * @param size 调整的大小
          * @param isSub 是否是减法操作
-         * FIXME: 目前实现太慢汇编效率了想办法优化
          */
         protected List<IceMachineInstruction> generateStackAdjustment(int size, boolean isSub) {
             List<IceMachineInstruction> instructions = new ArrayList<>();
@@ -68,6 +69,66 @@ public class PrologueEpilogueGenerator {
         }
 
         /**
+         * 生成保存调用者寄存器的指令序列 确保sp位于上一个栈帧参数结束位置，即还未移动
+         */
+        protected List<IceMachineInstruction> generateCalleeSaveCode(List<IceStackSlot.SavedRegisterStackSlot> calleeSavedSlots) {
+            List<IceMachineInstruction> instructions = new ArrayList<>();
+            for (int i = 0; i < calleeSavedSlots.size(); ) {
+                var currentSlot = calleeSavedSlots.get(i);
+                var currentReg = currentSlot.getRegister();
+
+                // 尝试与下一个寄存器配对
+                if (i + 1 < calleeSavedSlots.size()) {
+                    var nextSlot = calleeSavedSlots.get(i + 1);
+                    var nextReg = nextSlot.getRegister();
+                    // 仅当类型相同时才能配对
+                    if (currentReg.getType().equals(nextReg.getType())) {
+                        int size = currentSlot.getType().getByteSize() * 2;
+                        instructions.add(new ARM64Instruction("STP {reg}, {reg}, [sp, {imm:stack}]!",
+                                currentReg.createView(currentReg.getType()), nextReg.createView(nextReg.getType()), IceConstantData.create(-size)));
+                        i += 2;
+                        continue;
+                    }
+                }
+
+                // 处理单个寄存器，始终分配16字节以保证对齐
+                instructions.add(new ARM64Instruction("STR {reg}, [sp, {imm:stack}]!",
+                        currentReg.createView(currentReg.getType()), IceConstantData.create(-16)));
+                i++;
+            }
+            return instructions;
+        }
+
+        /**
+         * 生成加载被调用者寄存器的指令序列 确保sp位于上一个CalleeSave区结束的位置
+         */
+        protected List<IceMachineInstruction> generateCalleeLoadCode(List<IceStackSlot.SavedRegisterStackSlot> calleeSavedSlots) {
+            List<IceMachineInstruction> instructions = new ArrayList<>();
+            for (int i = calleeSavedSlots.size() - 1; i >= 0; ) {
+                var currentSlot = calleeSavedSlots.get(i);
+                var currentReg = currentSlot.getRegister();
+
+                // 尝试与前一个寄存器配对
+                if (i - 1 >= 0) {
+                    var prevSlot = calleeSavedSlots.get(i - 1);
+                    var prevReg = prevSlot.getRegister();
+                    if (currentReg.getType().equals(prevReg.getType())) {
+                        int size = currentSlot.getType().getByteSize() * 2;
+                        instructions.add(new ARM64Instruction("LDP {reg}, {reg}, [sp], {imm:stack}",
+                                prevReg.createView(prevReg.getType()), currentReg.createView(currentReg.getType()), IceConstantData.create(size)));
+                        i -= 2;
+                        continue;
+                    }
+                }
+
+                // 处理单个寄存器
+                instructions.add(new ARM64Instruction("LDR {reg}, [sp], {imm:stack}",
+                        currentReg.createView(currentReg.getType()), IceConstantData.create(16)));
+                i--;
+            }
+            return instructions;
+        }
+        /**
          * 生成函数序言指令序列
          */
         public abstract List<IceMachineInstruction> generatePrologue(AlignFramePass.AlignedStackFrame frame);
@@ -86,14 +147,15 @@ public class PrologueEpilogueGenerator {
     private static class LeafFunctionGenerator extends InstructionGenerator {
         @Override
         public List<IceMachineInstruction> generatePrologue(AlignFramePass.AlignedStackFrame frame) {
-            List<IceMachineInstruction> instructions = new ArrayList<>();
-            if (frame.getStackSize() > 0) {
-                if (isArithmeticImmediate(frame.getStackSize())) {
-                    instructions.add(new ARM64Instruction("SUB sp, sp, {imm:stack}", 
-                            IceConstantData.create(frame.getStackSize())));
+            List<IceMachineInstruction> instructions = new ArrayList<>(generateCalleeSaveCode(frame.getCalleeSavedSlots()));
+            int stackToAllocate = frame.getStackSize() - frame.getCalleeSavedSize();
+            if (stackToAllocate > 0) {
+                if (isArithmeticImmediate(stackToAllocate)) {
+                    instructions.add(new ARM64Instruction("SUB sp, sp, {imm:stack}",
+                            IceConstantData.create(stackToAllocate)));
                     instructions.add(new ARM64Instruction("MOV x29, sp"));
                 } else {
-                    instructions.addAll(generateStackAdjustment(frame.getStackSize(), true));
+                    instructions.addAll(generateStackAdjustment(stackToAllocate, true));
                     instructions.add(new ARM64Instruction("MOV x29, sp"));
                 }
             }
@@ -103,14 +165,16 @@ public class PrologueEpilogueGenerator {
         @Override
         public List<IceMachineInstruction> generateEpilogue(AlignFramePass.AlignedStackFrame frame) {
             List<IceMachineInstruction> instructions = new ArrayList<>();
-            if (frame.getStackSize() > 0) {
-                if (isArithmeticImmediate(frame.getStackSize())) {
-                    instructions.add(new ARM64Instruction("ADD sp, sp, {imm:stack}", 
-                            IceConstantData.create(frame.getStackSize())));
+            int stackToDeallocate = frame.getStackSize() - frame.getCalleeSavedSize();
+            if (stackToDeallocate > 0) {
+                if (isArithmeticImmediate(stackToDeallocate)) {
+                    instructions.add(new ARM64Instruction("ADD sp, sp, {imm:stack}",
+                            IceConstantData.create(stackToDeallocate)));
                 } else {
-                    instructions.addAll(generateStackAdjustment(frame.getStackSize(), false));
+                    instructions.addAll(generateStackAdjustment(stackToDeallocate, false));
                 }
             }
+            instructions.addAll(generateCalleeLoadCode(frame.getCalleeSavedSlots()));
             return instructions;
         }
     }
@@ -123,21 +187,22 @@ public class PrologueEpilogueGenerator {
     private static class NoArgsCallFunctionGenerator extends InstructionGenerator {
         @Override
         public List<IceMachineInstruction> generatePrologue(AlignFramePass.AlignedStackFrame frame) {
-            List<IceMachineInstruction> instructions = new ArrayList<>();
+            List<IceMachineInstruction> instructions = new ArrayList<>(generateCalleeSaveCode(frame.getCalleeSavedSlots()));
+            int stackToAllocate = frame.getStackSize() - frame.getCalleeSavedSize();
             // 有函数调用但没有栈上参数
-            if (isSTPImmediate(-frame.getStackSize())) {
+            if (isSTPImmediate(-stackToAllocate)) {
                 // 小栈帧：使用STP的立即数寻址
-                instructions.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]!", 
-                        IceConstantData.create(-frame.getStackSize())));
+                instructions.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]!",
+                        IceConstantData.create(-stackToAllocate)));
                 instructions.add(new ARM64Instruction("MOV x29, sp"));
             } else {
                 // 大栈帧：需要分开处理
-                if (isArithmeticImmediate(frame.getStackSize())) {
-                    instructions.add(new ARM64Instruction("SUB sp, sp, {imm:stack}", 
-                            IceConstantData.create(frame.getStackSize())));
+                if (isArithmeticImmediate(stackToAllocate)) {
+                    instructions.add(new ARM64Instruction("SUB sp, sp, {imm:stack}",
+                            IceConstantData.create(stackToAllocate)));
                     instructions.add(new ARM64Instruction("STP x29, x30, [sp]"));
                 } else {
-                    instructions.addAll(generateStackAdjustment(frame.getStackSize(), true));
+                    instructions.addAll(generateStackAdjustment(stackToAllocate, true));
                     instructions.add(new ARM64Instruction("STP x29, x30, [sp]"));
                 }
             }
@@ -147,21 +212,23 @@ public class PrologueEpilogueGenerator {
         @Override
         public List<IceMachineInstruction> generateEpilogue(AlignFramePass.AlignedStackFrame frame) {
             List<IceMachineInstruction> instructions = new ArrayList<>();
+            int stackToDeallocate = frame.getStackSize() - frame.getCalleeSavedSize();
             // 有函数调用但没有栈上参数
-            if (isSTPImmediate(frame.getStackSize())) {
+            if (isSTPImmediate(stackToDeallocate)) {
                 // 小栈帧：使用STP的立即数寻址
-                instructions.add(new ARM64Instruction("LDP x29, x30, [sp], {imm:stack}", 
-                        IceConstantData.create(frame.getStackSize())));
+                instructions.add(new ARM64Instruction("LDP x29, x30, [sp], {imm:stack}",
+                        IceConstantData.create(stackToDeallocate)));
             } else {
                 // 大栈帧：需要分开处理
                 instructions.add(new ARM64Instruction("LDP x29, x30, [sp]"));
-                if (isArithmeticImmediate(frame.getStackSize())) {
-                    instructions.add(new ARM64Instruction("ADD sp, sp, {imm:stack}", 
-                            IceConstantData.create(frame.getStackSize())));
+                if (isArithmeticImmediate(stackToDeallocate)) {
+                    instructions.add(new ARM64Instruction("ADD sp, sp, {imm:stack}",
+                            IceConstantData.create(stackToDeallocate)));
                 } else {
-                    instructions.addAll(generateStackAdjustment(frame.getStackSize(), false));
+                    instructions.addAll(generateStackAdjustment(stackToDeallocate, false));
                 }
             }
+            instructions.addAll(generateCalleeLoadCode(frame.getCalleeSavedSlots()));
             return instructions;
         }
     }
@@ -174,27 +241,28 @@ public class PrologueEpilogueGenerator {
     private static class WithArgsCallFunctionGenerator extends InstructionGenerator {
         @Override
         public List<IceMachineInstruction> generatePrologue(AlignFramePass.AlignedStackFrame frame) {
-            List<IceMachineInstruction> instructions = new ArrayList<>();
+            List<IceMachineInstruction> instructions = new ArrayList<>(generateCalleeSaveCode(frame.getCalleeSavedSlots()));
             var argSize = frame.getArgumentSize();
-            var remainSize = frame.getStackSize() - argSize;
+            var stackToAllocate = frame.getStackSize() - frame.getCalleeSavedSize();
+            var remainSize = stackToAllocate - argSize;
 
-            if (isSTPImmediate(frame.getArgumentSize())) {
+            if (isSTPImmediate(argSize)) {
                 // 参数区在STP范围内：保持原有逻辑
-                if (isArithmeticImmediate(frame.getStackSize())) {
+                if (isArithmeticImmediate(stackToAllocate)) {
                     // 小栈帧：直接使用立即数
-                    instructions.add(new ARM64Instruction("SUB sp, sp, {imm:stack}", 
-                            IceConstantData.create(frame.getStackSize())));
-                    instructions.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]", 
-                            IceConstantData.create(frame.getArgumentSize())));
-                    instructions.add(new ARM64Instruction("ADD x29, sp, {imm:stack}", 
-                            IceConstantData.create(frame.getArgumentSize())));
+                    instructions.add(new ARM64Instruction("SUB sp, sp, {imm:stack}",
+                            IceConstantData.create(stackToAllocate)));
+                    instructions.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]",
+                            IceConstantData.create(argSize)));
+                    instructions.add(new ARM64Instruction("ADD x29, sp, {imm:stack}",
+                            IceConstantData.create(argSize)));
                 } else {
                     // 大栈帧：使用循环调整
-                    instructions.addAll(generateStackAdjustment(frame.getStackSize(), true));
-                    instructions.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]", 
-                            IceConstantData.create(frame.getArgumentSize())));
-                    instructions.add(new ARM64Instruction("ADD x29, sp, {imm:stack}", 
-                            IceConstantData.create(frame.getArgumentSize())));
+                    instructions.addAll(generateStackAdjustment(stackToAllocate, true));
+                    instructions.add(new ARM64Instruction("STP x29, x30, [sp, {imm:stack}]",
+                            IceConstantData.create(argSize)));
+                    instructions.add(new ARM64Instruction("ADD x29, sp, {imm:stack}",
+                            IceConstantData.create(argSize)));
                 }
             } else {
                 // 参数区超出范围时的处理
@@ -213,19 +281,20 @@ public class PrologueEpilogueGenerator {
         public List<IceMachineInstruction> generateEpilogue(AlignFramePass.AlignedStackFrame frame) {
             List<IceMachineInstruction> instructions = new ArrayList<>();
             var argSize = frame.getArgumentSize();
-            var remainSize = frame.getStackSize() - argSize;
+            var stackToDeallocate = frame.getStackSize() - frame.getCalleeSavedSize();
+            var remainSize = stackToDeallocate - argSize;
 
-            if (isSTPImmediate(frame.getArgumentSize())) {
+            if (isSTPImmediate(argSize)) {
                 // 参数区在STP范围内：保持原有逻辑
-                instructions.add(new ARM64Instruction("LDP x29, x30, [sp, {imm:stack}]", 
-                        IceConstantData.create(frame.getArgumentSize())));
-                if (isArithmeticImmediate(frame.getStackSize())) {
+                instructions.add(new ARM64Instruction("LDP x29, x30, [sp, {imm:stack}]",
+                        IceConstantData.create(argSize)));
+                if (isArithmeticImmediate(stackToDeallocate)) {
                     // 小栈帧：直接使用立即数
-                    instructions.add(new ARM64Instruction("ADD sp, sp, {imm:stack}", 
-                            IceConstantData.create(frame.getStackSize())));
+                    instructions.add(new ARM64Instruction("ADD sp, sp, {imm:stack}",
+                            IceConstantData.create(stackToDeallocate)));
                 } else {
                     // 大栈帧：使用循环调整
-                    instructions.addAll(generateStackAdjustment(frame.getStackSize(), false));
+                    instructions.addAll(generateStackAdjustment(stackToDeallocate, false));
                 }
             } else {
                 // 参数区超出范围时的处理
@@ -236,6 +305,7 @@ public class PrologueEpilogueGenerator {
                 // 3. 回收变量区和返回地址区
                 instructions.addAll(generateStackAdjustment(remainSize, false));
             }
+            instructions.addAll(generateCalleeLoadCode(frame.getCalleeSavedSlots()));
             return instructions;
         }
     }
