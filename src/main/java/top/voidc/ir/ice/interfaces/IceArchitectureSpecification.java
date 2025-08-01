@@ -2,9 +2,9 @@ package top.voidc.ir.ice.interfaces;
 
 public interface IceArchitectureSpecification {
     default String getArchitectureDescription() {
-        return getArchitecture() + "-" + getBitSize() + "-" + getABIName();
+        return getArchitecture() + "-" + getArchitectureBitSize() + "-" + getABIName();
     }
     String getArchitecture();
     String getABIName();
-    int getBitSize();
+    int getArchitectureBitSize();
 }

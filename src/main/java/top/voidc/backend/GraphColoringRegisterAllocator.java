@@ -159,7 +159,7 @@ public class GraphColoringRegisterAllocator implements CompilePass<IceMachineFun
     }
 
     @Override
-    public int getBitSize() {
+    public int getArchitectureBitSize() {
         return 64;
     }
 }

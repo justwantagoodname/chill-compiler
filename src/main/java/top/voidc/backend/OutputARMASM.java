@@ -161,7 +161,7 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
     }
 
     @Override
-    public int getBitSize() {
+    public int getArchitectureBitSize() {
         return 64;
     }
 }

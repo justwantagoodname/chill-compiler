@@ -123,7 +123,7 @@ public class FixStackOffset implements CompilePass<IceMachineFunction>, IceArchi
     }
 
     @Override
-    public int getBitSize() {
+    public int getArchitectureBitSize() {
         return 64;
     }
 }
