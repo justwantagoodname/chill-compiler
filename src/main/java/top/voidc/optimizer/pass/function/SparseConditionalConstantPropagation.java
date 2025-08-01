@@ -37,7 +37,7 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
 
             ValueLatticeElement(IceValue bindValue, IceConstantData constant) {
                 this.bindValue = bindValue;
-                if (constant != null && !(constant instanceof IceUndef)) {
+                if (constant != null) { // Note: Undef 同样是常量 它和格值里面的 Undefined 是不一样的
                     state = LatticeValue.Constant;
                     this.constant = constant;
                 } else {
@@ -80,6 +80,15 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
 
             public boolean isUndefined() {
                 return state == LatticeValue.Undefined;
+            }
+
+            @Override
+            public String toString() {
+                return "ValueLatticeElement{" +
+                        "state=" + state +
+                        ", constant=" + constant +
+                        ", bindValue=" + bindValue +
+                        '}';
             }
         }
 
