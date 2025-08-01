@@ -26,7 +26,7 @@ public class ARM64Instruction extends IceMachineInstruction implements IceArchit
     }
 
     @Override
-    public int getBitSize() {
+    public int getArchitectureBitSize() {
         return 64;
     }
 

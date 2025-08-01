@@ -217,7 +217,7 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     @Override
-    public int getBitSize() {
+    public int getArchitectureBitSize() {
         return 64;
     }
 

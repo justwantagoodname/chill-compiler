@@ -55,7 +55,7 @@ public class ARM64Register extends IceMachineRegister {
     }
 
     @Override
-    public int getBitSize() {
+    public int getArchitectureBitSize() {
         return 64;
     }
 }

@@ -367,7 +367,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     }
 
     @Override
-    public int getBitSize() {
+    public int getArchitectureBitSize() {
         return 64;
     }
 }
