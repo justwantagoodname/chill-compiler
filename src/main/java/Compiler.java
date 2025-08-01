@@ -62,7 +62,7 @@ public class Compiler {
         context.addPassResult(new ARM64InstructionPatternPack());
 
         // TODO: 后续添加O0 O1的组
-//        passManager.addDisableGroup("needfix");
+        passManager.addDisableGroup("needfix");
         Boolean hasO1 = Flag.get("-O1");
         if (Boolean.FALSE.equals(hasO1)) {
 //            passManager.addDisableGroup("O1");
@@ -85,7 +85,7 @@ public class Compiler {
         final var passManager = new PassManager(context);
         passManager.setPipeline(pm -> {
             pm.runPass(RenameVariable.class);
-//            pm.runPass(ScalarReplacementOfAggregates.class);
+            pm.runPass(ScalarReplacementOfAggregates.class);
             pm.runPass(Mem2Reg.class);
             pm.runPass(SmartChilletSimplifyCFG.class);
             pm.untilStable(
@@ -101,12 +101,10 @@ public class Compiler {
             pm.runPass(InstructionSelectionPass.class);
             pm.runPass(LivenessAnalysis.class);
             pm.runPass(ShowIR.class);
+//            pm.runPass(SillyChilletAllocateRegister.class);
             pm.runPass(LinearScanAllocator.class);
-//            pm.runPass(ShowIR.class);
-            pm.runPass(ShowIR.class);
             pm.runPass(RegSaver.class);
             pm.runPass(AlignFramePass.class);
-            pm.runPass(ShowIR.class);
             pm.runPass(FixStackOffset.class);
             pm.runPass(OutputARMASM.class);
         });
