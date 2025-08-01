@@ -65,7 +65,7 @@ public class Compiler {
         passManager.addDisableGroup("needfix");
         Boolean hasO1 = Flag.get("-O1");
         if (Boolean.FALSE.equals(hasO1)) {
-            passManager.addDisableGroup("O1");
+//            passManager.addDisableGroup("O1");
         }
         String disableGroups = Flag.get("-fdisable-group");
         if (disableGroups != null && !disableGroups.isBlank()) {
@@ -85,7 +85,7 @@ public class Compiler {
         final var passManager = new PassManager(context);
         passManager.setPipeline(pm -> {
             pm.runPass(RenameVariable.class);
-//            pm.runPass(ScalarReplacementOfAggregates.class);
+            pm.runPass(ScalarReplacementOfAggregates.class);
             pm.runPass(Mem2Reg.class);
             pm.runPass(SmartChilletSimplifyCFG.class);
             pm.untilStable(
@@ -94,21 +94,16 @@ public class Compiler {
                     SmartChilletSimplifyCFG.class
             );
             pm.runPass(RenameVariable.class);
-//            pm.runPass(LoopInvariantCodeMotion.class);
-//            pm.runPass(InductionVariableOptimization.class);
-//            pm.runPass(LoopClosedFormOptimization.class);
-//            pm.runPass(RenameVariable.class);
             pm.runPass(DumpIR.class);
-            pm.runPass(ShowIR.class);
 
             // 后端相关
             pm.runPass(SSADestruction.class);
             pm.runPass(InstructionSelectionPass.class);
             pm.runPass(LivenessAnalysis.class);
             pm.runPass(ShowIR.class);
-            pm.runPass(SillyChilletAllocateRegister.class);
-//            pm.runPass(LinearScanAllocator.class);
-//            pm.runPass(CallerSaver.class);
+//            pm.runPass(SillyChilletAllocateRegister.class);
+            pm.runPass(LinearScanAllocator.class);
+            pm.runPass(RegSaver.class);
             pm.runPass(AlignFramePass.class);
             pm.runPass(FixStackOffset.class);
             pm.runPass(OutputARMASM.class);
