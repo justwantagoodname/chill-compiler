@@ -1,4 +1,4 @@
-package top.voidc.backend;
+package top.voidc.backend.regallocator;
 
 import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
