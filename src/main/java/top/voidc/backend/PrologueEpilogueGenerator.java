@@ -84,7 +84,7 @@ public class PrologueEpilogueGenerator {
                     // 仅当类型相同时才能配对
                     if (currentReg.getType().equals(nextReg.getType())) {
                         int size = currentSlot.getType().getByteSize() * 2;
-                        instructions.add(new ARM64Instruction("STP {reg}, {reg}, [sp, {imm:stack}]!",
+                        instructions.add(new ARM64Instruction("STP {reg1}, {reg2}, [sp, {imm:stack}]!",
                                 currentReg.createView(currentReg.getType()), nextReg.createView(nextReg.getType()), IceConstantData.create(-size)));
                         i += 2;
                         continue;
@@ -92,7 +92,7 @@ public class PrologueEpilogueGenerator {
                 }
 
                 // 处理单个寄存器，始终分配16字节以保证对齐
-                instructions.add(new ARM64Instruction("STR {reg}, [sp, {imm:stack}]!",
+                instructions.add(new ARM64Instruction("STR {reg1}, [sp, {imm:stack}]!",
                         currentReg.createView(currentReg.getType()), IceConstantData.create(-16)));
                 i++;
             }
@@ -114,7 +114,7 @@ public class PrologueEpilogueGenerator {
                     var prevReg = prevSlot.getRegister();
                     if (currentReg.getType().equals(prevReg.getType())) {
                         int size = currentSlot.getType().getByteSize() * 2;
-                        instructions.add(new ARM64Instruction("LDP {reg}, {reg}, [sp], {imm:stack}",
+                        instructions.add(new ARM64Instruction("LDP {reg1}, {reg2}, [sp], {imm:stack}",
                                 prevReg.createView(prevReg.getType()), currentReg.createView(currentReg.getType()), IceConstantData.create(size)));
                         i -= 2;
                         continue;
@@ -122,7 +122,7 @@ public class PrologueEpilogueGenerator {
                 }
 
                 // 处理单个寄存器
-                instructions.add(new ARM64Instruction("LDR {reg}, [sp], {imm:stack}",
+                instructions.add(new ARM64Instruction("LDR {reg1}, [sp], {imm:stack}",
                         currentReg.createView(currentReg.getType()), IceConstantData.create(16)));
                 i--;
             }
