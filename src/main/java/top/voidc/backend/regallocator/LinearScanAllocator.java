@@ -206,7 +206,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 spillCandidate.preg = null; // 清除物理寄存器映射 标志溢出
 
                 active.remove(spillCandidate); // 从活跃区间中移除
-                active.add(spillCandidate);
+                active.add(current);
             } else {
                 // 溢出当前区间
                 current.preg = null;
@@ -231,6 +231,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                     var alignment = switch (interval.vreg.getType().getTypeEnum()) {
                         case I32, F32 -> 4;
                         case I64, F64, PTR -> 8;
+                        case VEC -> 16; // VEC128 对齐到 16 字节
                         default -> throw new IllegalArgumentException("Unsupported type: " + interval.vreg.getType());
                     };
                     slot.setAlignment(alignment);
