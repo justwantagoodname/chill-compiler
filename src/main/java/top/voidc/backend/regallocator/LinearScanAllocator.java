@@ -3,7 +3,6 @@ package top.voidc.backend.regallocator;
 import top.voidc.backend.LivenessAnalysis;
 import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.ir.IceBlock;
-import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.*;
@@ -133,8 +132,14 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             for (var block : BBs) {
                 var liveOut = functionLivenessData.get(block).liveOut();
 
-                var blockStartId = instructionIds.getValue((IceMachineInstruction) block.getFirst());
-                var blockEndId = instructionIds.getValue((IceMachineInstruction) block.getLast());
+                var validInstructions = new ArrayList<>(
+                        block.stream().filter(inst -> !(inst instanceof IceMachineInstructionComment)).map(inst -> ((IceMachineInstruction) inst)).toList());
+
+
+                var blockStartId = instructionIds.getValue(validInstructions.getFirst());
+                var blockEndId = instructionIds.getValue(validInstructions.getLast());
+
+                Collections.reverse(validInstructions); // 倒序遍历指令
 
                 for (var value : liveOut) {
                     if (value instanceof IceMachineRegister register && intervalMap.containsKey(register)) {
@@ -143,9 +148,8 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                     }
                 }
 
-                for (var i = block.size() - 1; i >= 0; --i) {
-                    var instruction = (IceMachineInstruction) block.get(i);
-                    if (instruction instanceof IceMachineInstructionComment) continue;
+                for (var instruction : validInstructions) {
+                    assert !(instruction instanceof IceMachineInstructionComment);
 
                     var instructionId = instructionIds.getValue(instruction);
 
@@ -223,7 +227,8 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         private void createAllocationResult() {
             for (var interval : intervals) {
                 Log.d("LinearScanAllocator: Processing interval: " + interval.vreg + " [" + interval.start + ", " + interval.end + "], preg: " + interval.preg);
-                if (false) { // FIXME: 先让全部变量溢出
+                assert interval.isValid() : "Invalid live interval: " + interval.vreg + " [" + interval.start + ", " + interval.end + "]";
+                if (interval.preg != null) {
                     // 将虚拟寄存器映射到物理寄存器
                     regMapping.put(interval.vreg, interval.preg);
                 } else {
@@ -395,25 +400,22 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 }
                 
                 // 如果this的开始部分与other相交，保留后面的部分
-                if (other.start <= this.start && other.end < this.end) {
+                if (other.start <= this.start) {
                     return List.of(new Range(other.end + 1, this.end));
                 }
                 
                 // 如果this的结束部分与other相交，保留前面的部分
-                if (other.start > this.start && other.end >= this.end) {
+                if (other.end >= this.end) {
                     return List.of(new Range(this.start, other.start - 1));
                 }
                 
                 // 如果other在this中间，区间被分裂成两部分
-                if (other.start > this.start && other.end < this.end) {
-                    return List.of(
-                        new Range(this.start, other.start - 1),
-                        new Range(other.end + 1, this.end)
-                    );
-                }
-                
+                return List.of(
+                    new Range(this.start, other.start - 1),
+                    new Range(other.end + 1, this.end)
+                );
+
                 // 其他情况，返回原区间（理论上不应该到达这里）
-                return List.of(this);
             }
 
             /**
@@ -432,7 +434,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
         IceMachineRegister vreg, preg;
         int start, end;
-        private Set<Integer> uses = new HashSet<>(); // 记录使用位置
+        private final Set<Integer> uses = new HashSet<>(); // 记录使用位置
 
         public LiveInterval(IceMachineRegister vreg) {
             this(vreg, -1, -1);
@@ -496,6 +498,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
         public void addUse(int position) {
             uses.add(position);
+        }
+
+        public boolean isValid() {
+            return start >= 0 && end >= start; // 确保区间有效
         }
     }
 
