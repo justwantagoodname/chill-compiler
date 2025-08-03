@@ -70,6 +70,11 @@ public class ConditionPatterns {
         }
 
         @Override
+        public int getCost(InstructionSelector selector, IceCmpInstruction.Icmp value) {
+            return getIntrinsicCost() + selector.select(value.getLhs()).cost();
+        }
+
+        @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCmpInstruction.Icmp value) {
             var xReg = selector.emit(value.getLhs());
             var imm = (IceConstantInt) value.getRhs();

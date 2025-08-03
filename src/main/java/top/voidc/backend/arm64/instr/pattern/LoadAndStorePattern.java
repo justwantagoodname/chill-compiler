@@ -259,6 +259,11 @@ public class LoadAndStorePattern {
         }
 
         @Override
+        public int getCost(InstructionSelector selector, IceCopyInstruction value) {
+            return getIntrinsicCost() + selector.select(value.getDestination()).cost();
+        }
+
+        @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCopyInstruction value) {
             assert value.getDestination() instanceof IcePHINode;// 一般目标是PHINode
             // 目标寄存器一般是PHINode，为了防止没有被选择过，先选择一下
@@ -296,6 +301,11 @@ public class LoadAndStorePattern {
     public static class CopyImm extends InstructionPattern<IceCopyInstruction> {
         public CopyImm() {
             super(1);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceCopyInstruction value) {
+            return getIntrinsicCost() + selector.select(value.getDestination()).cost();
         }
 
         @Override
