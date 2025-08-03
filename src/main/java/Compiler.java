@@ -91,6 +91,7 @@ public class Compiler {
             pm.untilStable(
                     GlobalValueNumbering.class,
                     SparseConditionalConstantPropagation.class,
+                    SmartChilletDeleteUnusedValue.class,
                     SmartChilletSimplifyCFG.class
             );
             pm.runPass(RenameVariable.class);
