@@ -59,7 +59,7 @@ public class SSHIRRunner extends SSHRunner {
         final var remoteLibsysyDir = workingDirectory + "/libsysy";
 
         try {
-            final var clangResult = executeCommand("clang", "-x", "ir", "-S", "-fno-integrated-as",
+            final var clangResult = executeCommand("clang", "-x", "ir", "-S", "-fno-integrated-as", "-O2",
                     "-o", testResult.getRemoteAsmPath(), testResult.getRemoteIrPath());
 
             if (!clangResult.isSuccess()) {
