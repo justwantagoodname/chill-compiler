@@ -1,0 +1,23 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="CompilerTest IR 测试" type="JUnit" factoryName="JUnit">
+    <module name="chillcompiler" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="top.voidc.e2e.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="PACKAGE_NAME" value="top.voidc.e2e" />
+    <option name="MAIN_CLASS_NAME" value="top.voidc.e2e.CompilerTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <option name="VM_PARAMETERS" value="-ea -Dchill.ci=true" />
+    <envs>
+      <env name="ENABLE_SSH" value="true" />
+      <env name="TESTCASE_DIR" value="testcases/custom;testcases/functional;testcases/h_functional" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
