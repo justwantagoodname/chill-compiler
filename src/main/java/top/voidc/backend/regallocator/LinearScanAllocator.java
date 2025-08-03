@@ -19,14 +19,16 @@ import java.util.*;
 public class LinearScanAllocator implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
 
     private static class RegisterPool {
-        private final List<IceMachineRegister> pool;
-        private final List<IceMachineRegister> allocated = new ArrayList<>();
+        private final PriorityQueue<IceMachineRegister> pool;
+        private final Set<IceMachineRegister> allocated = new HashSet<>();
         private final IceType poolType;
 
         public RegisterPool(List<IceMachineRegister> registers) {
             assert !registers.isEmpty() : "Register pool cannot be empty";
-            this.pool = registers;
             this.poolType = registers.getFirst().getType();
+            // 使用优先队列（小顶堆）按寄存器名字中的数字排序
+            this.pool = new PriorityQueue<>(Comparator.comparingInt(reg -> Integer.parseInt(reg.getName())));
+            this.pool.addAll(registers);
         }
 
         public IceType getPoolType() {
@@ -34,10 +36,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         }
 
         public Optional<IceMachineRegister> get() {
-            if (pool.isEmpty()) {
+            IceMachineRegister alloc = pool.poll();
+            if (alloc == null) {
                 return Optional.empty();
             }
-            var alloc = pool.removeFirst();
             allocated.add(alloc);
             return Optional.of(alloc);
         }
@@ -47,14 +49,12 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             if (!allocated.remove(register)) {
                 throw new IllegalStateException("Trying to release a register that was not allocated in this pool: " + register);
             }
-            pool.add(register);
-            pool.sort(Comparator.comparingInt(reg -> Integer.parseInt(reg.getName())));
+            pool.offer(register);
         }
 
         public void releaseAll() {
             pool.addAll(allocated);
             allocated.clear();
-            pool.sort(Comparator.comparingInt(reg -> Integer.parseInt(reg.getName())));
         }
     }
 
@@ -84,7 +84,8 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             this.machineFunction = machineFunction;
 
             unhandled = buildLiveIntervals();
-            unhandled.sort(Comparator.comparingInt(i -> i.start));
+            unhandled.sort(Comparator.comparingInt(i -> ((LiveInterval) i).start)
+                    .thenComparing(i -> ((LiveInterval) i).end));
             intervals = new ArrayList<>(unhandled);
 
             Log.d("Initial live intervals: ");
@@ -131,10 +132,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                             IceMachineRegister reg = rv.getRegister();
                             if (intervalMap.containsKey(reg)) {
                                 // 如果已经存在这个寄存器的区间，更新结束位置
-                                intervalMap.get(reg).end = Math.max(intervalMap.get(reg).end, currentIndex + 1);
+                                intervalMap.get(reg).end = Math.max(intervalMap.get(reg).end, currentIndex + 10);
                             } else {
                                 // 如果不存在，创建新的区间
-                                intervalMap.put(reg, new LiveInterval(reg, currentIndex, currentIndex + 1));
+                                intervalMap.put(reg, new LiveInterval(reg, currentIndex, currentIndex + 10));
                             }
                             intervalMap.get(reg).uses.add(currentIndex);
                         }
@@ -145,15 +146,15 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                         IceMachineRegister reg = rv.getRegister();
                         if (intervalMap.containsKey(reg)) {
                             // 如果已经存在这个寄存器的区间，更新结束位置
-                            intervalMap.get(reg).end = Math.max(intervalMap.get(reg).end, currentIndex + 1);
+                            intervalMap.get(reg).end = Math.max(intervalMap.get(reg).end, currentIndex + 10);
                         } else {
                             // 如果不存在，创建新的区间
-                            intervalMap.put(reg, new LiveInterval(reg, currentIndex, currentIndex + 1));
+                            intervalMap.put(reg, new LiveInterval(reg, currentIndex, currentIndex + 10));
                         }
                         intervalMap.get(reg).uses.add(currentIndex); // 记录使用位置
                     }
 
-                    ++currentIndex;
+                    currentIndex += 10;
                 }
             }
 
