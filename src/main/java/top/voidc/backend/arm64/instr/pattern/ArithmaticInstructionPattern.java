@@ -316,6 +316,11 @@ public class ArithmaticInstructionPattern {
         }
 
         @Override
+        public int getCost(InstructionSelector selector, IceBinaryInstruction.Sub value) {
+            return getIntrinsicCost() + selector.select(value.getLhs()).cost();
+        }
+
+        @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Sub value) {
             var xReg = selector.emit(value.getLhs());
             var imm = (IceConstantInt) value.getRhs();
