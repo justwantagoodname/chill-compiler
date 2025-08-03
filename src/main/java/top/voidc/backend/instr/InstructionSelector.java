@@ -2,6 +2,7 @@ package top.voidc.backend.instr;
 
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
@@ -80,7 +81,10 @@ public class InstructionSelector {
             if (!allOperands.contains(instruction) || hasSideEffect(instruction)) {
                 if (instruction instanceof IceCopyInstruction copyInstruction) {
                     // 处理并行复制 我们先不翻译 复制语义而是先计算所有的 source
-                    emit(copyInstruction.getSource());
+                    if (!(copyInstruction.getSource() instanceof IceConstantData)) {
+                        emit(copyInstruction.getSource()); // 如果是常量数据则不需要emit
+                    }
+
                     copyList.add(copyInstruction);
                 } else if (instruction.isTerminal()) {
                     // 终结指令直接添加到终结列表
