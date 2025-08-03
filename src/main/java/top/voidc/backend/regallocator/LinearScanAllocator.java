@@ -8,6 +8,7 @@ import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.*;
 
+import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.misc.exceptions.MyTeammateGotIntoOUCException;
@@ -59,42 +60,33 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     }
 
     private final LivenessAnalysis.LivenessResult livenessResult;
-    private List<IceBlock> BBs;
-    private Map<IceBlock, LivenessAnalysis.BlockLivenessData> functionLivenessData;
 
     /**
      * 仅构建某种类型寄存器的活跃区间并分配
      */
     private class TypedLinearScanAllocator {
         private final IceMachineFunction machineFunction;
+        private Map<IceBlock, LivenessAnalysis.BlockLivenessData> functionLivenessData;
+        private List<IceBlock> BBs;
         private final Map<IceMachineRegister, IceStackSlot> vregSlotMap = new HashMap<>();
-        private final Set<IceStackSlot> vregSlotSet = new HashSet<>();
+        private final Map<IceMachineRegister, IceMachineRegister> regMapping = new HashMap<>();
 
-        private final List<LiveInterval> intervals;
+        private final List<LiveInterval> intervals = new ArrayList<>();
 
         private List<LiveInterval> fixed; // 固定寄存器的区间
-        private final List<LiveInterval> unhandled; // 未处理的区间
+        private final List<LiveInterval> unhandled = new ArrayList<>(); // 未处理的区间
         private final List<LiveInterval> active = new ArrayList<>(); // 活跃的区间
         private List<LiveInterval> inactive; // 当前不占用寄存器但之后仍然活跃的区间
 
         private final RegisterPool registerPool;
+        private final RegisterPool scratchRegisterPool;
 
-        public TypedLinearScanAllocator(IceMachineFunction machineFunction, RegisterPool registerPool) {
+        public TypedLinearScanAllocator(IceMachineFunction machineFunction, RegisterPool registerPool, RegisterPool scratchRegisterPool) {
+            this.BBs = machineFunction.getBlocks();
+            this.functionLivenessData = livenessResult.getLivenessData(machineFunction);
             this.registerPool = registerPool;
             this.machineFunction = machineFunction;
-
-            unhandled = buildLiveIntervals();
-            unhandled.sort(Comparator.comparingInt(i -> ((LiveInterval) i).start)
-                    .thenComparing(i -> ((LiveInterval) i).end));
-            intervals = new ArrayList<>(unhandled);
-
-            Log.d("Initial live intervals: ");
-            for (var interval : intervals) {
-                Log.d("  " + interval.vreg + " [" + interval.start + ", " + interval.end + "]");
-            }
-
-
-            linearScan(); // 执行线性扫描寄存器分配
+            this.scratchRegisterPool = scratchRegisterPool;
         }
 
         private void linearScan() {
@@ -113,7 +105,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
         }
 
-        private List<LiveInterval> buildLiveIntervals() {
+        public void buildLiveIntervals() {
             Map<IceMachineRegister, LiveInterval> intervalMap = new HashMap<>();
             Map<IceBlock, Integer> blockEndIndex = new HashMap<>();
 
@@ -173,7 +165,15 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 }
             }
 
-            return new ArrayList<>(intervalMap.values());
+            unhandled.addAll(intervalMap.values());
+            unhandled.sort(Comparator.comparingInt(i -> ((LiveInterval) i).start)
+                    .thenComparing(i -> ((LiveInterval) i).end));
+            intervals.addAll(unhandled);
+
+            Log.d("Initial live intervals: ");
+            for (var interval : intervals) {
+                Log.d("  " + interval.vreg + " [" + interval.start + ", " + interval.end + "]");
+            }
         }
 
         private void expireOldIntervals(LiveInterval current) {
@@ -197,144 +197,138 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 throw new IllegalStateException("No active intervals to spill.");
             }
 
-            LiveInterval old = active.getLast();
-            LiveInterval newInterval;
-            if (old.nextUseAfter(current.start) > current.nextUseAfter(current.start)) {
-                newInterval = old.splitAt(current.start);
-                unhandled.add(newInterval);
+            LiveInterval spillCandidate = active.stream().max(Comparator.comparingInt(interval -> interval.end)).orElseThrow();
 
-                unhandled.sort(Comparator.comparingInt(i -> i.start));
-                active.sort(Comparator.comparingInt(i -> i.end));
+            // 选择结束位置更大的区间进行溢出 相等时优先溢出 current
+            if (spillCandidate.end > current.end) {
+                // 溢出当前在active中的区间 spillCandidate
+                current.preg = spillCandidate.preg;
+                spillCandidate.preg = null; // 清除物理寄存器映射 标志溢出
 
-                registerPool.release(newInterval.preg);
-                newInterval.preg = null;
-
+                active.remove(spillCandidate); // 从活跃区间中移除
+                active.add(spillCandidate);
             } else {
-                newInterval = current.splitAt(current.nextUseAfter(current.start));
-                unhandled.add(current);
-                unhandled.add(newInterval);
-
-                unhandled.sort(Comparator.comparingInt(i -> i.start));
+                // 溢出当前区间
+                current.preg = null;
             }
-            intervals.add(newInterval);
         }
 
-        private void applyRegisterAllocation() {
-            Map<IceMachineRegister, IceMachineRegister> regMapping = new HashMap<>();
+        /**
+         * 应用寄存器分配结果
+         */
+        public void applyRegisterAllocation() {
+            var showDebug = Boolean.TRUE.equals(Flag.get("-fshow-trace-info"));
+
             for (var interval : intervals) {
                 Log.d("LinearScanAllocator: Processing interval: " + interval.vreg + " [" + interval.start + ", " + interval.end + "], preg: " + interval.preg);
                 if (interval.preg != null) {
                     // 将虚拟寄存器映射到物理寄存器
                     regMapping.put(interval.vreg, interval.preg);
                 } else {
-                    if (vregSlotMap.containsKey(interval.vreg)) {
-                        // 如果已经有映射，跳过
-                        continue;
-                    }
-                    var slot = machineFunction.allocateVariableStackSlot(interval.vreg.getType());
-                    vregSlotMap.putIfAbsent(interval.vreg, slot);
-                    vregSlotSet.add(slot);
+                    // 溢出变量
+                    var slot = vregSlotMap.computeIfAbsent(interval.vreg, register ->
+                            machineFunction.allocateVariableStackSlot(register.getType()));
+                    var alignment = switch (interval.vreg.getType().getTypeEnum()) {
+                        case I32, F32 -> 4;
+                        case I64, F64, PTR -> 8;
+                        default -> throw new IllegalArgumentException("Unsupported type: " + interval.vreg.getType());
+                    };
+                    slot.setAlignment(alignment);
                 }
             }
 
             for (var block : BBs) {
                 for (int i = 0; i < block.size(); ++i) {
-                    if (!(block.get(i) instanceof IceMachineInstruction inst)) {
-                        throw new IllegalArgumentException("Why there is a non-machine instruction in a machine function???");
-                    }
+                    var instruction = (IceMachineInstruction)  block.get(i);
+                    if (instruction instanceof IceMachineInstructionComment) continue;
 
-                    replaceRegisters(inst, regMapping);
-                }
-            }
+                    var dstReg = instruction.getResultReg(); // 一定要在插入加载指令前获取目标寄存器因为有可能在和源操作数重合的情况下被覆盖
+                    var loadSourceOperandsInstructions = new ArrayList<IceMachineInstruction>();
+                    var dstReplaced = false;
 
-            insertSpillCode();
-        }
+                    for (var operand : List.copyOf(instruction.getSourceOperands())) {
+                        if (operand instanceof IceMachineRegister.RegisterView registerView) {
+                            if (regMapping.containsKey(registerView.getRegister())) {
+                                // 物理寄存器
+                                var preg = regMapping.get(registerView.getRegister());
+                                instruction.replaceOperand(operand, preg.createView(registerView.getType()));
 
-        /**
-         * 替换指令中的虚拟寄存器为物理寄存器 / 栈槽
-         *
-         */
-        private void replaceRegisters(IceMachineInstruction inst, Map<IceMachineRegister, IceMachineRegister> regMapping) {
-            for (int i = 0; i < inst.getOperands().size(); i++) {
-                IceValue operand = inst.getOperand(i);
-                if (operand instanceof IceMachineRegister.RegisterView rv) {
-                    IceMachineRegister reg = rv.getRegister();
-                    if (reg.isVirtualize()) {
-                        // 如果是虚拟寄存器，替换为物理寄存器或栈槽
-                        IceMachineRegister mappedReg = regMapping.getOrDefault(reg, null);
-                        if (mappedReg != null) {
-                            inst.replaceOperand(operand, mappedReg.createView(operand.getType()));
-                        } else {
-                            IceStackSlot slot = vregSlotMap.get(reg);
-                            inst.replaceOperand(operand, slot);
-                        }
-                    }
-                }
-            }
+                                if (dstReg != null && dstReg.getRegister().equals(registerView.getRegister())) {
+                                    // 如果目标寄存器也是这个虚拟寄存器，记录下来 以便分配同一个物理寄存器
+                                    dstReplaced = true;
+                                }
+                            } else if (vregSlotMap.containsKey(registerView.getRegister())) {
+                                // 溢出变量
+                                var slot = vregSlotMap.get(registerView.getRegister()); // 获取对应的栈槽
+                                // 先申请一个scratchRegister
+                                var scratchRegister = scratchRegisterPool.get();
+                                // 如果没有可用的scratchRegister，抛出异常
+                                if (scratchRegister.isEmpty()) {
+                                    throw new IllegalStateException("No available scratch register, Try to increase");
+                                }
+                                var scratchRegisterView = scratchRegister.get().createView(registerView.getType());
 
-        }
+                                // 生成ldr指令
+                                var load = new ARM64Instruction("LDR {dst}, {local:src}" + (showDebug ? " //" + registerView.getRegister().getReferenceName() : ""),
+                                        scratchRegisterView, slot);
+                                loadSourceOperandsInstructions.add(load);
 
+                                instruction.replaceOperand(operand, scratchRegisterView); // 替换原指令的虚拟寄存器操作数为溢出专用寄存器
 
-        private void insertSpillCode() {
-            IceMachineRegister tempReg = machineFunction.getPhysicalRegister("x19");
-            IceStackSlot slotOnTempReg = null;
-
-            for (var block : BBs) {
-                for (int i = 0; i < block.size(); ++i) {
-                    if (!(block.get(i) instanceof IceMachineInstruction inst)) {
-                        throw new IllegalArgumentException("Why there is a non-machine instruction in a machine function?????");
-                    }
-
-                    Map<IceValue, IceValue> replacements = new HashMap<>();
-
-                    for (IceValue operand : inst.getSourceOperands()) {
-                        if (operand instanceof IceStackSlot slot && vregSlotSet.contains(slot)) {
-                            // 如果是栈槽，需要替换
-                            if (slotOnTempReg != null) {
-                                IceMachineInstruction storeInst = new ARM64Instruction("STR {src}, {local:dst}",
-                                        tempReg.createView(slotOnTempReg.getType()), slotOnTempReg);
-                                storeInst.setParent(block);
-                                block.add(i, storeInst);
-                                i++; // 插入后需要更新索引
+                                if (dstReg != null && dstReg.getRegister().equals(registerView.getRegister())) {
+                                    // 如果目标寄存器也是这个虚拟寄存器，记录下来 以便分配同一个物理寄存器
+                                    dstReplaced = true;
+                                }
                             }
+                        }
 
-                            var newOperand = tempReg.createView(slot.getType());
-                            IceMachineInstruction loadInst = new ARM64Instruction("LDR {dst}, {local:src}",
-                                    newOperand, slot);
-                            loadInst.setParent(block);
-                            block.add(i, loadInst);
-                            i++; // 插入后需要更新索引
-                            replacements.put(operand, newOperand);
-                            slotOnTempReg = slot;
+
+                    }
+
+                    if (!loadSourceOperandsInstructions.isEmpty()) {
+                        loadSourceOperandsInstructions.forEach(instr -> instr.setParent(block));
+                        block.addAll(i, loadSourceOperandsInstructions); // 在原指令前插入加载指令
+                        i += loadSourceOperandsInstructions.size(); // 更新索引，跳过插入的加载指令
+                    }
+
+                    if (dstReg != null && !dstReplaced) {
+                        if (regMapping.containsKey(dstReg.getRegister())) {
+                            // 物理寄存器
+                            var preg = regMapping.get(dstReg.getRegister());
+                            instruction.replaceOperand(dstReg, preg.createView(dstReg.getType()));
+                        } else if (vregSlotMap.containsKey(dstReg.getRegister())) {
+                            // 溢出变量
+                            var slot = vregSlotMap.get(dstReg.getRegister()); // 获取对应的栈槽
+                            // 先申请一个scratchRegister
+                            var scratchRegister = scratchRegisterPool.get();
+                            // 如果没有可用的scratchRegister，抛出异常
+                            if (scratchRegister.isEmpty()) {
+                                throw new IllegalStateException("No available scratch register, Try to increase");
+                            }
+                            var scratchRegisterView = scratchRegister.get().createView(dstReg.getType());
+
+                            instruction.replaceOperand(dstReg, scratchRegisterView); // 替换原指令的虚拟寄存器操作数为溢出专用寄存器
+
+                            // 生成str指令
+                            var store = new ARM64Instruction("STR {src}, {local:target}" + (showDebug ? " //" + dstReg.getRegister().getReferenceName() : ""),
+                                    scratchRegisterView, slot);
+                            store.setParent(block);
+                            block.add(i + 1, store); // 在原指令后插入存储指令
+                            i++; // 跳过存储指令
                         }
                     }
-
-                    for (var entry : replacements.entrySet()) {
-                        inst.replaceOperand(entry.getKey(), entry.getValue());
-                    }
-
-                    IceMachineRegister.RegisterView resultReg = inst.getResultReg();
-                    if (resultReg != null && vregSlotMap.containsKey(resultReg.getRegister())) {
-                        IceMachineRegister reg = resultReg.getRegister();
-                        IceStackSlot slot = vregSlotMap.get(reg);
-
-                        // 创建存储指令
-                        IceMachineInstruction storeInst = new ARM64Instruction("STR {src}, {local:dst}",
-                                reg.createView(slot.getType()), slot);
-                        storeInst.setParent(block);
-                        block.add(i, storeInst);
-                        i++; // 插入后需要更新索引
-                    }
+                    scratchRegisterPool.releaseAll(); // 释放所有的scratch寄存器
                 }
-
-
             }
         }
-
     }
 
-    private RegisterPool xRegPool; // 整数寄存器池
-    private RegisterPool vRegPool; // 浮点寄存器池
+    private record AllRegisterPools(
+            RegisterPool xRegPool,
+            RegisterPool xScratchPool,
+            RegisterPool vRegPool,
+            RegisterPool vScratchPool
+    ) {}
 
     private static class LiveInterval {
         IceMachineRegister vreg, preg;
@@ -377,19 +371,19 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
     @Override
     public boolean run(IceMachineFunction target) {
-        functionLivenessData = livenessResult.getLivenessData(target);
-
-        BBs = target.getBlocks();
-        initPhysicalRegisterPool(target);
+        var registerPools = initPhysicalRegisterPool(target);
 
         Log.d("开始分配整数寄存器");
-        var integerAllocator = new TypedLinearScanAllocator(target, xRegPool);
+        var integerAllocator = new TypedLinearScanAllocator(target, registerPools.xRegPool(), registerPools.xScratchPool());
+        integerAllocator.buildLiveIntervals();
+        integerAllocator.linearScan();
         integerAllocator.applyRegisterAllocation(); // 应用寄存器分配结果
 
         Log.d("开始分配浮点寄存器");
-        var floatAllocator = new TypedLinearScanAllocator(target, vRegPool);
-
-         floatAllocator.applyRegisterAllocation(); // 应用寄存器分配结果
+        var floatAllocator = new TypedLinearScanAllocator(target, registerPools.vRegPool(), registerPools.vScratchPool());
+        floatAllocator.buildLiveIntervals();
+        floatAllocator.linearScan();
+        floatAllocator.applyRegisterAllocation(); // 应用寄存器分配结果
 
 
 
@@ -400,13 +394,15 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
      * 设置寄存器池
      * TODO 完成 Caller Save 使用后给寄存器池添加Caller Save寄存器
      */
-    private void initPhysicalRegisterPool(IceMachineFunction mf) {
+    private AllRegisterPools initPhysicalRegisterPool(IceMachineFunction mf) {
+        
         var xRegs = new ArrayList<IceMachineRegister>();
         for (var i = 19; i <= 27; ++i) {
             xRegs.add(mf.getPhysicalRegister("x" + i));
         }
 
-        xRegPool = new RegisterPool(xRegs);
+        var xRegPool = new RegisterPool(xRegs.subList(0, 5)); // x19 - x23
+        var xScratchPool = new RegisterPool(xRegs.subList(5, 9)); // x24 - x27
 
         var vRegs = new ArrayList<IceMachineRegister>();
 
@@ -414,7 +410,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             vRegs.add(mf.getPhysicalRegister("v" + i));
         }
 
-        vRegPool = new RegisterPool(vRegs);
+        var vRegPool = new RegisterPool(vRegs.subList(0, 4)); // v8 - v11
+        var vScratchPool = new RegisterPool(vRegs.subList(4, 8)); // v12 - v15
+
+        return new AllRegisterPools(xRegPool, xScratchPool, vRegPool, vScratchPool);
     }
 
     @Override
