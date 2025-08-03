@@ -84,6 +84,7 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                             var alignment = switch (registerView.getRegister().getType().getTypeEnum()) {
                                 case I32, F32 -> 4;
                                 case I64, F64, PTR -> 8;
+                                case VEC -> 16; // 128 位向量寄存器，ARM64 中通常按照 16 字节对齐
                                 default -> throw new IllegalArgumentException("Unsupported type: " + registerView.getRegister().getType());
                             };
                             slot.setAlignment(alignment);
