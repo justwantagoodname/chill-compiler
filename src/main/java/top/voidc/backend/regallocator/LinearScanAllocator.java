@@ -11,6 +11,7 @@ import top.voidc.ir.machine.*;
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
+import top.voidc.misc.ds.BiMap;
 import top.voidc.misc.exceptions.MyTeammateGotIntoOUCException;
 import top.voidc.optimizer.pass.CompilePass;
 
@@ -66,8 +67,9 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
      */
     private class TypedLinearScanAllocator {
         private final IceMachineFunction machineFunction;
-        private Map<IceBlock, LivenessAnalysis.BlockLivenessData> functionLivenessData;
-        private List<IceBlock> BBs;
+        private final Map<IceBlock, LivenessAnalysis.BlockLivenessData> functionLivenessData;
+        private final List<IceBlock> BBs;
+        private final BiMap<IceMachineInstruction, Integer> instructionIds = new BiMap<>();
         private final Map<IceMachineRegister, IceStackSlot> vregSlotMap = new HashMap<>();
         private final Map<IceMachineRegister, IceMachineRegister> regMapping = new HashMap<>();
 
@@ -80,6 +82,8 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
         private final RegisterPool registerPool;
         private final RegisterPool scratchRegisterPool;
+
+        private static final int INSTRUCTION_ID_STEP = 2; // 每条指令的ID步长
 
         public TypedLinearScanAllocator(IceMachineFunction machineFunction, RegisterPool registerPool, RegisterPool scratchRegisterPool) {
             this.BBs = machineFunction.getBlocks();
@@ -107,65 +111,65 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
         public void buildLiveIntervals() {
             Map<IceMachineRegister, LiveInterval> intervalMap = new HashMap<>();
-            Map<IceBlock, Integer> blockEndIndex = new HashMap<>();
 
             int currentIndex = 0;
             for (var block : BBs) {
-                // 左闭右开区间
-                blockEndIndex.put(block, currentIndex + block.size());
-
                 for (var instruction : block) {
-                    if (!(instruction instanceof IceMachineInstruction inst)) {
-                        throw new IllegalArgumentException("Why there is a non-machine instruction in a machine function?");
-                    }
-                    for (IceValue operand : inst.getSourceOperands()) {
-                        if (operand instanceof IceMachineRegister.RegisterView rv && rv.getRegister().isVirtualize()
-                                && rv.getRegister().getType().equals(registerPool.getPoolType())) { // 仅处理指定类型的寄存器
-                            IceMachineRegister reg = rv.getRegister();
-                            if (intervalMap.containsKey(reg)) {
-                                // 如果已经存在这个寄存器的区间，更新结束位置
-                                intervalMap.get(reg).end = Math.max(intervalMap.get(reg).end, currentIndex + 10);
-                            } else {
-                                // 如果不存在，创建新的区间
-                                intervalMap.put(reg, new LiveInterval(reg, currentIndex, currentIndex + 10));
-                            }
-                            intervalMap.get(reg).uses.add(currentIndex);
+                    if (instruction instanceof IceMachineInstructionComment) continue;
+                    instructionIds.put((IceMachineInstruction) instruction, currentIndex);
+                    currentIndex += INSTRUCTION_ID_STEP;
+
+                    for (var operand : instruction.getOperands()) {
+                        // TODO: 想想物理寄存器怎么处理
+                        if (operand instanceof IceMachineRegister.RegisterView registerView
+                                && registerView.getRegister().isVirtualize()
+                                && registerView.getRegister().getType().equals(registerPool.getPoolType())) {
+                            intervalMap.computeIfAbsent(registerView.getRegister(), LiveInterval::new);
                         }
                     }
-
-                    IceMachineRegister.RegisterView rv = inst.getResultReg();
-                    if (rv != null && rv.getRegister().isVirtualize() && rv.getRegister().getType().equals(registerPool.getPoolType())) { // 仅处理指定类型的寄存器
-                        IceMachineRegister reg = rv.getRegister();
-                        if (intervalMap.containsKey(reg)) {
-                            // 如果已经存在这个寄存器的区间，更新结束位置
-                            intervalMap.get(reg).end = Math.max(intervalMap.get(reg).end, currentIndex + 10);
-                        } else {
-                            // 如果不存在，创建新的区间
-                            intervalMap.put(reg, new LiveInterval(reg, currentIndex, currentIndex + 10));
-                        }
-                        intervalMap.get(reg).uses.add(currentIndex); // 记录使用位置
-                    }
-
-                    currentIndex += 10;
                 }
             }
 
             for (var block : BBs) {
                 var liveOut = functionLivenessData.get(block).liveOut();
-                for (IceValue value : liveOut) {
-                    if (value instanceof IceMachineRegister.RegisterView rv) {
-                        IceMachineRegister reg = rv.getRegister();
-                        if (reg.isVirtualize()) {
-                            LiveInterval interval = intervalMap.get(reg);
-                            if (interval != null) {
-                                interval.end = Math.max(interval.end, blockEndIndex.get(block)); // 更新结束位置
-                            }
+
+                var blockStartId = instructionIds.getValue((IceMachineInstruction) block.getFirst());
+                var blockEndId = instructionIds.getValue((IceMachineInstruction) block.getLast());
+
+                for (var value : liveOut) {
+                    if (value instanceof IceMachineRegister register && intervalMap.containsKey(register)) {
+                        var interval = intervalMap.get(register);
+                        interval.addRange(blockStartId, blockEndId);
+                    }
+                }
+
+                for (var i = block.size() - 1; i >= 0; --i) {
+                    var instruction = (IceMachineInstruction) block.get(i);
+                    if (instruction instanceof IceMachineInstructionComment) continue;
+
+                    var instructionId = instructionIds.getValue(instruction);
+
+                    // 先处理Def
+                    if (instruction.getResultReg() != null && intervalMap.containsKey(instruction.getResultReg().getRegister())) {
+                        var interval = intervalMap.get(instruction.getResultReg().getRegister());
+                        interval.addUse(instructionId); // 记录使用位置
+                        interval.removeRange(blockStartId, instructionId); // 此指令重新定义了这个寄存器 需要删除从块开始到现在的定义
+                    }
+
+                    // 后处理 Use 如果一个一条指令同时使用和定义 按此顺序就能正确处理
+                    for (var operand : instruction.getSourceOperands()) {
+                        if (operand instanceof IceMachineRegister.RegisterView registerView
+                            && intervalMap.containsKey(registerView.getRegister())) {
+                            var interval = intervalMap.get(registerView.getRegister());
+                            interval.addUse(instructionId);
+                            interval.addRange(blockStartId, instructionId);
                         }
                     }
                 }
             }
 
             unhandled.addAll(intervalMap.values());
+            unhandled.forEach(LiveInterval::updateStartEnd);
             unhandled.sort(Comparator.comparingInt(i -> ((LiveInterval) i).start)
                     .thenComparing(i -> ((LiveInterval) i).end));
             intervals.addAll(unhandled);
@@ -179,7 +183,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         private void expireOldIntervals(LiveInterval current) {
             // 过期的区间是那些结束位置小于当前区间开始位置的区间
             active.removeIf(interval -> {
-                if (interval.end >= current.start) {
+                if (interval.end > current.start) {
                     return false; // 这个区间还活跃
                 }
                 registerPool.release(interval.preg); // 将物理寄存器释放回寄存器池
@@ -214,14 +218,12 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         }
 
         /**
-         * 应用寄存器分配结果
+         * 利用活跃区间生成寄存器分配结果
          */
-        public void applyRegisterAllocation() {
-            var showDebug = Boolean.TRUE.equals(Flag.get("-fshow-trace-info"));
-
+        private void createAllocationResult() {
             for (var interval : intervals) {
                 Log.d("LinearScanAllocator: Processing interval: " + interval.vreg + " [" + interval.start + ", " + interval.end + "], preg: " + interval.preg);
-                if (interval.preg != null) {
+                if (false) { // FIXME: 先让全部变量溢出
                     // 将虚拟寄存器映射到物理寄存器
                     regMapping.put(interval.vreg, interval.preg);
                 } else {
@@ -237,15 +239,23 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                     slot.setAlignment(alignment);
                 }
             }
+        }
+        /**
+         * 应用寄存器分配结果
+         */
+        public void applyRegisterAllocation() {
+            var showDebug = Boolean.TRUE.equals(Flag.get("-fshow-trace-info"));
+
+            createAllocationResult();
 
             for (var block : BBs) {
                 for (int i = 0; i < block.size(); ++i) {
                     var instruction = (IceMachineInstruction)  block.get(i);
                     if (instruction instanceof IceMachineInstructionComment) continue;
+                    var loadSourceOperandsInstructions = new ArrayList<IceMachineInstruction>(); // 用于存储加载源操作数的指令
 
                     var dstReg = instruction.getResultReg(); // 一定要在插入加载指令前获取目标寄存器因为有可能在和源操作数重合的情况下被覆盖
-                    var loadSourceOperandsInstructions = new ArrayList<IceMachineInstruction>();
-                    var dstReplaced = false;
+                    IceMachineRegister dstReplacedReg = null; // 记录目标寄存器是否被替换过如果被替换过，如果替换过那么在替换源操作数时也要替换成同一个物理寄存器
 
                     for (var operand : List.copyOf(instruction.getSourceOperands())) {
                         if (operand instanceof IceMachineRegister.RegisterView registerView) {
@@ -256,17 +266,26 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
                                 if (dstReg != null && dstReg.getRegister().equals(registerView.getRegister())) {
                                     // 如果目标寄存器也是这个虚拟寄存器，记录下来 以便分配同一个物理寄存器
-                                    dstReplaced = true;
+                                    dstReplacedReg = preg; // 记录被替换的寄存器
                                 }
                             } else if (vregSlotMap.containsKey(registerView.getRegister())) {
                                 // 溢出变量
                                 var slot = vregSlotMap.get(registerView.getRegister()); // 获取对应的栈槽
+                                Optional<IceMachineRegister> scratchRegister;
                                 // 先申请一个scratchRegister
-                                var scratchRegister = scratchRegisterPool.get();
-                                // 如果没有可用的scratchRegister，抛出异常
-                                if (scratchRegister.isEmpty()) {
-                                    throw new IllegalStateException("No available scratch register, Try to increase");
+                                if (dstReg == null || !dstReg.getRegister().equals(registerView.getRegister()) // 没有目标操作数或者和目标操作数不是一个
+                                    || (dstReg.getRegister().equals(registerView.getRegister()) && dstReplacedReg == null)) { // 或者是目标操作数但是还没有分配过
+                                    scratchRegister = scratchRegisterPool.get();
+                                    // 如果没有可用的scratchRegister，抛出异常
+                                    if (scratchRegister.isEmpty()) {
+                                        throw new IllegalStateException("No available scratch register, Try to increase");
+                                    }
+                                } else {
+                                    // 如果目标寄存器和源操作数重合且已经被替换过，那么使用之前的scratchRegister
+                                    assert dstReplacedReg != null;
+                                    scratchRegister = Optional.of(dstReplacedReg);
                                 }
+
                                 var scratchRegisterView = scratchRegister.get().createView(registerView.getType());
 
                                 // 生成ldr指令
@@ -276,14 +295,12 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
                                 instruction.replaceOperand(operand, scratchRegisterView); // 替换原指令的虚拟寄存器操作数为溢出专用寄存器
 
+                                // 如果目标寄存器也是这个虚拟寄存器，记录下来 以便分配同一个物理寄存器
                                 if (dstReg != null && dstReg.getRegister().equals(registerView.getRegister())) {
-                                    // 如果目标寄存器也是这个虚拟寄存器，记录下来 以便分配同一个物理寄存器
-                                    dstReplaced = true;
+                                    dstReplacedReg = scratchRegister.get(); // 记录被替换的寄存器
                                 }
                             }
                         }
-
-
                     }
 
                     if (!loadSourceOperandsInstructions.isEmpty()) {
@@ -292,27 +309,36 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                         i += loadSourceOperandsInstructions.size(); // 更新索引，跳过插入的加载指令
                     }
 
-                    if (dstReg != null && !dstReplaced) {
+                    if (dstReg != null) {
                         if (regMapping.containsKey(dstReg.getRegister())) {
                             // 物理寄存器
-                            var preg = regMapping.get(dstReg.getRegister());
-                            instruction.replaceOperand(dstReg, preg.createView(dstReg.getType()));
+                            if (dstReplacedReg == null || instruction.getResultReg().getRegister().isVirtualize()) {
+                                // 目标寄存器没有被替换过 或者 如果存在已经替换的物理寄存器但是目标寄存器还没有被替换，这发生在目标寄存器和源操作数重合但视图不一致的情况下
+                                var preg = regMapping.get(dstReg.getRegister());
+                                instruction.replaceOperand(dstReg, preg.createView(dstReg.getType()));
+                            }
                         } else if (vregSlotMap.containsKey(dstReg.getRegister())) {
                             // 溢出变量
                             var slot = vregSlotMap.get(dstReg.getRegister()); // 获取对应的栈槽
-                            // 先申请一个scratchRegister
-                            var scratchRegister = scratchRegisterPool.get();
-                            // 如果没有可用的scratchRegister，抛出异常
-                            if (scratchRegister.isEmpty()) {
-                                throw new IllegalStateException("No available scratch register, Try to increase");
-                            }
-                            var scratchRegisterView = scratchRegister.get().createView(dstReg.getType());
+                            if (dstReplacedReg == null || instruction.getResultReg().getRegister().isVirtualize()) { // 如果目标寄存器没有被替换过
 
-                            instruction.replaceOperand(dstReg, scratchRegisterView); // 替换原指令的虚拟寄存器操作数为溢出专用寄存器
+                                if (dstReplacedReg == null) {
+                                    // 先申请一个scratchRegister
+                                    var scratchRegister = scratchRegisterPool.get();
+                                    // 如果没有可用的scratchRegister，抛出异常
+                                    if (scratchRegister.isEmpty()) {
+                                        throw new IllegalStateException("No available scratch register, Try to increase");
+                                    }
+                                    dstReplacedReg = scratchRegister.get();
+                                }
+
+                                instruction.replaceOperand(dstReg, dstReplacedReg.createView(dstReg.getType())); // 替换原指令的虚拟寄存器操作数为溢出专用寄存器
+                            }
 
                             // 生成str指令
+                            // 确保使用相同的物理寄存器存储溢出的目标虚拟寄存器
                             var store = new ARM64Instruction("STR {src}, {local:target}" + (showDebug ? " //" + dstReg.getRegister().getReferenceName() : ""),
-                                    scratchRegisterView, slot);
+                                    dstReplacedReg.createView(dstReg.getType()), slot);
                             store.setParent(block);
                             block.add(i + 1, store); // 在原指令后插入存储指令
                             i++; // 跳过存储指令
@@ -332,37 +358,144 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     ) {}
 
     private static class LiveInterval {
+        public record Range(int start, int end) { // 范围是闭区间 [start, end]
+
+            // 区间可能为一个点
+            public Range {
+                assert start <= end : "Range start must be less than or equal to end";
+            }
+
+            public boolean contains(int pos) {
+                return pos >= start && pos <= end;
+            }
+
+            /**
+             * 判断此区间是否与另一个区间相交，即使端点相交也算相交
+             * @param other 另一个区间
+             * @return 如果此区间与另一个区间相交则返回true，否则返回false
+             */
+            public boolean isIntersecting(Range other) {
+                return this.start <= other.end && other.start <= this.end;
+            }
+
+            /**
+             * 从此区间中移除与另一个区间的交集部分
+             * 如果没有交集则返回原区间
+             * @param other 要移除的部分
+             * @return 一个区间列表，表示从此区间中移除与另一个区间的交集部分后剩余的区间
+             */
+            public List<Range> removeIntersection(Range other) {
+                if (!this.isIntersecting(other)) {
+                    return List.of(this); // 没有交集，返回原区间
+                }
+                
+                // 如果other完全包含this，返回空列表表示区间被完全移除
+                if (other.start <= this.start && other.end >= this.end) {
+                    return List.of();
+                }
+                
+                // 如果this的开始部分与other相交，保留后面的部分
+                if (other.start <= this.start && other.end < this.end) {
+                    return List.of(new Range(other.end + 1, this.end));
+                }
+                
+                // 如果this的结束部分与other相交，保留前面的部分
+                if (other.start > this.start && other.end >= this.end) {
+                    return List.of(new Range(this.start, other.start - 1));
+                }
+                
+                // 如果other在this中间，区间被分裂成两部分
+                if (other.start > this.start && other.end < this.end) {
+                    return List.of(
+                        new Range(this.start, other.start - 1),
+                        new Range(other.end + 1, this.end)
+                    );
+                }
+                
+                // 其他情况，返回原区间（理论上不应该到达这里）
+                return List.of(this);
+            }
+
+            /**
+             * 合并两个区间
+             * @param other 另一个区间
+             * @return 一个新的区间，表示合并后的区间
+             * @throws AssertionError 如果两个区间不相交
+             */
+            public Range merge(Range other) {
+                assert this.isIntersecting(other) : "Cannot merge non-intersecting ranges";
+                return new Range(Math.min(this.start, other.start), Math.max(this.end, other.end));
+            }
+        }
+
+        private final List<Range> livedRanges = new ArrayList<>();
+
         IceMachineRegister vreg, preg;
         int start, end;
-        ArrayList<Integer> uses = new ArrayList<>(); // 记录使用位置
+        private Set<Integer> uses = new HashSet<>(); // 记录使用位置
 
-        public LiveInterval(IceMachineRegister vreg, int start, int end) {
+        public LiveInterval(IceMachineRegister vreg) {
+            this(vreg, -1, -1);
+        }
+
+        private LiveInterval(IceMachineRegister vreg, int start, int end) {
             this.vreg = vreg;
             this.start = start;
             this.end = end;
             this.preg = null;
         }
 
-        public int nextUseAfter(int pos) {
-            for (int use : uses) {
-                if (use > pos) {
-                    return use;
+        public void addRange(int start, int end) {
+            Range newRange = new Range(start, end);
+            
+            // 使用迭代器遍历并合并相交的区间
+            Iterator<Range> iterator = livedRanges.iterator();
+            while (iterator.hasNext()) {
+                Range existingRange = iterator.next();
+                if (newRange.isIntersecting(existingRange)) {
+                    // 合并相交的区间
+                    newRange = newRange.merge(existingRange);
+                    iterator.remove(); // 移除已合并的区间
                 }
             }
-            return Integer.MAX_VALUE; // 如果没有找到，返回一个很大的值
+
+            // 添加合并后的新区间
+            livedRanges.add(newRange);
+            
+            // 更新整体的开始和结束位置
+            updateStartEnd();
         }
 
-        public LiveInterval splitAt(int pos) {
-            if (pos <= start || pos >= end) {
-                throw new IllegalArgumentException("Cannot split interval at position: " + pos);
+        public void removeRange(int start, int end) {
+            Range rangeToRemove = new Range(start, end);
+            List<Range> updatedRanges = new ArrayList<>();
+
+            for (Range existingRange : livedRanges) {
+                // 从每个现有区间中移除指定区间
+                List<Range> remainingRanges = existingRange.removeIntersection(rangeToRemove);
+                updatedRanges.addAll(remainingRanges);
             }
-            LiveInterval newInterval = new LiveInterval(vreg, pos, end);
-            this.end = pos; // 更新当前区间的结束位置
-            return newInterval; // 返回新的区间
+
+            // 更新区间列表
+            livedRanges.clear();
+            livedRanges.addAll(updatedRanges);
+            
+            // 更新整体的开始和结束位置
+            updateStartEnd();
         }
 
-        public boolean isIntersecting(LiveInterval other) {
-            return this.start < other.end && other.start < this.end;
+        public void updateStartEnd() {
+            if (livedRanges.isEmpty()) {
+                start = -1;
+                end = -1;
+            } else {
+                start = livedRanges.stream().mapToInt(range -> range.start).min().orElse(-1);
+                end = livedRanges.stream().mapToInt(range -> range.end).max().orElse(-1);
+            }
+        }
+
+        public void addUse(int position) {
+            uses.add(position);
         }
     }
 
