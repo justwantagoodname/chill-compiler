@@ -171,7 +171,7 @@ public class ARM64Function extends IceMachineFunction {
     public IceMachineRegister.RegisterView allocateVirtualRegister(IceType type) {
         return switch (type.getTypeEnum()) {
             case I32, I64, PTR -> allocateVirtualRegister(String.valueOf(integerVRegCount++), IceType.I64).createView(type);
-            case F32, F64 -> allocateVirtualRegister(String.valueOf(floatVRegCount++), type).createView(type);
+            case F32, F64 -> allocateVirtualRegister(String.valueOf(floatVRegCount++), IceVecType.VEC128).createView(type);
             default -> throw new IllegalArgumentException("Wrong type!");
         };
     }
