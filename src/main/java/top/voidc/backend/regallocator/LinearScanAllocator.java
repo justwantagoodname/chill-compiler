@@ -23,8 +23,9 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
     private static class RegisterPool {
         private final PriorityQueue<IceMachineRegister> pool;
-        private final Set<IceMachineRegister> allocated = new HashSet<>();
+        private final BiMap<IceMachineRegister, LiveInterval> allocated = new BiMap<>();
         private final IceType poolType;
+        private final List<LiveInterval> fixed = new ArrayList<>(); // 固定寄存器的区间
 
         public RegisterPool(List<IceMachineRegister> registers) {
             assert !registers.isEmpty() : "Register pool cannot be empty";
@@ -38,26 +39,66 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             return poolType;
         }
 
-        public Optional<IceMachineRegister> get() {
-            IceMachineRegister alloc = pool.poll();
-            if (alloc == null) {
-                return Optional.empty();
+        public void forceUseRegister(LiveInterval user, IceMachineRegister register) {
+            assert register.getType().equals(poolType) : "Register type mismatch: " + register.getType() + " vs " + poolType;
+            if (!pool.remove(register)) {
+                throw new IllegalStateException("Trying to force use a register that is not in the pool: " + register);
             }
-            allocated.add(alloc);
+            allocated.put(register, user);
+        }
+
+        public Optional<IceMachineRegister> get(LiveInterval user) {
+            if (user == null) { // 传入 null 值就任意分配寄存器
+                IceMachineRegister alloc = pool.poll();
+                if (alloc == null) {
+                    return Optional.empty();
+                }
+                allocated.put(alloc, user);
+                return Optional.of(alloc);
+            }
+            // 启发式算法如果该用户和未来预着色区间有重合那就不分配对应的预着色寄存器
+            assert !user.isPrecolored() : "Cannot allocate precolored register: " + user.vreg;
+
+            var userRange = new LiveInterval.Range(user.start, user.end);
+            var dangerRegisters = fixed.stream()
+                    .filter(interval -> interval.livedRanges.stream().anyMatch(range -> range.isIntersecting(userRange)))
+                    .map(interval -> interval.preg)
+                    .toList();
+
+            // 从池中获取一个寄存器同时避开预着色寄存器
+            IceMachineRegister alloc = pool.stream()
+                    .filter(reg -> !dangerRegisters.contains(reg) && !allocated.containsKey(reg))
+                    .findFirst()
+                    .orElse(null);
+            if (alloc == null) {
+                return Optional.empty(); // 没有可用的寄存器
+            }
+            allocated.put(alloc, user);
+            pool.remove(alloc); // 从池中移除已分配的寄存器
             return Optional.of(alloc);
         }
 
         public void release(IceMachineRegister register) {
             assert register.getType().equals(poolType);
-            if (!allocated.remove(register)) {
+            if (allocated.removeByKey(register) == null) {
                 throw new IllegalStateException("Trying to release a register that was not allocated in this pool: " + register);
             }
             pool.offer(register);
         }
 
         public void releaseAll() {
-            pool.addAll(allocated);
+            pool.addAll(allocated.keySet());
             allocated.clear();
+        }
+
+        public LiveInterval getUser(IceMachineRegister register) {
+            assert register.getType().equals(poolType) && allocated.containsKey(register);
+            return allocated.getValue(register);
+        }
+
+        public void addFixedIntervals(Collection<LiveInterval> intervals) {
+            fixed.addAll(intervals);
+            fixed.sort(Comparator.comparingInt(i -> i.start));
         }
     }
 
@@ -76,10 +117,9 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
         private final List<LiveInterval> intervals = new ArrayList<>();
 
-        private List<LiveInterval> fixed; // 固定寄存器的区间
+        private final List<LiveInterval> fixed = new ArrayList<>(); // 预着色寄存器的区间
         private final List<LiveInterval> unhandled = new ArrayList<>(); // 未处理的区间
         private final List<LiveInterval> active = new ArrayList<>(); // 活跃的区间
-        private List<LiveInterval> inactive; // 当前不占用寄存器但之后仍然活跃的区间
 
         private final RegisterPool registerPool;
         private final RegisterPool scratchRegisterPool;
@@ -94,15 +134,34 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
         private void linearScan() {
             while (!unhandled.isEmpty()) {
+                // TODO: 添加寄存器合并逻辑
                 LiveInterval current = unhandled.removeFirst();
                 expireOldIntervals(current);
 
-                var newPhyReg = registerPool.get();
-                if (newPhyReg.isPresent()) {
-                    current.preg = newPhyReg.get();
+                if (current.isPrecolored()) {
                     active.add(current);
+                    try {
+                        registerPool.forceUseRegister(current, current.preg); // 强制使用预着色寄存器
+                    } catch (IllegalStateException e) {
+                        // 如果被使用了就需要强制溢出使用了的区间
+                        var victim = registerPool.getUser(current.preg);
+                        if (victim != null) {
+                            Log.d("因为预着色强制溢出 " + current.preg + " used by " + victim.vreg);
+                            registerPool.release(victim.preg);
+                            victim.preg = null;
+                            registerPool.forceUseRegister(current, current.preg); // 重新强制使用预着色寄存器
+                        } else {
+                            throw new IllegalStateException("Precolored register " + current.preg + " is not allocated to any interval.");
+                        }
+                    }
                 } else {
-                    spillAtInterval(current);
+                    var newPhyReg = registerPool.get(current);
+                    if (newPhyReg.isPresent()) {
+                        current.preg = newPhyReg.get();
+                        active.add(current);
+                    } else {
+                        spillAtInterval(current);
+                    }
                 }
             }
 
@@ -161,14 +220,15 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                     var instructionId = instructionIds.getValue(instruction);
 
                     // 先处理Def
-                    if (instruction.getResultReg() != null && intervalMap.containsKey(instruction.getResultReg().getRegister())) {
-                        var interval = intervalMap.get(instruction.getResultReg().getRegister());
+                    if (instruction.getResultReg(true) != null && intervalMap.containsKey(instruction.getResultReg(true).getRegister())) {
+                        var interval = intervalMap.get(instruction.getResultReg(true).getRegister());
                         interval.addUse(instructionId); // 记录使用位置
-                        interval.removeRange(blockStartId, instructionId); // 此指令重新定义了这个寄存器 需要删除从块开始到现在的定义
+                        if (!instructionId.equals(blockStartId)) // 此指令重新定义了这个寄存器 需要删除从块开始到前一条指令的活跃区间，如果此指令同时使用了由 def 保证
+                            interval.removeRange(blockStartId, instructionId - INSTRUCTION_ID_STEP);
                     }
 
                     // 后处理 Use 如果一个一条指令同时使用和定义 按此顺序就能正确处理
-                    for (var operand : instruction.getSourceOperands()) {
+                    for (var operand : instruction.getSourceOperands(true)) {
                         if (operand instanceof IceMachineRegister.RegisterView registerView
                             && intervalMap.containsKey(registerView.getRegister())) {
                             var interval = intervalMap.get(registerView.getRegister());
@@ -179,11 +239,22 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 }
             }
 
-            unhandled.addAll(intervalMap.values());
+            unhandled.addAll(intervalMap.values().stream().filter(interval -> !interval.isPrecolored()).toList());
+
+            for (var interval : intervalMap.values().stream().filter(LiveInterval::isPrecolored).toList()) { // 为了简单起见我们把固定寄存器拆分后放入unhandled中
+                for (var range : interval.livedRanges) {
+                    var newInterval = new LiveInterval(interval.vreg, range.start, range.end, true);
+                    newInterval.preg = interval.preg; // 预着色寄存器
+                    newInterval.addRange(range.start, range.end);
+                    unhandled.add(newInterval);
+                    fixed.add(newInterval);
+                }
+            }
             unhandled.forEach(LiveInterval::updateStartEnd);
             unhandled.sort(Comparator.comparingInt(i -> ((LiveInterval) i).start)
                     .thenComparing(i -> ((LiveInterval) i).end));
             intervals.addAll(unhandled);
+            registerPool.addFixedIntervals(fixed);
 
             Log.d("Initial live intervals: ");
             for (var interval : intervals) {
@@ -194,7 +265,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         private void expireOldIntervals(LiveInterval current) {
             // 过期的区间是那些结束位置小于当前区间开始位置的区间
             active.removeIf(interval -> {
-                if (interval.end > current.start) {
+                if (interval.end > current.start) { // 这里不用等于号，如果上一个区间最后一个是def，那以后用不到了可以重新分配了，如果上一个是use，那这个区间分配过来相当于直接重用了
                     return false; // 这个区间还活跃
                 }
                 registerPool.release(interval.preg); // 将物理寄存器释放回寄存器池
@@ -235,6 +306,9 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             for (var interval : intervals) {
                 Log.d("LinearScanAllocator: Processing interval: " + interval.vreg + " [" + interval.start + ", " + interval.end + "], preg: " + interval.preg);
                 assert interval.isValid() : "Invalid live interval: " + interval.vreg + " [" + interval.start + ", " + interval.end + "]";
+
+                if (interval.isPrecolored()) continue; // 预着色寄存器不需要处理
+
                 if (interval.preg != null) {
                     // 将虚拟寄存器映射到物理寄存器
                     regMapping.put(interval.vreg, interval.preg);
@@ -287,7 +361,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                                 // 先申请一个scratchRegister
                                 if (dstReg == null || !dstReg.getRegister().equals(registerView.getRegister()) // 没有目标操作数或者和目标操作数不是一个
                                     || (dstReg.getRegister().equals(registerView.getRegister()) && dstReplacedReg == null)) { // 或者是目标操作数但是还没有分配过
-                                    scratchRegister = scratchRegisterPool.get();
+                                    scratchRegister = scratchRegisterPool.get(null); // 不需要指定用户
                                     // 如果没有可用的scratchRegister，抛出异常
                                     if (scratchRegister.isEmpty()) {
                                         throw new IllegalStateException("No available scratch register, Try to increase");
@@ -336,7 +410,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
                                 if (dstReplacedReg == null) {
                                     // 先申请一个scratchRegister
-                                    var scratchRegister = scratchRegisterPool.get();
+                                    var scratchRegister = scratchRegisterPool.get(null); // 不需要指定用户
                                     // 如果没有可用的scratchRegister，抛出异常
                                     if (scratchRegister.isEmpty()) {
                                         throw new IllegalStateException("No available scratch register, Try to increase");
@@ -544,13 +618,13 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     public boolean run(IceMachineFunction target) {
         var registerPools = initPhysicalRegisterPool(target);
 
-        Log.d("开始分配整数寄存器");
+        Log.d(target.getName() + " 开始分配整数寄存器");
         var integerAllocator = new TypedLinearScanAllocator(target, registerPools.xRegPool(), registerPools.xScratchPool());
         integerAllocator.buildLiveIntervals();
         integerAllocator.linearScan();
         integerAllocator.applyRegisterAllocation(); // 应用寄存器分配结果
 
-        Log.d("开始分配浮点寄存器");
+        Log.d(target.getName() + " 开始分配浮点寄存器");
         var floatAllocator = new TypedLinearScanAllocator(target, registerPools.vRegPool(), registerPools.vScratchPool());
         floatAllocator.buildLiveIntervals();
         floatAllocator.linearScan();
@@ -568,25 +642,25 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
     private AllRegisterPools initPhysicalRegisterPool(IceMachineFunction mf) {
         var xRegPool = new RegisterPool(List.of(
             // caller-save 寄存器
-//            mf.getPhysicalRegister("x0"),
-//            mf.getPhysicalRegister("x1"),
-//            mf.getPhysicalRegister("x2"),
-//            mf.getPhysicalRegister("x3"),
-//            mf.getPhysicalRegister("x4"),
-//            mf.getPhysicalRegister("x5"),
-//            mf.getPhysicalRegister("x6"),
-//            mf.getPhysicalRegister("x7"),
-//            mf.getPhysicalRegister("x8"),
-//            mf.getPhysicalRegister("x9"),
-//            mf.getPhysicalRegister("x10"),
-//            mf.getPhysicalRegister("x11"),
-//            mf.getPhysicalRegister("x12"),
-//            mf.getPhysicalRegister("x13"),
-//            mf.getPhysicalRegister("x14"),
-//            mf.getPhysicalRegister("x15"),
-//            mf.getPhysicalRegister("x16"),
-//            mf.getPhysicalRegister("x17"),
-//            mf.getPhysicalRegister("x18"),
+            mf.getPhysicalRegister("x0"),
+            mf.getPhysicalRegister("x1"),
+            mf.getPhysicalRegister("x2"),
+            mf.getPhysicalRegister("x3"),
+            mf.getPhysicalRegister("x4"),
+            mf.getPhysicalRegister("x5"),
+            mf.getPhysicalRegister("x6"),
+            mf.getPhysicalRegister("x7"),
+            mf.getPhysicalRegister("x8"),
+            mf.getPhysicalRegister("x9"),
+            mf.getPhysicalRegister("x10"),
+            mf.getPhysicalRegister("x11"),
+            mf.getPhysicalRegister("x12"),
+            mf.getPhysicalRegister("x13"),
+            mf.getPhysicalRegister("x14"),
+            mf.getPhysicalRegister("x15"),
+            mf.getPhysicalRegister("x16"),
+            mf.getPhysicalRegister("x17"),
+            mf.getPhysicalRegister("x18"),
             // callee-save 寄存器
             mf.getPhysicalRegister("x19"),
             mf.getPhysicalRegister("x20"),
