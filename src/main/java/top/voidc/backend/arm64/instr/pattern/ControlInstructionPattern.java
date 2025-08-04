@@ -161,7 +161,7 @@ public class ControlInstructionPattern {
             super(intrinsicCost);
         }
 
-        private record ArgumentInfo(String argTemplate, List<RegisterView> argumentRegisters) {}
+        protected record ArgumentInfo(String argTemplate, List<RegisterView> argumentRegisters) {}
 
         @Override
         public int getCost(InstructionSelector selector, IceCallInstruction value) {
@@ -183,7 +183,7 @@ public class ControlInstructionPattern {
                 var funcName = targetFunction.getName();
                 argumentsInfo.argumentRegisters.addFirst(returnReg);
                 selector.addEmittedInstruction(new ARM64Instruction(
-                        "BL " + funcName + "// idef: {implicit:dst} iuse: [ " + argumentsInfo.argTemplate + "]", argumentsInfo.argumentRegisters.toArray(new RegisterView[0])));
+                        "BL " + funcName + " // idef: {implicit:dst} iuse: [ " + argumentsInfo.argTemplate + "]", argumentsInfo.argumentRegisters.toArray(new RegisterView[0])));
 
             }
             return handleFunctionReturn(selector, value);
