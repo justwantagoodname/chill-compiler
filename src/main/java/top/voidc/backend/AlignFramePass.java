@@ -4,6 +4,7 @@ import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
+import top.voidc.misc.Config;
 import top.voidc.misc.Tool;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
@@ -203,11 +204,11 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
     }
 
     private void handScratchRegister(IceMachineFunction target) {
-        // 特殊处理一下 x28 寄存器
-        // TODO 这里需要考虑 x28 寄存器是否会被使用
+        // 特殊处理一下 scratch 寄存器
+        // TODO 这里需要考虑 scratch 寄存器是否会被使用
         if (target.getStackFrame().stream().noneMatch(slot -> slot instanceof IceStackSlot.SavedRegisterStackSlot regSlot
-                && regSlot.getRegister().equals(target.getPhysicalRegister("x28")))) {
-            target.allocateSavedRegisterStackSlot(target.getPhysicalRegister("x28"));
+                && regSlot.getRegister().equals(target.getPhysicalRegister(Config.ARM_SCRATCH_REGISTER)))) {
+            target.allocateSavedRegisterStackSlot(target.getPhysicalRegister(Config.ARM_SCRATCH_REGISTER));
         }
     }
 
