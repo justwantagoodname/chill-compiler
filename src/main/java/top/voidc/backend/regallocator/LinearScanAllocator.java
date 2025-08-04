@@ -41,6 +41,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
         public void forceUseRegister(LiveInterval user, IceMachineRegister register) {
             assert register.getType().equals(poolType) : "Register type mismatch: " + register.getType() + " vs " + poolType;
+            if (!pool.contains(register) && !allocated.containsKey(register)) {
+                return;
+            }
+
             if (!pool.remove(register)) {
                 throw new IllegalStateException("Trying to force use a register that is not in the pool: " + register);
             }
@@ -53,7 +57,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 if (alloc == null) {
                     return Optional.empty();
                 }
-                allocated.put(alloc, user);
+                allocated.put(alloc, new LiveInterval(null));
                 return Optional.of(alloc);
             }
             // 启发式算法如果该用户和未来预着色区间有重合那就不分配对应的预着色寄存器
@@ -185,8 +189,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                                 intervalMap.computeIfAbsent(registerView.getRegister(), LiveInterval::new);
                             } else {
                                 // 物理寄存器
-                                if (!registerView.getRegister().equals(machineFunction.getZeroRegister(registerView.getType()).getRegister())) {
-                                    // 零寄存器不需要处理
+                                if (!registerView.getRegister().getName().equals("zr")) { // 零寄存器不需要处理
                                     intervalMap.computeIfAbsent(registerView.getRegister(), reg -> new LiveInterval(reg, true));
                                 }
                             }
@@ -268,7 +271,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 if (interval.end > current.start) { // 这里不用等于号，如果上一个区间最后一个是def，那以后用不到了可以重新分配了，如果上一个是use，那这个区间分配过来相当于直接重用了
                     return false; // 这个区间还活跃
                 }
-                registerPool.release(interval.preg); // 将物理寄存器释放回寄存器池
+                if (!interval.isPrecolored()) registerPool.release(interval.preg); // 将物理寄存器释放回寄存器池
                 return true; // 这个区间过期了
             });
         }
@@ -283,7 +286,8 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 throw new IllegalStateException("No active intervals to spill.");
             }
 
-            LiveInterval spillCandidate = active.stream().max(Comparator.comparingInt(interval -> interval.end)).orElseThrow();
+            LiveInterval spillCandidate = active.stream().filter(interval -> !interval.isPrecolored())
+                    .max(Comparator.comparingInt(interval -> interval.end)).orElseThrow();
 
             // 选择结束位置更大的区间进行溢出 相等时优先溢出 current
             if (spillCandidate.end > current.end) {
