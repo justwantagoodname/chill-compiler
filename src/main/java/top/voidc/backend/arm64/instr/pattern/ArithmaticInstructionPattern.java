@@ -533,7 +533,8 @@ public class ArithmaticInstructionPattern {
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConvertInstruction value) {
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             var cmp = (IceCmpInstruction) value.getOperand();
-            selector.select(value.getOperand()); // 确保操作数被选择
+            selector.select(cmp); // 确保操作数被选择
+            selector.emit(cmp);
             selector.addEmittedInstruction(
                     new ARM64Instruction("CSET {dst}, " + Tool.mapToArm64Condition(cmp), dstReg)
             );
@@ -560,7 +561,8 @@ public class ArithmaticInstructionPattern {
             var tempIntReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             var cmp = (IceCmpInstruction) value.getOperand();
 
-            selector.select(value.getOperand()); // 确保操作数被选择
+            selector.select(cmp); // 确保操作数被选择
+            selector.emit(cmp);
             selector.addEmittedInstruction(
                     new ARM64Instruction("CSET {dst}, " + Tool.mapToArm64Condition(cmp), tempIntReg)
             );
