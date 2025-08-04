@@ -7,6 +7,7 @@ import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -104,28 +105,31 @@ public class PrologueEpilogueGenerator {
          */
         protected List<IceMachineInstruction> generateCalleeLoadCode(List<IceStackSlot.SavedRegisterStackSlot> calleeSavedSlots) {
             List<IceMachineInstruction> instructions = new ArrayList<>();
-            for (int i = calleeSavedSlots.size() - 1; i >= 0; ) {
+            for (int i = 0; i < calleeSavedSlots.size(); ) {
                 var currentSlot = calleeSavedSlots.get(i);
                 var currentReg = currentSlot.getRegister();
 
-                // 尝试与前一个寄存器配对
-                if (i - 1 >= 0) {
-                    var prevSlot = calleeSavedSlots.get(i - 1);
-                    var prevReg = prevSlot.getRegister();
-                    if (currentReg.getType().equals(prevReg.getType())) {
+                // 尝试与下一个寄存器配对
+                if (i + 1 < calleeSavedSlots.size()) {
+                    var nextSlot = calleeSavedSlots.get(i + 1);
+                    var nextReg = nextSlot.getRegister();
+                    // 仅当类型相同时才能配对
+                    if (currentReg.getType().equals(nextReg.getType())) {
                         int size = currentSlot.getType().getByteSize() * 2;
                         instructions.add(new ARM64Instruction("LDP {reg1}, {reg2}, [sp], {imm:stack}",
-                                prevReg.createView(prevReg.getType()), currentReg.createView(currentReg.getType()), IceConstantData.create(size)));
-                        i -= 2;
+                                currentReg.createView(currentReg.getType()), nextReg.createView(nextReg.getType()), IceConstantData.create(size)));
+
+                        i += 2;
                         continue;
                     }
                 }
 
-                // 处理单个寄存器
+                // 处理单个寄存器，始终分配16字节以保证对齐
                 instructions.add(new ARM64Instruction("LDR {reg1}, [sp], {imm:stack}",
                         currentReg.createView(currentReg.getType()), IceConstantData.create(16)));
-                i--;
+                i++;
             }
+            Collections.reverse(instructions); // 利用栈的FILO特性加载
             return instructions;
         }
         /**
