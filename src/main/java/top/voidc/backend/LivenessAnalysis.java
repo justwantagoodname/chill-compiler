@@ -85,7 +85,7 @@ public class LivenessAnalysis implements CompilePass<IceMachineFunction> {
             });
             for (var instruction : block) {
                 var machineInstruction = (IceMachineInstruction) instruction;
-                for (var operand : machineInstruction.getSourceOperands()) {
+                for (var operand : machineInstruction.getSourceOperands(true)) {
                     if (operand instanceof IceMachineRegister.RegisterView registerView) {
                         var regId = registerMapping.getKey(registerView.getRegister());
                         assert regId != null;
@@ -96,9 +96,9 @@ public class LivenessAnalysis implements CompilePass<IceMachineFunction> {
                     }
                 }
 
-                if (machineInstruction.getResultReg() != null) {
+                if (machineInstruction.getResultReg(true) != null) {
                     // 有返回值那就是被定义
-                    var regId = registerMapping.getKey(machineInstruction.getResultReg().getRegister());
+                    var regId = registerMapping.getKey(machineInstruction.getResultReg(true).getRegister());
                     assert regId != null;
                     // 检查是否之前有使用过 （互斥定义）
                     if (!livenessData.use.get(regId)) {
@@ -180,11 +180,11 @@ public class LivenessAnalysis implements CompilePass<IceMachineFunction> {
         analyzer.run();
         var livenessData = analyzer.getLivenessData();
         this.livenessResult.addLivenessData(target, livenessData);
-//        for (var entry : livenessData.entrySet()) {
-//            var block = entry.getKey();
-//            var data = entry.getValue();
-//            Log.i("Block " + block.getName() + " Live In: " + data.liveIn + ", Live Out: " + data.liveOut);
-//        }
+        for (var entry : livenessData.entrySet()) {
+            var block = entry.getKey();
+            var data = entry.getValue();
+            Log.i("Block " + block.getName() + " Live In: " + data.liveIn + ", Live Out: " + data.liveOut);
+        }
         return false;
     }
 }

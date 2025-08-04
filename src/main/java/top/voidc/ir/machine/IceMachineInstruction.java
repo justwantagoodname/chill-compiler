@@ -173,10 +173,18 @@ public abstract class IceMachineInstruction extends IceInstruction {
         return opcode;
     }
 
+    /**
+     * 获取结果寄存器，返回的结果中不带有隐式操作数
+     */
     public IceMachineRegister.RegisterView getResultReg() {
         return getResultReg(false);
     }
 
+    /**
+     * 获取结果寄存器，可以选择 隐式操作数，主要用于数据流分析等场景
+     * @param withImplicit 是否包含隐式操作数
+     * @return 结果寄存器，如果没有设置结果寄存器则返回null
+     */
     public IceMachineRegister.RegisterView getResultReg(boolean withImplicit) {
         if (resultRegIndex == -1) return null;
         var dstTemplate = namedOperandsArrays[resultRegIndex];
@@ -188,8 +196,7 @@ public abstract class IceMachineInstruction extends IceInstruction {
     }
 
     /**
-     * 获取指令的所有输入操作数
-     * @return 获取
+     * 获取源操作数，返回的结果中不带有带有隐式操作数
      */
     public List<IceValue> getSourceOperands() {
         return getSourceOperands(false);
@@ -197,6 +204,7 @@ public abstract class IceMachineInstruction extends IceInstruction {
 
     /**
      * 获取指令的所有输入操作数
+     * @param withImplicit 是否包含隐式操作数
      * @return 获取
      */
     public List<IceValue> getSourceOperands(boolean withImplicit) {
@@ -214,6 +222,36 @@ public abstract class IceMachineInstruction extends IceInstruction {
             results.add(getOperand(i));
         }
         return results;
+    }
+
+    /**
+     * 获取所有操作数，包括结果寄存器和源操作数
+     * @param withImplicit 是否包含隐式操作数
+     * @return 所有操作数
+     */
+    public List<IceValue> getOperands(boolean withImplicit) {
+        if (namedOperandsArrays == null || namedOperandsArrays.length == 0) {
+            return Collections.emptyList();
+        }
+
+        var results = new ArrayList<IceValue>();
+        for (var i = 0; i < namedOperandsArrays.length; i++) {
+            var namedOperand = namedOperandsArrays[i];
+            if ("implicit".equals(namedOperand.prefix()) && !withImplicit) {
+                continue; // 如果是隐式操作数且不需要，则跳过
+            }
+            results.add(getOperand(i));
+        }
+        return results;
+    }
+
+    /**
+     * 获取所有操作数，包括结果寄存器和源操作数
+     * @return 所有操作数
+     */
+    @Override
+    public List<IceValue> getOperands() {
+        return getOperands(false);
     }
 
     public abstract IceMachineInstruction clone();
