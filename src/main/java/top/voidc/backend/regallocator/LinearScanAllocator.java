@@ -535,23 +535,32 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
      * TODO 完成 Caller Save 使用后给寄存器池添加Caller Save寄存器
      */
     private AllRegisterPools initPhysicalRegisterPool(IceMachineFunction mf) {
-        
-        var xRegs = new ArrayList<IceMachineRegister>();
-        for (var i = 19; i <= 27; ++i) {
-            xRegs.add(mf.getPhysicalRegister("x" + i));
-        }
+        var xRegPool = new RegisterPool(List.of(
+            mf.getPhysicalRegister("x19"),
+            mf.getPhysicalRegister("x20"),
+            mf.getPhysicalRegister("x21"),
+            mf.getPhysicalRegister("x22"),
+            mf.getPhysicalRegister("x23")
+        ));
+        var xScratchPool = new RegisterPool(List.of(
+            mf.getPhysicalRegister("x24"),
+            mf.getPhysicalRegister("x25"),
+            mf.getPhysicalRegister("x26"),
+            mf.getPhysicalRegister("x27")
+        ));
 
-        var xRegPool = new RegisterPool(xRegs.subList(0, 5)); // x19 - x23
-        var xScratchPool = new RegisterPool(xRegs.subList(5, 9)); // x24 - x27
-
-        var vRegs = new ArrayList<IceMachineRegister>();
-
-        for (var i = 8; i <= 15; ++i) {
-            vRegs.add(mf.getPhysicalRegister("v" + i));
-        }
-
-        var vRegPool = new RegisterPool(vRegs.subList(0, 4)); // v8 - v11
-        var vScratchPool = new RegisterPool(vRegs.subList(4, 8)); // v12 - v15
+        var vRegPool = new RegisterPool(List.of(
+            mf.getPhysicalRegister("v8"),
+            mf.getPhysicalRegister("v9"),
+            mf.getPhysicalRegister("v10"),
+            mf.getPhysicalRegister("v11")
+        ));
+        var vScratchPool = new RegisterPool(List.of(
+            mf.getPhysicalRegister("v12"),
+            mf.getPhysicalRegister("v13"),
+            mf.getPhysicalRegister("v14"),
+            mf.getPhysicalRegister("v15")
+        ));
 
         return new AllRegisterPools(xRegPool, xScratchPool, vRegPool, vScratchPool);
     }
