@@ -31,7 +31,7 @@ public class IceCallInstruction extends IceInstruction {
      * @return 参数列表
      */
     public List<IceValue> getArguments() {
-        return getOperandsList().subList(1, getOperandsList().size());
+        return getOperands().subList(1, getOperands().size());
     }
 
     @Override

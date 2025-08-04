@@ -81,10 +81,6 @@ public class IceUser extends IceValue {
         return operands;
     }
 
-    public List<IceValue> getOperandsList() {
-        return operands;
-    }
-
     @Override
     public void destroy() {
         operands.forEach(operand -> operand.removeUse(this));
@@ -95,7 +91,7 @@ public class IceUser extends IceValue {
     @Override
     public void getTextIR(StringBuilder builder) {
         builder.append("user with ")
-                .append(getOperandsList().size())
+                .append(getOperands().size())
                 .append(" operand(s)");
     }
 }
