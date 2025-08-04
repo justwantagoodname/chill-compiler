@@ -139,6 +139,7 @@ public abstract class IceMachineInstruction extends IceInstruction {
                     }
                 }
                 case "label" -> operand.getName();
+                case "implicit" -> operand.getReferenceName();
                 default -> operand.getReferenceName();
             };
             
@@ -173,8 +174,17 @@ public abstract class IceMachineInstruction extends IceInstruction {
     }
 
     public IceMachineRegister.RegisterView getResultReg() {
+        return getResultReg(false);
+    }
+
+    public IceMachineRegister.RegisterView getResultReg(boolean withImplicit) {
         if (resultRegIndex == -1) return null;
-        return (IceMachineRegister.RegisterView) getOperand(resultRegIndex);
+        var dstTemplate = namedOperandsArrays[resultRegIndex];
+        if ("implicit".equals(dstTemplate.prefix())) {
+            return withImplicit ? (IceMachineRegister.RegisterView) getOperand(resultRegIndex) : null;
+        } else {
+            return (IceMachineRegister.RegisterView) getOperand(resultRegIndex);
+        }
     }
 
     /**
@@ -182,18 +192,25 @@ public abstract class IceMachineInstruction extends IceInstruction {
      * @return 获取
      */
     public List<IceValue> getSourceOperands() {
+        return getSourceOperands(false);
+    }
+
+    /**
+     * 获取指令的所有输入操作数
+     * @return 获取
+     */
+    public List<IceValue> getSourceOperands(boolean withImplicit) {
         if (namedOperandsArrays == null || namedOperandsArrays.length == 0) {
             return Collections.emptyList();
-        }
-
-        if (resultRegIndex == 0) {
-            // 如果结果寄存器在第一个位置，直接返回除第一个外的所有操作数
-            return getOperandsList().subList(1, getOperandsList().size());
         }
 
         var results = new ArrayList<IceValue>();
         for (var i = 0; i < namedOperandsArrays.length; i++) {
             if (i == resultRegIndex) continue; // 跳过结果寄存器
+            var namedOperand = namedOperandsArrays[i];
+            if ("implicit".equals(namedOperand.prefix()) && !withImplicit) {
+                continue; // 如果是隐式操作数且不需要，则跳过
+            }
             results.add(getOperand(i));
         }
         return results;
