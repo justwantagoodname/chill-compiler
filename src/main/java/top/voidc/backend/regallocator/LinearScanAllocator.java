@@ -19,6 +19,8 @@ import java.util.*;
 @Pass(group = {"O0", "backend"})
 public class LinearScanAllocator implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
 
+    private static final int INSTRUCTION_ID_STEP = 2; // 每条指令的ID步长
+
     private static class RegisterPool {
         private final PriorityQueue<IceMachineRegister> pool;
         private final Set<IceMachineRegister> allocated = new HashSet<>();
@@ -82,8 +84,6 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         private final RegisterPool registerPool;
         private final RegisterPool scratchRegisterPool;
 
-        private static final int INSTRUCTION_ID_STEP = 2; // 每条指令的ID步长
-
         public TypedLinearScanAllocator(IceMachineFunction machineFunction, RegisterPool registerPool, RegisterPool scratchRegisterPool) {
             this.BBs = machineFunction.getBlocks();
             this.functionLivenessData = livenessResult.getLivenessData(machineFunction);
@@ -119,11 +119,18 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                     currentIndex += INSTRUCTION_ID_STEP;
 
                     for (var operand : instruction.getOperands()) {
-                        // TODO: 想想物理寄存器怎么处理
                         if (operand instanceof IceMachineRegister.RegisterView registerView
-                                && registerView.getRegister().isVirtualize()
                                 && registerView.getRegister().getType().equals(registerPool.getPoolType())) {
-                            intervalMap.computeIfAbsent(registerView.getRegister(), LiveInterval::new);
+                            if (registerView.getRegister().isVirtualize()) {
+                                // 虚拟寄存器
+                                intervalMap.computeIfAbsent(registerView.getRegister(), LiveInterval::new);
+                            } else {
+                                // 物理寄存器
+                                if (!registerView.getRegister().equals(machineFunction.getZeroRegister(registerView.getType()).getRegister())) {
+                                    // 零寄存器不需要处理
+                                    intervalMap.computeIfAbsent(registerView.getRegister(), reg -> new LiveInterval(reg, true));
+                                }
+                            }
                         }
                     }
                 }
@@ -180,7 +187,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
             Log.d("Initial live intervals: ");
             for (var interval : intervals) {
-                Log.d("  " + interval.vreg + " [" + interval.start + ", " + interval.end + "]");
+                Log.d("  " + interval);
             }
         }
 
@@ -401,18 +408,18 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 
                 // 如果this的开始部分与other相交，保留后面的部分
                 if (other.start <= this.start) {
-                    return List.of(new Range(other.end + 1, this.end));
+                    return List.of(new Range(other.end + INSTRUCTION_ID_STEP, this.end));
                 }
                 
                 // 如果this的结束部分与other相交，保留前面的部分
                 if (other.end >= this.end) {
-                    return List.of(new Range(this.start, other.start - 1));
+                    return List.of(new Range(this.start, other.start - INSTRUCTION_ID_STEP));
                 }
                 
                 // 如果other在this中间，区间被分裂成两部分
                 return List.of(
-                    new Range(this.start, other.start - 1),
-                    new Range(other.end + 1, this.end)
+                    new Range(this.start, other.start - INSTRUCTION_ID_STEP),
+                    new Range(other.end + INSTRUCTION_ID_STEP, this.end)
                 );
 
                 // 其他情况，返回原区间（理论上不应该到达这里）
@@ -435,16 +442,23 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         IceMachineRegister vreg, preg;
         int start, end;
         private final Set<Integer> uses = new HashSet<>(); // 记录使用位置
+        private final boolean isPrecolored; // 是否是预着色寄存器
 
         public LiveInterval(IceMachineRegister vreg) {
-            this(vreg, -1, -1);
+            this(vreg, -1, -1, false);
         }
 
-        private LiveInterval(IceMachineRegister vreg, int start, int end) {
+        public LiveInterval(IceMachineRegister preg, boolean isPrecolored) {
+            this(preg, -1, -1, isPrecolored);
+            this.preg = preg;
+        }
+
+        private LiveInterval(IceMachineRegister vreg, int start, int end, boolean isPrecolored) {
             this.vreg = vreg;
             this.start = start;
             this.end = end;
             this.preg = null;
+            this.isPrecolored = isPrecolored;
         }
 
         public void addRange(int start, int end) {
@@ -503,6 +517,23 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         public boolean isValid() {
             return start >= 0 && end >= start; // 确保区间有效
         }
+
+        public boolean isPrecolored() {
+            return isPrecolored;
+        }
+
+        @Override
+        public String toString() {
+            return "LiveInterval{" +
+                    "livedRanges=" + livedRanges +
+                    ", vreg=" + vreg +
+                    ", preg=" + preg +
+                    ", start=" + start +
+                    ", end=" + end +
+                    ", uses=" + uses +
+                    ", isPrecolored=" + isPrecolored +
+                    '}';
+        }
     }
 
     public LinearScanAllocator(LivenessAnalysis.LivenessResult livenessResult) {
@@ -536,6 +567,27 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
      */
     private AllRegisterPools initPhysicalRegisterPool(IceMachineFunction mf) {
         var xRegPool = new RegisterPool(List.of(
+            // caller-save 寄存器
+//            mf.getPhysicalRegister("x0"),
+//            mf.getPhysicalRegister("x1"),
+//            mf.getPhysicalRegister("x2"),
+//            mf.getPhysicalRegister("x3"),
+//            mf.getPhysicalRegister("x4"),
+//            mf.getPhysicalRegister("x5"),
+//            mf.getPhysicalRegister("x6"),
+//            mf.getPhysicalRegister("x7"),
+//            mf.getPhysicalRegister("x8"),
+//            mf.getPhysicalRegister("x9"),
+//            mf.getPhysicalRegister("x10"),
+//            mf.getPhysicalRegister("x11"),
+//            mf.getPhysicalRegister("x12"),
+//            mf.getPhysicalRegister("x13"),
+//            mf.getPhysicalRegister("x14"),
+//            mf.getPhysicalRegister("x15"),
+//            mf.getPhysicalRegister("x16"),
+//            mf.getPhysicalRegister("x17"),
+//            mf.getPhysicalRegister("x18"),
+            // callee-save 寄存器
             mf.getPhysicalRegister("x19"),
             mf.getPhysicalRegister("x20"),
             mf.getPhysicalRegister("x21"),
