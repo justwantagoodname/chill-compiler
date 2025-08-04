@@ -198,6 +198,7 @@ public class ARM64Function extends IceMachineFunction {
     @Override
     public IceMachineRegister.RegisterView getZeroRegister(IceType type) {
         // TODO: 根据浮点类型返回对应的零寄存器
+        if (type.isFloat()) return null;
         return zeroRegister.createView(type);
     }
 
