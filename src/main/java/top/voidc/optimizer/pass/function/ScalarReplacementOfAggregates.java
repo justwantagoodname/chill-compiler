@@ -52,7 +52,7 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
                     result.add(alloca);
                 } else if (instr instanceof IceGEPInstruction gep) {
                     // 这个 pass 只能处理被 静态访问 的数组，因此需要检查 gep 的下标是不是全为 constant
-                    List<IceValue> indices = gep.getOperandsList();
+                    List<IceValue> indices = gep.getOperands();
                     for (int i = 1; i < indices.size(); i++) {
                         IceValue index = indices.get(i);
                         if (!(index instanceof IceConstant)) {
@@ -133,7 +133,7 @@ public class ScalarReplacementOfAggregates implements CompilePass<IceFunction> {
                     --index;
                 } else {
                     // 如果不是 gep，应当尝试替换指令中的别名
-                    List<IceValue> operands = instr.getOperandsList();
+                    List<IceValue> operands = instr.getOperands();
                     for (int i = 0; i < operands.size(); ++i) {
                         IceValue operand = instr.getOperand(i);
                         if (aliasTable.containsKey(operand)) {

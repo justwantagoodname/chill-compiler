@@ -27,7 +27,7 @@ public class IceGEPInstruction extends IceInstruction {
     }
 
     public List<IceValue> getIndices() {
-        return this.getOperandsList().subList(1, this.getOperandsList().size());
+        return this.getOperands().subList(1, this.getOperands().size());
     }
 
     /**
@@ -78,7 +78,7 @@ public class IceGEPInstruction extends IceInstruction {
         builder.append(" ").append(((IcePtrType<?>) getBasePtr().getType()).getPointTo())
                 .append(", ").append(getBasePtr().getReferenceName());
         
-        for (int i = 1; i < getOperandsList().size(); i++) {
+        for (int i = 1; i < getOperands().size(); i++) {
             builder.append(", ").append(getOperand(i).getReferenceName());
         }
     }
