@@ -9,6 +9,7 @@ import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
+import top.voidc.misc.Config;
 import top.voidc.misc.Tool;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
@@ -54,7 +55,7 @@ public class FixStackOffset implements CompilePass<IceMachineFunction>, IceArchi
     @Override
     public boolean run(IceMachineFunction target) {
         // 需要在分配器中保留一个寄存器在这里用
-        var scratchRegister = target.getPhysicalRegister("x28");
+        var scratchRegister = target.getPhysicalRegister(Config.ARM_SCRATCH_REGISTER);
         var isChanged = false;
 
         for (var block : target) {
