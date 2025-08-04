@@ -296,11 +296,15 @@ public class ControlInstructionPattern {
 
         @Override
         protected RegisterView handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
-            var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
-            var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
-            return selector
-                    .addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", virtualReg, resultReg))
-                    .getResultReg();
+            if (!value.getUsers().isEmpty()) {
+                var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
+                var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
+                return selector
+                        .addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", virtualReg, resultReg))
+                        .getResultReg();
+            } else {
+                return null; // 未使用的值返回null也不会影响
+            }
         }
 
         @Override
@@ -319,11 +323,16 @@ public class ControlInstructionPattern {
 
         @Override
         protected RegisterView handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
-            var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
-            var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
-            return selector
-                    .addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", virtualReg, resultReg))
-                    .getResultReg();
+            if (!value.getUsers().isEmpty()) {
+                // 如果有用户使用这个返回值，那么需要将其转换为虚拟寄存器
+                var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
+                var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
+                return selector
+                        .addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", virtualReg, resultReg))
+                        .getResultReg();
+            } else {
+                return null; // 未使用的值返回null也不会影响
+            }
         }
 
         @Override
@@ -332,6 +341,10 @@ public class ControlInstructionPattern {
         }
     }
 
+    /**
+     * 处理可变参数的函数调用，和标准的AAPCS64标准是一样的只是浮点参数在需要作为double传递，但是已经在IR中处理过了，直接就能用VoidCall FloatCall IntCall 处理
+     */
+    @Deprecated
     public static class VoidVACall extends AbstractCallPattern {
         public VoidVACall() {
             super(0);

@@ -55,8 +55,19 @@ public class SmartChilletDeleteUnusedValue implements CompilePass<IceFunction> {
                 }
                 switch (instruction) {
                     case IceStoreInstruction _, IceLoadInstruction _  -> {}
-                    case IceCallInstruction _, IceIntrinsicInstruction _ -> {} // TODO: 做完纯函数分析后应用实际的情况
+                    case IceIntrinsicInstruction _ -> {} // TODO: 做完纯函数分析后应用实际的情况
                     case IceBranchInstruction _ , IceRetInstruction _  -> {}
+                    case IceCallInstruction call -> {
+                        if (false) { // FIXME: 先认为所有的函数调用是不纯的
+                            // 如果是纯函数调用，那么可以删除这个调用
+                            if (call.getUsers().isEmpty()) {
+                                // 如果这个调用没有被使用且没有副作用，那么就可以删除
+                                removeUnusedValue(deleteInstructions, call);
+                            }
+                        }
+                        // 如果是非纯函数调用，那么不能删除
+                        // 这里不做任何处理，保留这个调用
+                    }
                     default -> {
                         assert !instruction.getType().isVoid();
                         if (instruction.getUsers().isEmpty() && !hasSideEffect(instruction)) {
