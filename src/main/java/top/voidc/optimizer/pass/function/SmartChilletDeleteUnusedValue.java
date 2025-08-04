@@ -54,7 +54,7 @@ public class SmartChilletDeleteUnusedValue implements CompilePass<IceFunction> {
                     return;
                 }
                 switch (instruction) {
-                    case IceStoreInstruction _, IceLoadInstruction _  -> {}
+                    case IceStoreInstruction _  -> {}
                     case IceIntrinsicInstruction _ -> {} // TODO: 做完纯函数分析后应用实际的情况
                     case IceBranchInstruction _ , IceRetInstruction _  -> {}
                     case IceCallInstruction call -> {
