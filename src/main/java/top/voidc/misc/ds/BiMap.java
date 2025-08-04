@@ -1,8 +1,10 @@
 package top.voidc.misc.ds;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * 双向映射（BiMap）实现，可以高效查询键到值的映射以及值到键的映射。
@@ -99,6 +101,20 @@ public class BiMap<K, V> {
     public void clear() {
         forward.clear();
         reverse.clear();
+    }
+
+    /**
+     * Returns a Set view of the keys contained in this map.
+     */
+    public Set<K> keySet() {
+        return forward.keySet();
+    }
+
+    /**
+     * Returns a Collection view of the values contained in this map.
+     */
+    public Collection<V> values() {
+        return forward.values();
     }
 
     @Override
