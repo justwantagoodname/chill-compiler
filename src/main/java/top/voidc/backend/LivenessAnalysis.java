@@ -180,11 +180,11 @@ public class LivenessAnalysis implements CompilePass<IceMachineFunction> {
         analyzer.run();
         var livenessData = analyzer.getLivenessData();
         this.livenessResult.addLivenessData(target, livenessData);
-        for (var entry : livenessData.entrySet()) {
-            var block = entry.getKey();
-            var data = entry.getValue();
-            Log.i("Block " + block.getName() + " Live In: " + data.liveIn + ", Live Out: " + data.liveOut);
-        }
+//        for (var entry : livenessData.entrySet()) {
+//            var block = entry.getKey();
+//            var data = entry.getValue();
+//            Log.i("Block " + block.getName() + " Live In: " + data.liveIn + ", Live Out: " + data.liveOut);
+//        }
         return false;
     }
 }
