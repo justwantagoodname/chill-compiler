@@ -9,6 +9,7 @@ import top.voidc.ir.machine.*;
 
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
+import top.voidc.misc.Tool;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.misc.ds.BiMap;
 import top.voidc.misc.exceptions.MyTeammateGotIntoOUCException;
@@ -46,6 +47,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             }
 
             if (!pool.remove(register)) {
+                if (getUser(register).equals(user)) return; // 如果这个寄存器已经被分配给了这个用户就不需要从池中移除
                 throw new IllegalStateException("Trying to force use a register that is not in the pool: " + register);
             }
             allocated.put(register, user);
@@ -70,10 +72,26 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                     .toList();
 
             // 从池中获取一个寄存器同时避开预着色寄存器
-            IceMachineRegister alloc = pool.stream()
-                    .filter(reg -> !dangerRegisters.contains(reg) && !allocated.containsKey(reg))
-                    .findFirst()
-                    .orElse(null);
+            IceMachineRegister alloc;
+            var candidates = pool.stream()
+                    .filter(reg -> !dangerRegisters.contains(reg) && !allocated.containsKey(reg));
+
+            // 如果跨越了调用的区间则尽量分配 callee-save 寄存器
+
+            if (user.isCrossCall()) {
+                // 先尝试分配 callee-save 寄存器没有再尝试分配 caller-save 寄存器
+                var candidatesList = candidates.toList();
+                alloc = candidatesList.stream()
+                        .filter(reg -> Tool.getArm64RegisterType(reg) == Tool.RegisterType.CALLEE_SAVED)
+                        .findFirst().orElseGet(
+                                () -> candidatesList.stream()
+                                        .filter(reg -> Tool.getArm64RegisterType(reg) == Tool.RegisterType.CALLER_SAVED)
+                                        .findFirst().orElse(null)
+                        );
+            } else {
+                alloc = candidates.findFirst().orElse(null);
+            }
+
             if (alloc == null) {
                 return Optional.empty(); // 没有可用的寄存器
             }
@@ -124,6 +142,11 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         private final List<LiveInterval> fixed = new ArrayList<>(); // 预着色寄存器的区间
         private final List<LiveInterval> unhandled = new ArrayList<>(); // 未处理的区间
         private final List<LiveInterval> active = new ArrayList<>(); // 活跃的区间
+
+        private final List<Integer> callPositions = new ArrayList<>(); // 记录调用指令的位置
+        private final Map<Integer, List<LiveInterval>> callIntervals = new HashMap<>(); // 记录调用指令对应的活跃区间
+
+        private final Map<IceMachineRegister, IceStackSlot.VariableStackSlot> callerSavedSlots = new HashMap<>(); // 用于保存 caller-save 寄存器的栈槽
 
         private final RegisterPool registerPool;
         private final RegisterPool scratchRegisterPool;
@@ -179,6 +202,12 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 for (var instruction : block) {
                     if (instruction instanceof IceMachineInstructionComment) continue;
                     instructionIds.put((IceMachineInstruction) instruction, currentIndex);
+
+                    if (((IceMachineInstruction) instruction).getOpcode().equals("BL")) {
+                        // 记录调用指令的位置
+                        callPositions.add(currentIndex);
+                    }
+
                     currentIndex += INSTRUCTION_ID_STEP;
 
                     for (var operand : instruction.getOperands()) {
@@ -259,6 +288,16 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             intervals.addAll(unhandled);
             registerPool.addFixedIntervals(fixed);
 
+            for (var callPos : callPositions) {
+                for (var interval : intervals) {
+                    if (interval.start <= callPos && interval.end > callPos) { // 如果调用位置在区间的最后那无所谓了
+                        // 如果区间包含调用位置，则标记为跨调用
+                        interval.setCrossCall(true);
+                        callIntervals.computeIfAbsent(callPos, _ -> new ArrayList<>()).add(interval);
+                    }
+                }
+            }
+
             Log.d("Initial live intervals: ");
             for (var interval : intervals) {
                 Log.d("  " + interval);
@@ -271,7 +310,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 if (interval.end > current.start) { // 这里不用等于号，如果上一个区间最后一个是def，那以后用不到了可以重新分配了，如果上一个是use，那这个区间分配过来相当于直接重用了
                     return false; // 这个区间还活跃
                 }
-                if (!interval.isPrecolored()) registerPool.release(interval.preg); // 将物理寄存器释放回寄存器池
+                registerPool.release(interval.preg); // 将物理寄存器释放回寄存器池
                 return true; // 这个区间过期了
             });
         }
@@ -342,7 +381,8 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 for (int i = 0; i < block.size(); ++i) {
                     var instruction = (IceMachineInstruction)  block.get(i);
                     if (instruction instanceof IceMachineInstructionComment) continue;
-                    var loadSourceOperandsInstructions = new ArrayList<IceMachineInstruction>(); // 用于存储加载源操作数的指令
+                    var insertPreInstructions = new ArrayList<IceMachineInstruction>(); // 插入到原指令前的指令
+                    var insertPostInstructions = new ArrayList<IceMachineInstruction>(); // 插入到原指令后的指令
 
                     var dstReg = instruction.getResultReg(); // 一定要在插入加载指令前获取目标寄存器因为有可能在和源操作数重合的情况下被覆盖
                     IceMachineRegister dstReplacedReg = null; // 记录目标寄存器是否被替换过如果被替换过，如果替换过那么在替换源操作数时也要替换成同一个物理寄存器
@@ -381,7 +421,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                                 // 生成ldr指令
                                 var load = new ARM64Instruction("LDR {dst}, {local:src}" + (showDebug ? " //" + registerView.getRegister().getReferenceName() : ""),
                                         scratchRegisterView, slot);
-                                loadSourceOperandsInstructions.add(load);
+                                insertPreInstructions.add(load);
 
                                 instruction.replaceOperand(operand, scratchRegisterView); // 替换原指令的虚拟寄存器操作数为溢出专用寄存器
 
@@ -393,10 +433,35 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                         }
                     }
 
-                    if (!loadSourceOperandsInstructions.isEmpty()) {
-                        loadSourceOperandsInstructions.forEach(instr -> instr.setParent(block));
-                        block.addAll(i, loadSourceOperandsInstructions); // 在原指令前插入加载指令
-                        i += loadSourceOperandsInstructions.size(); // 更新索引，跳过插入的加载指令
+                    if (instruction.getOpcode().equals("BL")) {
+                        // 如果是调用指令，需要保存所有活跃的caller-save
+                        var callId = instructionIds.getValue(instruction);
+                        // 查看此调用时所有活跃的区间
+                        for (var interval : callIntervals.getOrDefault(callId, List.of())) {
+                            if (interval.isPrecolored()) continue; // 预着色寄存器不需要处理
+                            if (interval.preg != null
+                                    && Tool.getArm64RegisterType(interval.preg) == Tool.RegisterType.CALLER_SAVED) {
+                                var slot = callerSavedSlots.computeIfAbsent(interval.preg, register -> {
+                                    var newSlot = machineFunction.allocateVariableStackSlot(register.getType());
+                                    newSlot.setAlignment(register.getType().getByteSize());
+                                    return newSlot;
+                                });
+                                // 生成str指令
+                                var store = new ARM64Instruction("STR {src}, {local:target}" + (showDebug ? " //" + interval.vreg.getReferenceName() : ""),
+                                        interval.preg.createView(interval.vreg.getType()), slot);
+                                insertPreInstructions.add(store); // 在调用前插入存储指令
+
+                                var load = new ARM64Instruction("LDR {dst}, {local:src}" + (showDebug ? " //" + interval.vreg.getReferenceName() : ""),
+                                        interval.preg.createView(interval.vreg.getType()), slot);
+                                insertPreInstructions.add(load);
+                            }
+                        }
+                    }
+
+                    if (!insertPreInstructions.isEmpty()) {
+                        insertPreInstructions.forEach(instr -> instr.setParent(block));
+                        block.addAll(i, insertPreInstructions); // 在原指令前插入加载指令
+                        i += insertPreInstructions.size(); // 更新索引，跳过插入的加载指令
                     }
 
                     if (dstReg != null) {
@@ -429,11 +494,19 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                             // 确保使用相同的物理寄存器存储溢出的目标虚拟寄存器
                             var store = new ARM64Instruction("STR {src}, {local:target}" + (showDebug ? " //" + dstReg.getRegister().getReferenceName() : ""),
                                     dstReplacedReg.createView(dstReg.getType()), slot);
-                            store.setParent(block);
-                            block.add(i + 1, store); // 在原指令后插入存储指令
-                            i++; // 跳过存储指令
+                            insertPostInstructions.add(store);
+//                            store.setParent(block);
+//                            block.add(i + 1, store); // 在原指令后插入存储指令
+//                            i++; // 跳过存储指令
                         }
                     }
+
+                    if (!insertPostInstructions.isEmpty()) {
+                        insertPostInstructions.forEach(instr -> instr.setParent(block));
+                        block.addAll(i + 1, insertPostInstructions); // 在原指令前插入指令
+                        i += insertPostInstructions.size(); // 更新索引，跳过插入的存储指令
+                    }
+
                     scratchRegisterPool.releaseAll(); // 释放所有的scratch寄存器
                 }
             }
@@ -515,6 +588,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             }
         }
 
+        private boolean crossCall;
         private final List<Range> livedRanges = new ArrayList<>();
 
         IceMachineRegister vreg, preg;
@@ -600,6 +674,14 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             return isPrecolored;
         }
 
+        public void setCrossCall(boolean crossCall) {
+            this.crossCall = crossCall;
+        }
+
+        public boolean isCrossCall() {
+            return crossCall;
+        }
+
         @Override
         public String toString() {
             return "LiveInterval{" +
@@ -680,10 +762,37 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
         ));
 
         var vRegPool = new RegisterPool(List.of(
+            // caller-save 寄存器
+            mf.getPhysicalRegister("v0"),
+            mf.getPhysicalRegister("v1"),
+            mf.getPhysicalRegister("v2"),
+            mf.getPhysicalRegister("v3"),
+            mf.getPhysicalRegister("v4"),
+            mf.getPhysicalRegister("v5"),
+            mf.getPhysicalRegister("v6"),
+            mf.getPhysicalRegister("v7"),
+            // callee-save 寄存器
             mf.getPhysicalRegister("v8"),
             mf.getPhysicalRegister("v9"),
             mf.getPhysicalRegister("v10"),
-            mf.getPhysicalRegister("v11")
+            mf.getPhysicalRegister("v11"),
+                // caller-save 寄存器
+            mf.getPhysicalRegister("v16"),
+            mf.getPhysicalRegister("v17"),
+            mf.getPhysicalRegister("v18"),
+            mf.getPhysicalRegister("v19"),
+            mf.getPhysicalRegister("v20"),
+            mf.getPhysicalRegister("v21"),
+            mf.getPhysicalRegister("v22"),
+            mf.getPhysicalRegister("v23"),
+            mf.getPhysicalRegister("v24"),
+            mf.getPhysicalRegister("v25"),
+            mf.getPhysicalRegister("v26"),
+            mf.getPhysicalRegister("v27"),
+            mf.getPhysicalRegister("v28"),
+            mf.getPhysicalRegister("v29"),
+            mf.getPhysicalRegister("v30"),
+            mf.getPhysicalRegister("v31")
         ));
         var vScratchPool = new RegisterPool(List.of(
             mf.getPhysicalRegister("v12"),
