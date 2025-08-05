@@ -433,6 +433,8 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                         }
                     }
 
+                    scratchRegisterPool.releaseAll(); // 在加载完源寄存器之后提前释放所有的scratch寄存器，这样一个寄存器就可以用于加载结果了
+
                     if (instruction.getOpcode().equals("BL")) {
                         // 如果是调用指令，需要保存所有活跃的caller-save
                         var callId = instructionIds.getValue(instruction);
@@ -752,10 +754,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             mf.getPhysicalRegister("x20"),
             mf.getPhysicalRegister("x21"),
             mf.getPhysicalRegister("x22"),
-            mf.getPhysicalRegister("x23")
+            mf.getPhysicalRegister("x23"),
+            mf.getPhysicalRegister("x24")
         ));
         var xScratchPool = new RegisterPool(List.of(
-            mf.getPhysicalRegister("x24"),
             mf.getPhysicalRegister("x25"),
             mf.getPhysicalRegister("x26"),
             mf.getPhysicalRegister("x27")
@@ -776,6 +778,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             mf.getPhysicalRegister("v9"),
             mf.getPhysicalRegister("v10"),
             mf.getPhysicalRegister("v11"),
+            mf.getPhysicalRegister("v12"),
                 // caller-save 寄存器
             mf.getPhysicalRegister("v16"),
             mf.getPhysicalRegister("v17"),
@@ -795,7 +798,6 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             mf.getPhysicalRegister("v31")
         ));
         var vScratchPool = new RegisterPool(List.of(
-            mf.getPhysicalRegister("v12"),
             mf.getPhysicalRegister("v13"),
             mf.getPhysicalRegister("v14"),
             mf.getPhysicalRegister("v15")
