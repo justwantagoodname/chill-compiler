@@ -453,7 +453,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
                                 var load = new ARM64Instruction("LDR {dst}, {local:src}" + (showDebug ? " //" + interval.vreg.getReferenceName() : ""),
                                         interval.preg.createView(interval.vreg.getType()), slot);
-                                insertPreInstructions.add(load);
+                                insertPostInstructions.add(load);
                             }
                         }
                     }
