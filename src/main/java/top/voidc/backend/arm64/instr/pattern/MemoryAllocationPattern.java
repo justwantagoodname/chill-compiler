@@ -104,17 +104,18 @@ public class MemoryAllocationPattern {
             // TODO len 小于 8 的直接换成NEON STR wzr
 
             // 第四位是 volatile 位直接不管了
-
-            // TODO 先想办法保存原来的寄存器值
             var x0 = selector.getMachineFunction().getPhysicalRegister("x0").createView(IceType.I64); // 第一个参数是地址
             var x1 = selector.getMachineFunction().getPhysicalRegister("x1").createView(IceType.I8); // 第二个参数是值
             var x2 = selector.getMachineFunction().getPhysicalRegister("x2").createView(IceType.I32); // 第三个参数是长度
             var slot = (IceStackSlot) selector.emit(value.getParameters().get(0));
             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", x0, slot));
+            assert value.getParameters().get(1) instanceof IceConstantByte : "目前只支持常量其他不管了";
             selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm8:val}", x1, (IceConstantByte) value.getParameters().get(1))); // 仅仅支持常量其他不管了
             var len = (IceMachineRegister.RegisterView) selector.emit(value.getParameters().get(2));
+//            assert value.getParameters().get(2) instanceof IceConstantData :  "目前只支持常量其他不管了";
             selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x2, len));
-            selector.addEmittedInstruction(new ARM64Instruction("BL memset"));
+            // 生成调用 memset 的指令 需要隐式引用
+            selector.addEmittedInstruction(new ARM64Instruction("BL memset // iuse: [{implicit:iarg1} {implicit:iarg2} {implicit:iarg3}]", x0, x1, x2));
             selector.getMachineFunction().setHasCall(true);
             return null;
         }
@@ -153,10 +154,6 @@ public class MemoryAllocationPattern {
             // 第四位是 volatile 位直接不管了
 
             var addrReg = selector.getMachineFunction().allocateVirtualRegister(src.getType());
-
-
-
-            // TODO 先想办法保存原来的寄存器值
             var x0 = selector.getMachineFunction().getPhysicalRegister("x0").createView(IceType.I64); // 第一个参数是地址
             var x1 = selector.getMachineFunction().getPhysicalRegister("x1").createView(IceType.I64); // 第二个参数是值
             var x2 = selector.getMachineFunction().getPhysicalRegister("x2").createView(IceType.I32); // 第三个参数是长度
@@ -169,8 +166,9 @@ public class MemoryAllocationPattern {
             selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x1, addrReg)); // src
 
             var len = (IceMachineRegister.RegisterView) selector.emit(value.getParameters().get(2));
-            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x2, len));
-            selector.addEmittedInstruction(new ARM64Instruction("BL memcpy"));
+            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", x2, len)); // len
+            selector.addEmittedInstruction(new ARM64Instruction("BL memcpy // iuse: [{implicit:iarg1} {implicit:iarg2} {implicit:iarg3}]", x0, x1, x2));
+            // 生成调用 memcpy 的指令 需要隐式引用
             selector.getMachineFunction().setHasCall(true);
             return null;
         }
