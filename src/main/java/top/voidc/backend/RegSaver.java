@@ -28,19 +28,14 @@ public class RegSaver implements CompilePass<IceMachineFunction>, IceArchitectur
 
     @Override
     public boolean run(IceMachineFunction target) {
-        if (!(target instanceof ARM64Function mf)) {
-            throw new IllegalArgumentException("CallerSaver only supports ARM64Function.");
-        }
-
-//        saveCallerSavedRegs(mf);
         saveCalleeSavedRegs(target);
-
-        return true;
+        return false; // 不需要修改 IR 只是声明栈槽了
     }
 
     /**
-     * FIXME 这个保存不是很正确？是否需要考虑一些caller-save寄存器其实是函数的参数寄存器跳过
+     * 这个由寄存器分配器保证
      */
+    @Deprecated
     private void saveCallerSavedRegs(ARM64Function mf) {
 
         // 直到这次被调用前，使用过的 caller-save 寄存器集合
