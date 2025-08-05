@@ -69,7 +69,7 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
                     case IceStackSlot.SavedRegisterStackSlot savedRegSlot -> {
                         var register = savedRegSlot.getRegister();
                         switch (Tool.getArm64RegisterType(register)) {
-                            case CALLER_SAVED -> callerSavedSlots.add(savedRegSlot);
+                            case CALLER_SAVED -> throw new IllegalStateException("直接用 VariableStackSlot 来保存调用者保存的寄存器，摆了: " + register.getName());
                             case CALLEE_SAVED -> calleeSavedSlots.add(savedRegSlot);
                             case READ_ONLY -> throw new IllegalStateException("This should never happen: " + register.getName() + " is a read-only register.");
                         }
