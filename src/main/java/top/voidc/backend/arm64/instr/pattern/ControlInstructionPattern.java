@@ -175,7 +175,11 @@ public class ControlInstructionPattern {
              var argumentsInfo = emitArguments(selector, value);
             if (value.getUsers().isEmpty() || value.getType().isVoid()) {
                 // 如果没有用户使用这个调用的返回值，或者返回值是void类型
-                selector.addEmittedInstruction(new ARM64Instruction("BL " + value.getTarget().getName())); // 直接调用就行
+                // 在 BL 指令中附加隐式的返回寄存器
+                var targetFunction = value.getTarget();
+                var funcName = targetFunction.getName();
+                selector.addEmittedInstruction(new ARM64Instruction(
+                        "BL " + funcName + " // iuse: [ " + argumentsInfo.argTemplate + "]", argumentsInfo.argumentRegisters.toArray(new RegisterView[0])));
             } else {
                 // 在 BL 指令中附加隐式的返回寄存器
                 var returnReg = selector.getMachineFunction().getReturnRegister(value.getType());
