@@ -83,8 +83,10 @@ public class SSADestruction implements CompilePass<IceFunction> {
                     var insertedFlag = false;
                     for (var i = fromBlock.size() - 1; i >= 0; i--) {
                         var inst = fromBlock.get(i);
-                        if (!inst.isTerminal()) {
-                            // 找到第一个非终结指令，插入复制指令到这个指令之后
+                        if (!inst.isTerminal() && !(inst instanceof IceCopyInstruction)) {
+                            // 找到第一个非终结和非复制指令之前，插入复制指令到这个指令之后
+                            // Note: 这里确保了复制指令是按照原来的顺序插入的
+                            // FIXME: 我也不知道为什么这样做就对了，按照SSA消融定义正确处理依赖的做法是插入临时变量
                             fromBlock.add(i + 1, new IceCopyInstruction(fromBlock, phiNode, copyValue));
                             insertedFlag = true;
                             break;
