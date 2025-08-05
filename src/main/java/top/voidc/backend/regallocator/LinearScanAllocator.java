@@ -298,10 +298,10 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 }
             }
 
-            Log.d("Initial live intervals: ");
-            for (var interval : intervals) {
-                Log.d("  " + interval);
-            }
+//            Log.d("Initial live intervals: ");
+//            for (var interval : intervals) {
+//                Log.d("  " + interval);
+//            }
         }
 
         private void expireOldIntervals(LiveInterval current) {
@@ -346,11 +346,18 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
          * 利用活跃区间生成寄存器分配结果
          */
         private void createAllocationResult() {
+            var all = 0;
+            var spilled = 0;
             for (var interval : intervals) {
-                Log.d("LinearScanAllocator: Processing interval: " + interval.vreg + " [" + interval.start + ", " + interval.end + "], preg: " + interval.preg);
+//                Log.d("LinearScanAllocator: Processing interval: " + interval.vreg + " [" + interval.start + ", " + interval.end + "], preg: " + interval.preg);
                 assert interval.isValid() : "Invalid live interval: " + interval.vreg + " [" + interval.start + ", " + interval.end + "]";
 
                 if (interval.isPrecolored()) continue; // 预着色寄存器不需要处理
+
+                all++;
+                if (interval.preg == null) {
+                    spilled++;
+                }
 
                 if (interval.preg != null) {
                     // 将虚拟寄存器映射到物理寄存器
@@ -367,6 +374,9 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                     };
                     slot.setAlignment(alignment);
                 }
+            }
+            if (all != 0) {
+                Log.d(String.format("分配寄存器结果: 总计: %d, 溢出: %d 溢出率: %.2f%%", all, spilled, (double) spilled / all));
             }
         }
         /**
@@ -725,7 +735,6 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
 
     /**
      * 设置寄存器池
-     * TODO 完成 Caller Save 使用后给寄存器池添加Caller Save寄存器
      */
     private AllRegisterPools initPhysicalRegisterPool(IceMachineFunction mf) {
         var xRegPool = new RegisterPool(List.of(
