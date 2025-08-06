@@ -1,6 +1,7 @@
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import top.voidc.backend.*;
+import top.voidc.backend.peephole.PeepholeOptimization;
 import top.voidc.backend.regallocator.*;
 import top.voidc.backend.arm64.instr.pattern.ARM64InstructionPatternPack;
 import top.voidc.backend.instr.InstructionSelectionPass;
@@ -101,11 +102,12 @@ public class Compiler {
             pm.runPass(SSADestruction.class);
             pm.runPass(InstructionSelectionPass.class);
             pm.runPass(LivenessAnalysis.class);
-            pm.runPass(ShowIR.class);
 //            pm.runPass(SillyChilletAllocateRegister.class);
             pm.runPass(LinearScanAllocator.class);
+            pm.runPass(ShowIR.class);
             pm.runPass(RegSaver.class);
             pm.runPass(AlignFramePass.class);
+            pm.runPass(PeepholeOptimization.class);
             pm.runPass(FixStackOffset.class);
             pm.runPass(OutputARMASM.class);
         });
