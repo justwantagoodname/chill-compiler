@@ -17,7 +17,7 @@ import top.voidc.optimizer.pass.CompilePass;
 
 import java.util.*;
 
-@Pass(group = {"O0", "backend"})
+@Pass(group = {"O0", "backend"}, parallel = true)
 public class LinearScanAllocator implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
 
     private static final int INSTRUCTION_ID_STEP = 2; // 每条指令的ID步长
@@ -376,7 +376,7 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
                 }
             }
             if (all != 0) {
-                Log.d(String.format("分配寄存器结果: 总计: %d, 溢出: %d 溢出率: %.2f%%", all, spilled, (double) spilled / all));
+                Log.d(String.format("分配寄存器结果: 总计: %d, 溢出: %d 溢出率: %.2f%%", all, spilled, (double) spilled / all * 100));
             }
         }
         /**
