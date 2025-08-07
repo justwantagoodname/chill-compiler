@@ -754,22 +754,22 @@ public class LinearScanAllocator implements CompilePass<IceMachineFunction>, Ice
             mf.getPhysicalRegister("x12"),
             mf.getPhysicalRegister("x13"),
             mf.getPhysicalRegister("x14"),
-            mf.getPhysicalRegister("x15"),
-            mf.getPhysicalRegister("x16"),
-            mf.getPhysicalRegister("x17"),
-            mf.getPhysicalRegister("x18"),
+//            mf.getPhysicalRegister("x18"), // 用作 scratch 寄存器
             // callee-save 寄存器
             mf.getPhysicalRegister("x19"),
             mf.getPhysicalRegister("x20"),
             mf.getPhysicalRegister("x21"),
             mf.getPhysicalRegister("x22"),
             mf.getPhysicalRegister("x23"),
-            mf.getPhysicalRegister("x24")
-        ));
-        var xScratchPool = new RegisterPool(List.of(
+            mf.getPhysicalRegister("x24"),
             mf.getPhysicalRegister("x25"),
             mf.getPhysicalRegister("x26"),
             mf.getPhysicalRegister("x27")
+        ));
+        var xScratchPool = new RegisterPool(List.of(
+                mf.getPhysicalRegister("x15"),
+                mf.getPhysicalRegister("x16"),
+                mf.getPhysicalRegister("x17")
         ));
 
         var vRegPool = new RegisterPool(List.of(

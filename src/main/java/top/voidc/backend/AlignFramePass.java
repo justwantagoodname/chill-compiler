@@ -203,9 +203,10 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
         }
     }
 
+    @Deprecated
     private void handScratchRegister(IceMachineFunction target) {
         // 特殊处理一下 scratch 寄存器
-        // TODO 这里需要考虑 scratch 寄存器是否会被使用
+        // Note: 已经用caller-saved寄存器保存了，所以不需要再分配栈槽
         if (target.getStackFrame().stream().noneMatch(slot -> slot instanceof IceStackSlot.SavedRegisterStackSlot regSlot
                 && regSlot.getRegister().equals(target.getPhysicalRegister(Config.ARM_SCRATCH_REGISTER)))) {
             target.allocateSavedRegisterStackSlot(target.getPhysicalRegister(Config.ARM_SCRATCH_REGISTER));
@@ -218,7 +219,7 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
         // 这个寄存器是用来保存临时数据的，通常不会被使用
         // 但在某些情况下需要用到，所以需要确保它被正确处理
         // 为了性能考虑注释掉也可以其实
-        handScratchRegister(target);
+//        handScratchRegister(target);
 
         var frame = new AlignedStackFrame(target);
         frame.calculateSizes();
