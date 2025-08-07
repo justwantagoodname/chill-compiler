@@ -207,6 +207,91 @@ public class MemoryAccessPatterns {
     }
 
     /**
+     * 从全局变量加载值
+     * 优化为直接使用:lo12:的LDR指令
+     */
+    public static class LoadGlobalVariablePattern extends InstructionPattern<IceLoadInstruction> {
+        public LoadGlobalVariablePattern() {
+            super(11);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceLoadInstruction value) {
+            return getIntrinsicCost();
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceLoadInstruction load) {
+            var globalVar = (IceGlobalVariable)load.getSource();
+            var addrReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(load.getType());
+
+            // 直接使用带:lo12:的LDR指令
+            selector.addEmittedInstruction(new ARM64Instruction(
+                "ADRP {dst}, " + globalVar.getName(),
+                addrReg
+            ));
+            selector.addEmittedInstruction(new ARM64Instruction(
+                "LDR {dst}, [{base}, :lo12:" + globalVar.getName() + "]",
+                dstReg, addrReg
+            ));
+
+            return dstReg;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceLoadInstruction load
+                && load.getSource() instanceof IceGlobalVariable;
+        }
+    }
+
+    /**
+     * 存储值到全局变量
+     * 优化为直接使用:lo12:的STR指令
+     */
+    public static class StoreGlobalVariablePattern extends InstructionPattern<IceStoreInstruction> {
+        public StoreGlobalVariablePattern() {
+            super(11);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceStoreInstruction value) {
+            return getIntrinsicCost();
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceStoreInstruction store) {
+            var srcReg = selector.emit(store.getValue());
+            var globalVar = (IceGlobalVariable)store.getTargetPtr();
+            var addrReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
+
+            // 直接使用带:lo12:的STR指令
+            selector.addEmittedInstruction(new ARM64Instruction(
+                "ADRP {dst}, " + globalVar.getName(),
+                addrReg
+            ));
+            selector.addEmittedInstruction(new ARM64Instruction(
+                "STR {src}, [{base}, :lo12:" + globalVar.getName() + "]",
+                srcReg, addrReg
+            ));
+
+            return null;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceStoreInstruction store
+                && store.getTargetPtr() instanceof IceGlobalVariable;
+        }
+    }
+
+    /**
      * GEP指令的通用基类，处理共同的偏移量计算逻辑
      */
     public abstract static class AbstractGEPLoadPattern extends InstructionPattern<IceGEPInstruction> {
