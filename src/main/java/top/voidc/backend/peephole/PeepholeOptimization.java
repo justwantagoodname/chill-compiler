@@ -1,7 +1,9 @@
 package top.voidc.backend.peephole;
 
 import top.voidc.ir.IceBlock;
+import top.voidc.ir.IceContext;
 import top.voidc.ir.IceValue;
+import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
 import top.voidc.ir.machine.IceMachineInstructionComment;
@@ -13,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 窥孔优化，注意优化后会丢失注释
@@ -20,11 +23,14 @@ import java.util.Map;
 @Pass(group = {"O0", "backend"}, parallel = true)
 public class PeepholeOptimization implements CompilePass<IceMachineFunction> {
 
+    private final Map<IceMachineFunction, List<IceBlock>> blockLists = new ConcurrentHashMap<>();
+
+    public PeepholeOptimization(IceContext context) {
+        context.addPassResult("functionBlocks", blockLists);
+    }
+
     public static class PeepholeOptimizer {
-        private static final List<PeepholePattern> patterns = List.of(
-                new RedundantMovePattern(),
-                new RedundantLoadStorePattern()
-        );
+        private final List<PeepholePattern> patterns;
 
         private final Map<PeepholePattern, Integer> patternsCounter = new HashMap<>();
 
@@ -37,6 +43,11 @@ public class PeepholeOptimization implements CompilePass<IceMachineFunction> {
         public PeepholeOptimizer(IceMachineFunction machineFunction) {
             this.machineFunction = machineFunction;
             this.BBs = machineFunction.blocks();
+            this.patterns = List.of(
+                    new RedundantMovePattern(),
+                    new RedundantLoadStorePattern(),
+                    new RedundantBranchPattern(BBs)
+            );
         }
 
         public boolean isChanged() {
@@ -84,6 +95,10 @@ public class PeepholeOptimization implements CompilePass<IceMachineFunction> {
                 Log.d(String.format("\t模式 %s, 使用次数: %d", entry.getKey().getClass().getSimpleName(), entry.getValue()));
             }
         }
+
+        public List<IceBlock> getBlocks() {
+            return BBs;
+        }
     }
 
     @Override
@@ -91,6 +106,7 @@ public class PeepholeOptimization implements CompilePass<IceMachineFunction> {
         var optimizer = new PeepholeOptimizer(target);
         optimizer.doOpt();
         optimizer.showStats();
+        blockLists.put(target, optimizer.getBlocks());
         return optimizer.isChanged();
     }
 }

@@ -107,8 +107,8 @@ public class Compiler {
             pm.runPass(ShowIR.class);
             pm.runPass(RegSaver.class);
             pm.runPass(AlignFramePass.class);
-            pm.runPass(PeepholeOptimization.class);
             pm.runPass(FixStackOffset.class);
+            pm.runPass(PeepholeOptimization.class);
             pm.runPass(OutputARMASM.class);
         });
         return passManager;
