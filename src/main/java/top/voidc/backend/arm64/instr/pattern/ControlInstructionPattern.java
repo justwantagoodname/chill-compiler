@@ -58,18 +58,22 @@ public class ControlInstructionPattern {
         @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceRetInstruction value) {
             assert value.getReturnValue().isPresent();
-            if (isImm12(value.getReturnValue().get())) {
-                selector.addEmittedInstruction(
-                        new ARM64Instruction("MOV {dst}, {imm12:src}", selector.getMachineFunction().getReturnRegister(IceType.I32), (IceConstantInt) value.getReturnValue().get()));
+            var returnValue = value.getReturnValue().get();
+            var returnReg = selector.getMachineFunction().getReturnRegister(IceType.I32);
+            
+            if (returnValue instanceof IceConstantInt constInt) {
+                // 如果是常量整数，使用ImmediateLoader处理
+                for (var instruction : LoadAndStorePattern.ImmediateLoader.loadImmediate32(returnReg, (int)constInt.getValue())) {
+                    selector.addEmittedInstruction(instruction);
+                }
             } else {
-                var retMachineValue = selector.emit(value.getReturnValue().orElseThrow());
+                var retMachineValue = selector.emit(returnValue);
                 if (retMachineValue instanceof IceMachineRegister.RegisterView) {
                     selector.addEmittedInstruction(
-                            new ARM64Instruction("MOV {dst}, {x}", selector.getMachineFunction().getReturnRegister(IceType.I32), retMachineValue));
+                        new ARM64Instruction("MOV {dst}, {x}", returnReg, retMachineValue));
                 } else {
                     selector.addEmittedInstruction(
-                            new ARM64Instruction("LDR {dst}, {local:src}", selector.getMachineFunction().getReturnRegister(IceType.I32), retMachineValue)
-                    );
+                        new ARM64Instruction("LDR {dst}, {local:src}", returnReg, retMachineValue));
                 }
             }
 
@@ -208,12 +212,15 @@ public class ControlInstructionPattern {
                 var arg = arguments.get(i);
                 boolean isFloat = arg.getType().isFloat();
                 
-                if (arg instanceof IceConstantInt argInt && isImm12(argInt)) {
+                if (arg instanceof IceConstantInt argInt) {
                     // 立即数参数 (只能是整数)
                     if (intArgCount < 8) {
                         var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount)
                                 .createView(IceType.I32);
-                        selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm12:src}", paramReg, argInt));
+                        // 使用ImmediateLoader处理任意整数常量
+                        for (var instruction : LoadAndStorePattern.ImmediateLoader.loadImmediate32(paramReg, (int)argInt.getValue())) {
+                            selector.addEmittedInstruction(instruction);
+                        }
                         argumentTemplateBuilder.append("{implicit:iarg").append(intArgCount).append("} ");
                         argumentRegisters.add(paramReg);
                     } else {
