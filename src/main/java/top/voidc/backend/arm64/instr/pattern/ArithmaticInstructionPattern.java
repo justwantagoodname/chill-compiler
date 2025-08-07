@@ -241,6 +241,48 @@ public class ArithmaticInstructionPattern {
         }
     }
 
+    public static class FMADDInstruction extends InstructionPattern<IceBinaryInstruction.FAdd> {
+
+        public FMADDInstruction() {
+            super(1);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceBinaryInstruction.FAdd value) {
+            return getIntrinsicCost() + commutativeApply(value,
+                    (lhs, rhs) -> lhs instanceof IceBinaryInstruction.FMul && canBeReg(selector, rhs),
+                    (IceBinaryInstruction.FMul mul, IceValue other) -> selector.select(other).cost()
+                            + selector.select(mul.getLhs()).cost()
+                            + selector.select(mul.getRhs()).cost());
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.FAdd value) {
+            // x * y + z -> dst
+            return commutativeApply(value,
+                    (lhs, rhs) -> lhs instanceof IceBinaryInstruction.FMul && canBeReg(selector, rhs),
+                    (IceBinaryInstruction.FMul mul, IceValue other) -> {
+                        IceMachineRegister.RegisterView xReg = (IceMachineRegister.RegisterView) selector.emit(mul.getLhs()),
+                                yReg = (IceMachineRegister.RegisterView) selector.emit(mul.getRhs()),
+                                zReg = (IceMachineRegister.RegisterView) selector.emit(other);
+                        var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
+
+                        return selector.addEmittedInstruction(
+                                new ARM64Instruction("FMADD {dst}, {x}, {y}, {z}", dstReg, xReg, yReg, zReg)
+                        ).getResultReg();
+                    });
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            if (value instanceof IceBinaryInstruction.FAdd addNode) {
+                return commutativeTest(addNode,
+                        (lhs, rhs) -> lhs instanceof IceBinaryInstruction.FMul && canBeReg(selector, rhs));
+            }
+            return false;
+        }
+    }
+
     /**
      * 寄存器乘减模式，注意这个指令不满足交换律
      * x - y * z -> dst
@@ -266,7 +308,7 @@ public class ArithmaticInstructionPattern {
             var zReg = selector.emit(mulNode.getRhs());
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             return selector.addEmittedInstruction(
-                    new ARM64Instruction("MSUB {dst}, {x}, {y}, {z}", dstReg, yReg, zReg, xReg)).getResultReg();
+                    new ARM64Instruction("MSUB {dst}, {y}, {z}, {x}", dstReg, yReg, zReg, xReg)).getResultReg();
         }
 
         @Override
@@ -275,6 +317,45 @@ public class ArithmaticInstructionPattern {
                 var lhs = subNode.getLhs();
                 var rhs = subNode.getRhs();
                 return canBeReg(selector, lhs) && rhs instanceof IceBinaryInstruction.Mul;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * 寄存器乘减模式，注意这个指令不满足交换律
+     * x - y * z -> dst
+     */
+    public static class FMSUBInstruction extends InstructionPattern<IceBinaryInstruction.FSub> {
+        public FMSUBInstruction() {
+            super(1);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceBinaryInstruction.FSub value) {
+            var mulNode = (IceBinaryInstruction.FMul)value.getRhs();
+            return getIntrinsicCost() + selector.select(value.getLhs()).cost()
+                    + selector.select(mulNode.getLhs()).cost() + selector.select(mulNode.getRhs()).cost();
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.FSub value) {
+            // x - y * z -> dst
+            var xReg = selector.emit(value.getLhs());
+            var mulNode = (IceBinaryInstruction.FMul) value.getRhs();
+            var yReg = selector.emit(mulNode.getLhs());
+            var zReg = selector.emit(mulNode.getRhs());
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.F32);
+            return selector.addEmittedInstruction(
+                    new ARM64Instruction("FMSUB {dst}, {y}, {z}, {x}", dstReg, yReg, zReg, xReg)).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            if (value instanceof IceBinaryInstruction.FSub subNode) {
+                var lhs = subNode.getLhs();
+                var rhs = subNode.getRhs();
+                return canBeReg(selector, lhs) && rhs instanceof IceBinaryInstruction.FMul;
             }
             return false;
         }

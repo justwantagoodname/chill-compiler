@@ -140,11 +140,121 @@ public class ConditionPatterns {
         }
     }
 
-    /*
-      TODO
-      与零比较优化模式
-      将`cmp x, 0`优化为`cbz/cbnz`指令
+    /**
+     * CBZ模式 - 如果寄存器值为0则跳转
+     * 优化 `cmp x, #0; b.eq label` 为 `cbz x, label`
      */
+    public static class CBZPattern extends InstructionPattern<IceBranchInstruction> {
+        public CBZPattern() {
+            super(1);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceBranchInstruction value) {
+            var icmp = (IceCmpInstruction.Icmp) value.getCondition();
+            // 获取比较的非零操作数的代价
+            var regCost = selector.select(icmp.getRhs() instanceof IceConstantInt ? icmp.getLhs() : icmp.getRhs()).cost();
+            return getIntrinsicCost() + regCost;
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBranchInstruction value) {
+            var icmp = (IceCmpInstruction.Icmp) value.getCondition();
+            // 获取比较的非零操作数
+            var reg = selector.emit(icmp.getRhs() instanceof IceConstantInt ? icmp.getLhs() : icmp.getRhs());
+            
+            var trueLabel = selector.getMachineFunction().getMachineBlock(value.getTrueBlock().getName());
+            var falseLabel = selector.getMachineFunction().getMachineBlock(value.getFalseBlock().getName());
+
+            // 生成CBZ指令并跳转到true分支
+            selector.addEmittedInstruction(new ARM64Instruction("CBZ {x}, {label:target}", reg, trueLabel));
+            selector.addEmittedInstruction(new ARM64Instruction("B {label:target}", falseLabel));
+            return null;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            if (!(value instanceof IceBranchInstruction branch && branch.isConditional())) {
+                return false;
+            }
+            if (!(branch.getCondition() instanceof IceCmpInstruction.Icmp icmp)) {
+                return false;
+            }
+            // 检查是否为等于0的比较
+            boolean isCompareWithZero = false;
+            if (icmp.getRhs() instanceof IceConstantInt rhsConstant && rhsConstant.getValue() == 0) {
+                isCompareWithZero = true;
+            } else if (icmp.getLhs() instanceof IceConstantInt lhsConstant && lhsConstant.getValue() == 0) {
+                isCompareWithZero = true;
+            }
+            
+            // 检查是否为等于比较
+            return isCompareWithZero && icmp.getCmpType() == IceCmpInstruction.Icmp.Type.EQ;
+        }
+    }
+
+    /**
+     * CBNZ模式 - 如果寄存器值不为0则跳转
+     * 优化 `cmp x, #0; b.ne label` 为 `cbnz x, label`
+     */
+    public static class CBNZPattern extends InstructionPattern<IceBranchInstruction> {
+        public CBNZPattern() {
+            super(1);
+        }
+
+        @Override
+        public int getCost(InstructionSelector selector, IceBranchInstruction value) {
+            var icmp = (IceCmpInstruction.Icmp) value.getCondition();
+            // 获取比较的非零操作数的代价
+            var regCost = selector.select(icmp.getRhs() instanceof IceConstantInt ? icmp.getLhs() : icmp.getRhs()).cost();
+            return getIntrinsicCost() + regCost;
+        }
+
+        @Override
+        public Class<?> getEmittedType() {
+            return null;
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBranchInstruction value) {
+            var icmp = (IceCmpInstruction.Icmp) value.getCondition();
+            // 获取比较的非零操作数
+            var reg = selector.emit(icmp.getRhs() instanceof IceConstantInt ? icmp.getLhs() : icmp.getRhs());
+            
+            var trueLabel = selector.getMachineFunction().getMachineBlock(value.getTrueBlock().getName());
+            var falseLabel = selector.getMachineFunction().getMachineBlock(value.getFalseBlock().getName());
+
+            // 生成CBNZ指令并跳转到true分支
+            selector.addEmittedInstruction(new ARM64Instruction("CBNZ {x}, {label:target}", reg, trueLabel));
+            selector.addEmittedInstruction(new ARM64Instruction("B {label:target}", falseLabel));
+            return null;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            if (!(value instanceof IceBranchInstruction branch && branch.isConditional())) {
+                return false;
+            }
+            if (!(branch.getCondition() instanceof IceCmpInstruction.Icmp icmp)) {
+                return false;
+            }
+            // 检查是否为不等于0的比较
+            boolean isCompareWithZero = false;
+            if (icmp.getRhs() instanceof IceConstantInt rhsConstant && rhsConstant.getValue() == 0) {
+                isCompareWithZero = true;
+            } else if (icmp.getLhs() instanceof IceConstantInt lhsConstant && lhsConstant.getValue() == 0) {
+                isCompareWithZero = true;
+            }
+            
+            // 检查是否为不等于比较
+            return isCompareWithZero && icmp.getCmpType() == IceCmpInstruction.Icmp.Type.NE;
+        }
+    }
 
     /**
      * 浮点寄存器比较模式（FCMP指令）

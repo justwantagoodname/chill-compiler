@@ -19,6 +19,8 @@ public class ARM64InstructionPatternPack implements InstructionPack {
 //        patternSet.add(new ArithmaticInstructionPattern.MULImm());
         patternSet.add(new ArithmaticInstructionPattern.MADDInstruction());
         patternSet.add(new ArithmaticInstructionPattern.MSUBInstruction());
+//       patternSet.add(new ArithmaticInstructionPattern.FMADDInstruction()); // 样例本身就不对这个等价于 GCC -ffast-math 的指令 没法用
+//        patternSet.add(new ArithmaticInstructionPattern.FMSUBInstruction());
         patternSet.add(new ArithmaticInstructionPattern.SUBTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.SUBImm());
         patternSet.add(new ArithmaticInstructionPattern.SDIVTwoReg());
@@ -67,6 +69,8 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ConditionPatterns.FCMPReg());
         patternSet.add(new ConditionPatterns.FCMPZ());
         patternSet.add(new ConditionPatterns.CondBranch());
+        patternSet.add(new ConditionPatterns.CBZPattern());
+        patternSet.add(new ConditionPatterns.CBNZPattern());
 
         patternSet.add(new MemoryAllocationPattern.SimpleAlloca());
 //        patternSet.add(new MemoryAllocationPattern.SimpleAllocaPointer());
