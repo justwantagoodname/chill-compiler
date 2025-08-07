@@ -16,6 +16,7 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ArithmaticInstructionPattern.ADDTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.ADDImm());
         patternSet.add(new ArithmaticInstructionPattern.MULTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.PowerMulPattern());
 //        patternSet.add(new ArithmaticInstructionPattern.MULImm());
         patternSet.add(new ArithmaticInstructionPattern.MADDInstruction());
         patternSet.add(new ArithmaticInstructionPattern.MSUBInstruction());
@@ -24,6 +25,7 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ArithmaticInstructionPattern.SUBTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.SUBImm());
         patternSet.add(new ArithmaticInstructionPattern.SDIVTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.PowerDivPattern());
         patternSet.add(new ArithmaticInstructionPattern.NEGReg());
         patternSet.add(new ArithmaticInstructionPattern.SMODTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.FADDTwoReg());

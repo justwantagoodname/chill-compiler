@@ -154,8 +154,48 @@ public class ArithmaticInstructionPattern {
         }
     }
 
-    public static class MULImm extends InstructionPattern<IceBinaryInstruction.Mul> {
+    public static class PowerMulPattern extends InstructionPattern<IceBinaryInstruction.Mul> {
+        public PowerMulPattern() {
+            super(1);
+        }
 
+        @Override
+        public int getCost(InstructionSelector selector, IceBinaryInstruction.Mul value) {
+            return getIntrinsicCost() + commutativeApply(value,
+                    (lhs, rhs) -> canBeReg(selector, lhs) && isConstInt(rhs),
+                    (IceValue lhs, IceConstantInt _) -> selector.select(lhs).cost());
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.Mul mul) {
+            return commutativeApply(mul,
+                    (lhs, rhs) -> canBeReg(selector, lhs) && isConstInt(rhs),
+                    (IceValue lhs, IceConstantInt rhs) -> {
+                        var srcReg = selector.emit(lhs);
+                        var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+                        
+                        // 使用LSL指令替代MUL
+                        int shift = Tool.log2((int)rhs.getValue());
+                        return selector.addEmittedInstruction(
+                            new ARM64Instruction(
+                                "LSL {dst}, {src}, {imm:shift}",
+                                dstReg, srcReg, IceConstantData.create(shift)
+                            )
+                        ).getResultReg();
+                    });
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            if (!(value instanceof IceBinaryInstruction.Mul mul)) return false;
+            return commutativeTest(mul,
+                    (lhs, rhs) -> canBeReg(selector, lhs) 
+                            && rhs instanceof IceConstantInt intConst 
+                            && Tool.isPowerOfTwo((int)intConst.getValue()));
+        }
+    }
+
+    public static class MULImm extends InstructionPattern<IceBinaryInstruction.Mul> {
         public MULImm() {
             super(1);
         }
@@ -186,7 +226,6 @@ public class ArithmaticInstructionPattern {
                                     .getResultReg();
                         }
                     });
-
         }
 
         @Override
@@ -441,6 +480,39 @@ public class ArithmaticInstructionPattern {
             return value instanceof IceBinaryInstruction.SDiv divNode
                     && canBeReg(selector, divNode.getLhs())
                     && canBeReg(selector, divNode.getRhs());
+        }
+    }
+
+    /**
+     * 除以2的幂的优化模式：用ASR替代SDIV
+     */
+    public static class PowerDivPattern extends InstructionPattern<IceBinaryInstruction.SDiv> {
+        public PowerDivPattern() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceBinaryInstruction.SDiv div) {
+            var lhs = selector.emit(div.getLhs());
+            var rhs = (IceConstantInt)div.getRhs();
+            var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            
+            // 使用ASR指令替代SDIV
+            int shift = Tool.log2((int)rhs.getValue());
+            return selector.addEmittedInstruction(
+                new ARM64Instruction(
+                    "ASR {dst}, {src}, {imm:shift}",
+                    dstReg, lhs, IceConstantData.create(shift)
+                )
+            ).getResultReg();
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceBinaryInstruction.SDiv div
+                && canBeReg(selector, div.getLhs())
+                && div.getRhs() instanceof IceConstantInt rhs
+                && Tool.isPowerOfTwo((int)rhs.getValue());
         }
     }
 
