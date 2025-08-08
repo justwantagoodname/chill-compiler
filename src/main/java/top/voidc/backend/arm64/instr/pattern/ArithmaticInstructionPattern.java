@@ -496,14 +496,40 @@ public class ArithmaticInstructionPattern {
             var lhs = selector.emit(div.getLhs());
             var rhs = (IceConstantInt)div.getRhs();
             var dstReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
+            var tempReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
             
-            // 使用ASR指令替代SDIV
-            int shift = Tool.log2((int)rhs.getValue());
+            int shift = Tool.log2(rhs.getValue());
+            int offset = (1 << shift) - 1;
+
+            // 比较源操作数是否小于0
+            selector.addEmittedInstruction(
+                new ARM64Instruction("CMP {src}, #0", lhs)
+            );
+
+            // 计算带偏移量的输入
+            if (Tool.isImm12(offset)) {
+                selector.addEmittedInstruction(
+                    new ARM64Instruction("ADD {dst}, {src}, {imm:offset}", tempReg, lhs, IceConstantData.create(offset))
+                );
+            } else {
+                for (var inst : LoadAndStorePattern.ImmediateLoader.loadImmediate32(tempReg, offset)) {
+                    selector.addEmittedInstruction(inst);
+                }
+                selector.addEmittedInstruction(
+                    new ARM64Instruction("ADD {dst}, {src}, {offset}", tempReg, lhs, tempReg)
+                );
+            }
+            
+            
+            // 根据符号选择是否使用带偏移的输入
+            // 如果是负数(LT)选择带偏移的值，否则使用原始值
+            selector.addEmittedInstruction(
+                new ARM64Instruction("CSEL {dst}, {x}, {y}, LT", tempReg, tempReg, lhs)
+            );
+            
+            // 对选择后的值进行一次算术右移
             return selector.addEmittedInstruction(
-                new ARM64Instruction(
-                    "ASR {dst}, {src}, {imm:shift}",
-                    dstReg, lhs, IceConstantData.create(shift)
-                )
+                new ARM64Instruction("ASR {dst}, {src}, {imm:shift}", dstReg, tempReg, IceConstantData.create(shift))
             ).getResultReg();
         }
 
