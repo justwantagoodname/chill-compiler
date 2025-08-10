@@ -3,7 +3,6 @@ package top.voidc.ir;
 import top.voidc.ir.ice.constant.IceConstant;
 import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.ir.ice.constant.IceFunction;
-import top.voidc.ir.ice.constant.IceGlobalVariable;
 import top.voidc.ir.ice.type.IceType;
 
 import java.util.ArrayList;

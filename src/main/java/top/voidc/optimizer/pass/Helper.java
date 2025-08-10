@@ -1,8 +1,6 @@
 package top.voidc.optimizer.pass;
 
 import top.voidc.ir.IceBlock;
-import top.voidc.ir.ice.instruction.IceInstruction;
-import top.voidc.ir.ice.instruction.IcePHINode;
 
 public class Helper {
     /**

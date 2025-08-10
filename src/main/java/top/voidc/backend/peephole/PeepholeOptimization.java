@@ -2,8 +2,6 @@ package top.voidc.backend.peephole;
 
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceContext;
-import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
 import top.voidc.ir.machine.IceMachineInstructionComment;

@@ -8,7 +8,6 @@ import top.voidc.ir.ice.constant.IceConstantBoolean;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.*;
-import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.misc.Tool;

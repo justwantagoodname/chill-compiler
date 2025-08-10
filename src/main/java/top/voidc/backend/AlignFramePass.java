@@ -2,7 +2,6 @@ package top.voidc.backend;
 
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 import top.voidc.ir.machine.IceMachineFunction;
-import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
 import top.voidc.misc.Config;
 import top.voidc.misc.Tool;

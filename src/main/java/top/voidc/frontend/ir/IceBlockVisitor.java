@@ -5,7 +5,6 @@ import top.voidc.frontend.parser.IceParser;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
-import top.voidc.ir.ice.instruction.IceInstruction;
 
 import java.util.ArrayList;
 import java.util.List;
