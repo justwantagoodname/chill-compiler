@@ -1,6 +1,7 @@
 package top.voidc.backend;
 
 import top.voidc.backend.arm64.instr.ARM64Instruction;
+import top.voidc.backend.arm64.instr.pattern.LoadAndStorePattern;
 import top.voidc.ir.IceBlock;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
@@ -38,16 +39,8 @@ public class FixStackOffset implements CompilePass<IceMachineFunction>, IceArchi
         return Tool.inRange(scaled, 0, 4095);
     }
 
-    private List<IceMachineInstruction> loadIntToScratchRegister(IceBlock block, IceMachineRegister scratchRegister, int value) {
-        var movList = new ArrayList<IceMachineInstruction>();
-        if (!Tool.isImm16(value)) {
-            var lowBit = value & 0xFFFF;
-            var highBit = value >> 16;
-            movList.add(new ARM64Instruction("MOVZ {dst}, {imm16:x}", scratchRegister.createView(IceType.I64), IceConstantData.create(lowBit)));
-            movList.add(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #16", scratchRegister.createView(IceType.I64), IceConstantData.create(highBit)));
-        } else {
-            movList.add(new ARM64Instruction("MOVZ {dst}, {imm16:x}", scratchRegister.createView(IceType.I64), IceConstantData.create(value)));
-        }
+    private List<ARM64Instruction> loadIntToScratchRegister(IceBlock block, IceMachineRegister scratchRegister, int value) {
+        var movList = LoadAndStorePattern.ImmediateLoader.loadImmediate32(scratchRegister.createView(IceType.I32), value);
         movList.forEach(instr -> instr.setParent(block));
         return movList;
     }
@@ -66,7 +59,7 @@ public class FixStackOffset implements CompilePass<IceMachineFunction>, IceArchi
                 if (opcode.equals("LDR") || opcode.equals("STR") || opcode.equals("ADD")) {
                     for (var operand: machineInstruction.getSourceOperands()) {
                         if (operand instanceof IceStackSlot stackSlot) {
-                            List<IceMachineInstruction> loadImms;
+                            List<ARM64Instruction> loadImms;
                             IceMachineInstruction newInstr;
                             if ((opcode.equals("LDR") || opcode.equals("STR"))
                                 && !isValidScaledOffset(stackSlot.getOffset(), machineInstruction.getOperand(0).getType().getByteSize())) {
