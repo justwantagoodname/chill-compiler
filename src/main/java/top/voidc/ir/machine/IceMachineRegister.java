@@ -37,12 +37,17 @@ public abstract class IceMachineRegister extends IceUser implements IceArchitect
     }
 
     private boolean isVirtualize = true;
+    private boolean isReadOnly = false; // 是否只读寄存器
     private IceMachineRegister bindRegister = null; // 绑定的物理寄存器
 
     public IceMachineRegister(String name, IceType type, boolean isVirtualize, IceMachineRegister bindRegister) {
         super(name, type);
         setVirtualize(isVirtualize);
         this.bindRegister = bindRegister;
+
+        if (bindRegister != null) {
+            this.setReadOnly(bindRegister.isReadOnly());
+        }
     }
 
     public int getBitwidth() {
@@ -55,6 +60,14 @@ public abstract class IceMachineRegister extends IceUser implements IceArchitect
 
     public void setVirtualize(boolean virtualize) {
         isVirtualize = virtualize;
+    }
+
+    public boolean isReadOnly() {
+        return isReadOnly;
+    }
+
+    public void setReadOnly(boolean readOnly) {
+        isReadOnly = readOnly;
     }
 
     public boolean isBound() {

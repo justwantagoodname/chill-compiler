@@ -103,7 +103,7 @@ public class LoadAndStorePattern {
          * 生成加载0的指令
          */
         public static IceMachineRegister.RegisterView loadZero(IceMachineFunction machineFunction, IceType type) {
-            return machineFunction.getZeroRegister(type);
+            return machineFunction.allocateBoundVirtualRegister(type, machineFunction.getZeroRegister(type).getRegister());
         }
     }
 

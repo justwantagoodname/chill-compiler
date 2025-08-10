@@ -75,9 +75,10 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
             for (var iceInstruction : block) {
                 var instruction = (IceMachineInstruction) iceInstruction;
                 // 将所有的虚拟寄存器都分配到栈上
-                for (var operand : instruction.getOperands()) {
+                for (var operand : instruction.getOperands(true)) {
                     if (operand instanceof IceMachineRegister.RegisterView registerView) {
-                        if (registerView.getRegister().isVirtualize()) {
+                        assert registerView.getRegister().isVirtualize(); // 不应该有非虚拟寄存器的视图
+                        if (registerView.getRegister().isVirtualize() && !registerView.getRegister().isBound()) {
                             // Note: 按照虚拟寄存器来分配栈槽而不是其寄存器视图，但是访问的时候是按照视图大小访问
                             var slot = slotMap.computeIfAbsent(registerView.getRegister(), register ->
                                     target.allocateVariableStackSlot(register.getType()));
@@ -88,6 +89,9 @@ public class SillyChilletAllocateRegister implements CompilePass<IceMachineFunct
                                 default -> throw new IllegalArgumentException("Unsupported type: " + registerView.getRegister().getType());
                             };
                             slot.setAlignment(alignment);
+                        } else if (registerView.getRegister().isBound()) {
+                            assert registerView.getRegister().getBindRegister().isPresent();
+                            instruction.replaceOperand(registerView, registerView.getRegister().getBindRegister().get().createView(registerView.getType()));
                         }
                     }
                 }

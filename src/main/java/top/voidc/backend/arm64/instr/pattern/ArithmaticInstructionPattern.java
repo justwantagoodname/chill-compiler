@@ -806,7 +806,8 @@ public class ArithmaticInstructionPattern {
                 return selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, #1", dstReg)).getResultReg();
             } else {
                 // false
-                return selector.getMachineFunction().getZeroRegister(IceType.I32);
+                return selector.getMachineFunction().allocateBoundVirtualRegister(IceType.I32,
+                        selector.getMachineFunction().getZeroRegister(IceType.I32).getRegister());
             }
         }
 
