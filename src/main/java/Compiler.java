@@ -15,6 +15,8 @@ import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
 import top.voidc.optimizer.PassManager;
 import top.voidc.optimizer.pass.function.*;
+import top.voidc.optimizer.pass.unit.CallGraphAnalyzer;
+import top.voidc.optimizer.pass.unit.FunctionPureness;
 import top.voidc.optimizer.pass.unit.ShowIR;
 
 import java.io.File;
@@ -89,13 +91,16 @@ public class Compiler {
             pm.runPass(ScalarReplacementOfAggregates.class);
             pm.runPass(Mem2Reg.class);
             pm.runPass(SmartChilletSimplifyCFG.class);
+            pm.runPass(FunctionPureness.class);
             pm.untilStable(
                     GlobalValueNumbering.class,
                     SparseConditionalConstantPropagation.class,
+                    ShowIR.class,
                     SmartChilletDeleteUnusedValue.class,
                     SmartChilletSimplifyCFG.class
             );
             pm.runPass(RenameVariable.class);
+            pm.runPass(CallGraphAnalyzer.class);
             pm.runPass(DumpIR.class);
 
             // 后端相关
