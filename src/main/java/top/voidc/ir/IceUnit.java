@@ -36,6 +36,12 @@ public class IceUnit extends IceValue {
         globalVariables.add(decl);
     }
 
+    public void removeGlobalDecl(IceConstant decl) {
+        if (!globalVariables.remove(decl)) {
+            throw new RuntimeException("Global variable not found: " + decl.getName());
+        }
+    }
+
     public void addFunction(IceFunction function) {
         if (functions.stream().anyMatch(f -> f.getName().equals(function.getName()))) {
             throw new RuntimeException("Duplicate function declaration: " + function.getName());

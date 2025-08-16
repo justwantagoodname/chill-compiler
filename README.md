@@ -5,11 +5,11 @@
 
 ## Intro
 
-Chill (Chill Hierarchical Intermediate Language Lowerer) Compiler 是疾旋鼬编译器的重构版本，旨在提供一个更清晰、更易于维护的编译器架构。
+Chill (**C**hill **H**ierarchical **I**ntermediate **L**anguage **L**owerer) Compiler 是疾旋鼬编译器的重构版本，旨在提供一个更清晰、更易于维护的编译器架构。
 此版编译器中间语言名为Ice IR，提供了健全（迫真）的 API 和合理的抽象层次，旨在简化编译器的开发和维护。
 
 ## Features
-- 基于 Java 语言开发，尽最大努力为您提供 *Spring Boot*-like 的编译器开发体验，支持模块化开发与依赖注入
+- 基于 Java 语言开发，尽最大努力为您提供 *Spring Boot®*-like 的编译器开发体验，支持模块化开发与依赖注入
 - 和前代相比完全不同 IR 设计，提供更清晰的 API 和合理的抽象层次
 - JNI 交互接口，用于方便的传递 IR 至 C/C++ 代码进行高复杂度优化（大饼）
 - 更多**疾旋鼬**（Yay！）
@@ -59,4 +59,4 @@ Chill (Chill Hierarchical Intermediate Language Lowerer) Compiler 是疾旋鼬�
 ### 可用 JVM 选项
 - `chill.runner`: 指定使用的运行器类型，可选`SSHIRRunner`（运行 IR 测试，使用LLVM后端）和 `SSHARM64ASMRunner` （使用chill-compiler后端），默认为 `SSHIRRunner`
 - `chill.ci`: 是否启用 CI 模式，默认为 `false`，启用后将禁用或者启用一些功能以适应 CI 环境，除非您知道自己在做什么，否则请默认为 `false`
-- `chill.timeout`: 设置测试用例的超时时间，单位为秒，默认为 5 秒
+- `chill.timeout`: 设置测试用例的超时时间，可以传入`timeout`指令支持的时间字符串如`5m`等，默认为 5 秒
