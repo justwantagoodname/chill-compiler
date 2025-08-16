@@ -11,7 +11,7 @@ import top.voidc.ir.ice.type.IceType;
 
 import top.voidc.misc.Log;
 import top.voidc.optimizer.pass.CompilePass;
-import top.voidc.optimizer.pass.DominatorTree;
+import top.voidc.misc.ds.DominatorTree;
 
 import top.voidc.misc.annotation.Pass;
 
