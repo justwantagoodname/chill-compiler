@@ -11,7 +11,7 @@ import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
-import top.voidc.optimizer.pass.DominatorTree;
+import top.voidc.misc.ds.DominatorTree;
 
 import java.util.Collection;
 import java.util.HashMap;
