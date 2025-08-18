@@ -96,12 +96,13 @@ public class FunctionPureness implements CompilePass<IceUnit> {
                         var args = callInstruction.getArguments();
                         for (var i = 0; i < args.size(); ++i) {
                             var arg = args.get(i);
-                            var param = targetFunction.getParameters().get(i);
+                            var isVAArgs = targetFunction instanceof IceExternFunction externFunction && externFunction.isVArgs();
+                            var param = isVAArgs ? null : targetFunction.getParameters().get(i);
                             if (arg instanceof IceGEPInstruction gepInstruction) {
                                 // 传递了数组参数
                                 var base = gepInstruction.getBasePtr();
                                 if (base instanceof IceGlobalVariable globalVariable) {
-                                    if (purenessInfo.writeParams.contains(param)) {
+                                    if (purenessInfo.writeParams.contains(param)) { // FIXME: 对于可变参数默认认为不修改了每一个参数，目前只有putf所有这个假设是对的
                                         // 如果参数是数组且被写入，则当前函数不纯
                                         currentPureness.setPureness(Pureness.IMPURE);
                                         currentPureness.writeGlobals.add(globalVariable);
@@ -114,7 +115,7 @@ public class FunctionPureness implements CompilePass<IceUnit> {
                                 } else if (base instanceof IceFunction.IceFunctionParameter parameter) {
                                     if (parameter.getType().isArray()) { // 接力传递了数组参数
                                         // 如果是数组参数且被写入，等同于当前函数写入了参数，则当前函数不纯
-                                        if (purenessInfo.writeParams.contains(param)) {
+                                        if (purenessInfo.writeParams.contains(param)) { // FIXME: 对于可变参数默认认为不修改了每一个参数，目前只有putf所有这个假设是对的
                                             currentPureness.setPureness(Pureness.IMPURE);
                                             currentPureness.writeParams.add(parameter);
                                         } else {
@@ -179,7 +180,14 @@ public class FunctionPureness implements CompilePass<IceUnit> {
             if (func instanceof IceExternFunction) {
                 // 外部函数默认视为不纯
                 functionPurenessInfo.computeIfAbsent(func,
-                        _ -> new PurenessInfo(Pureness.IMPURE));
+                        externFunc -> switch (externFunc.getName()) {
+                            case "getfarray", "getarray" -> {
+                                var pureness = new PurenessInfo(Pureness.IMPURE);
+                                pureness.writeParams.add(externFunc.getParameters().getFirst());
+                                yield pureness;
+                            }
+                            default -> new PurenessInfo(Pureness.IMPURE);
+                    });
             }
         }
 
