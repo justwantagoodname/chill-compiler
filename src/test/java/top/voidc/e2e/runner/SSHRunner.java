@@ -299,8 +299,9 @@ public abstract class SSHRunner implements TestcaseRunner {
     public boolean runTest(Testcase test) {
         final var testResult = testResultMap.get(test.name());
         final var redirectInput = testResult.getRemoteInputPath() == null ? "" : "< " + testResult.getRemoteInputPath();
+        var timeOut = System.getProperty("chill.timeout") == null ? "5s" : System.getProperty("chill.timeout");
         try {
-            final var executeResult = executeCommand("timeout", "30s", testResult.getRemoteExecutablePath(), redirectInput,
+            final var executeResult = executeCommand("timeout", timeOut, testResult.getRemoteExecutablePath(), redirectInput,
                     ">", testResult.getRemoteActualOutputPath());
 
             Log.i("执行信息：" + executeResult.stderr());

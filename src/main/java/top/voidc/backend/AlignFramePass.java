@@ -2,7 +2,10 @@ package top.voidc.backend;
 
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 import top.voidc.ir.machine.IceMachineFunction;
+import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
+import top.voidc.misc.Config;
+import top.voidc.misc.Tool;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
 
@@ -15,19 +18,26 @@ import java.util.stream.Collectors;
  * 对齐栈帧并设置偏移量，同时插入函数序言和尾声还有 插入保存寄存器
  * <br>
  * <a href="https://blog.csdn.net/anyegongjuezjd/article/details/107173140">AArch 64 栈帧</a>
+ * 栈帧布局由编译器决定
+ * 选择将 callee-saved 放到栈帧最高位因为访问很少，将 caller-saved 放到栈帧最低位方便快速存取（减少偏移量）
+ *
  */
 @Pass(group = {"O0", "backend"}, parallel = true)
 public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
 
     public static class AlignedStackFrame {
         private final IceMachineFunction function;
+        private final List<IceStackSlot.SavedRegisterStackSlot> calleeSavedSlots = new ArrayList<>(); // 所有被调用者保存的寄存器栈槽
+        private final List<IceStackSlot.SavedRegisterStackSlot> callerSavedSlots = new ArrayList<>(); // 所有调用者保存的寄存器栈槽
         private final List<IceStackSlot.VariableStackSlot> variableSlots = new ArrayList<>(); // 所有变量栈槽
         private final List<IceStackSlot.ArgumentStackSlot> argumentSlots = new ArrayList<>(); // 所有调用参数栈槽
         private final List<IceStackSlot.ParameterStackSlot> parameterSlots = new ArrayList<>(); // 所有函数参数栈槽
 
-        private int stackSize = 0;
-        private int returnRegisterSize = 0; // 保存返回地址的寄存器大小
+        private int stackSize = 0; // 栈帧总大小
+
+        private int calleeSavedSize = 0; // 被调用者保存的寄存器栈槽大小
         private int argumentSize = 0; // 参数区大小
+        private int returnRegisterSize = 0; // 保存返回地址的寄存器大小
         private final int dynamicStackSize = 0; // 动态栈大小，暂时不使用
         private int variableSize = 0; // 变量区大小
         private final boolean hasCall; // 是否有函数调用
@@ -38,8 +48,14 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
         public int getReturnRegisterSize() { return returnRegisterSize; }
         public int getArgumentSize() { return argumentSize; }
         public int getVariableSize() { return variableSize; }
+        public int getCalleeSavedSize() {
+            return calleeSavedSize;
+        }
         public int getDynamicStackSize() { return dynamicStackSize; }
         public boolean isHasCall() { return hasCall; }
+        public List<IceStackSlot.SavedRegisterStackSlot> getCalleeSavedSlots() {
+            return calleeSavedSlots;
+        }
 
         public AlignedStackFrame(IceMachineFunction function) {
             this.function = function;
@@ -50,18 +66,42 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
                     case IceStackSlot.ArgumentStackSlot argSlot -> argumentSlots.add(argSlot);
                     case IceStackSlot.VariableStackSlot varSlot -> variableSlots.add(varSlot);
                     case IceStackSlot.ParameterStackSlot paramSlot -> parameterSlots.add(paramSlot); // 保存寄存器栈槽不需要计算大小
-                    default -> {
-                        // 其他类型不处理
+                    case IceStackSlot.SavedRegisterStackSlot savedRegSlot -> {
+                        var register = savedRegSlot.getRegister();
+                        switch (Tool.getArm64RegisterType(register)) {
+                            case CALLER_SAVED -> throw new IllegalStateException("直接用 VariableStackSlot 来保存调用者保存的寄存器，摆了: " + register.getName());
+                            case CALLEE_SAVED -> calleeSavedSlots.add(savedRegSlot);
+                            case READ_ONLY -> throw new IllegalStateException("This should never happen: " + register.getName() + " is a read-only register.");
+                        }
                     }
+                    default -> throw new IllegalStateException("Unexpected value: " + slot);
                 }
             }
         }
 
+        public void calculateCalleeStackSize() {
+            // 计算被调用者保存的寄存器栈槽大小
+            // 首先排序，先按类型后按名称排序
+            calleeSavedSlots.sort(
+                    Comparator.comparingInt(a -> ((IceStackSlot.SavedRegisterStackSlot) a).getRegister().getType().getTypeEnum().ordinal())
+                    .thenComparing(slot -> Integer.parseInt(((IceStackSlot.SavedRegisterStackSlot) slot).getRegister().getName())));
+
+            // 不用对齐了因为寄存器最少也是8字节
+            calleeSavedSize = calleeSavedSlots.stream().mapToInt(slot -> slot.getType().getByteSize()).sum();
+
+            // 对齐到 16 字节
+            if (calleeSavedSize % 16 != 0) {
+                // 对齐到 16 字节
+                calleeSavedSize += 16 - (calleeSavedSize % 16);
+            }
+        }
+
         public void calculateSizes() {
+            calculateCalleeStackSize();
             calcVariableSize();
             calcArgumentSize();
 
-            stackSize = variableSize + argumentSize + dynamicStackSize;
+            stackSize = calleeSavedSize + variableSize + argumentSize + dynamicStackSize;
 
             if (hasCall) {
                 returnRegisterSize = 2 * 8; // 大小为16字节,保存x29和x30
@@ -73,7 +113,8 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
          * 计算栈帧中所有变量的大小
          */
         private void calcVariableSize() {
-            // 收集所有变量栈槽并按大小排序
+            // 收集所有变量栈槽并按大小排序，将小变量放在前面 减少偏移大小
+            // TODO 可以根据访问频率进行排序，访问频率高的变量放在前面
             variableSlots.sort(Comparator.comparingInt(a -> a.getType().getByteSize()));
             for (var varSlot : variableSlots) {
                 if (variableSize % varSlot.getAlignment() != 0) {
@@ -162,8 +203,24 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
         }
     }
 
+    @Deprecated
+    private void handScratchRegister(IceMachineFunction target) {
+        // 特殊处理一下 scratch 寄存器
+        // Note: 已经用caller-saved寄存器保存了，所以不需要再分配栈槽
+        if (target.getStackFrame().stream().noneMatch(slot -> slot instanceof IceStackSlot.SavedRegisterStackSlot regSlot
+                && regSlot.getRegister().equals(target.getPhysicalRegister(Config.ARM_SCRATCH_REGISTER)))) {
+            target.allocateSavedRegisterStackSlot(target.getPhysicalRegister(Config.ARM_SCRATCH_REGISTER));
+        }
+    }
+
     @Override
     public boolean run(IceMachineFunction target) {
+        // 特殊处理后面FixStackOffsetPass需要用到的x28寄存器
+        // 这个寄存器是用来保存临时数据的，通常不会被使用
+        // 但在某些情况下需要用到，所以需要确保它被正确处理
+        // 为了性能考虑注释掉也可以其实
+//        handScratchRegister(target);
+
         var frame = new AlignedStackFrame(target);
         frame.calculateSizes();
         
@@ -218,7 +275,7 @@ public class AlignFramePass implements CompilePass<IceMachineFunction>, IceArchi
     }
 
     @Override
-    public int getBitSize() {
+    public int getArchitectureBitSize() {
         return 64;
     }
 }

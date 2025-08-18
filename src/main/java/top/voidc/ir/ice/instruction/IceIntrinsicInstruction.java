@@ -38,7 +38,7 @@ public class IceIntrinsicInstruction extends IceInstruction {
     }
 
     public List<IceValue> getParameters() {
-        return getOperandsList();
+        return getOperands();
     }
 
     @Override

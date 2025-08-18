@@ -15,6 +15,9 @@ import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
 import top.voidc.ir.machine.IceMachineRegister.RegisterView;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static top.voidc.ir.machine.InstructionSelectUtil.*;
 
 public class ControlInstructionPattern {
@@ -55,22 +58,27 @@ public class ControlInstructionPattern {
         @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceRetInstruction value) {
             assert value.getReturnValue().isPresent();
-            if (isImm12(value.getReturnValue().get())) {
-                selector.addEmittedInstruction(
-                        new ARM64Instruction("MOV {dst}, {imm12:src}", selector.getMachineFunction().getReturnRegister(IceType.I32), (IceConstantInt) value.getReturnValue().get()));
+            var returnValue = value.getReturnValue().get();
+            var returnReg = selector.getMachineFunction().getReturnRegister(IceType.I32);
+            
+            if (returnValue instanceof IceConstantInt constInt) {
+                // 如果是常量整数，使用ImmediateLoader处理
+                for (var instruction : LoadAndStorePattern.ImmediateLoader.loadImmediate32(returnReg, (int)constInt.getValue())) {
+                    selector.addEmittedInstruction(instruction);
+                }
             } else {
-                var retMachineValue = selector.emit(value.getReturnValue().orElseThrow());
+                var retMachineValue = selector.emit(returnValue);
                 if (retMachineValue instanceof IceMachineRegister.RegisterView) {
                     selector.addEmittedInstruction(
-                            new ARM64Instruction("MOV {dst}, {x}", selector.getMachineFunction().getReturnRegister(IceType.I32), retMachineValue));
+                        new ARM64Instruction("MOV {dst}, {x}", returnReg, retMachineValue));
                 } else {
                     selector.addEmittedInstruction(
-                            new ARM64Instruction("LDR {dst}, {local:src}", selector.getMachineFunction().getReturnRegister(IceType.I32), retMachineValue)
-                    );
+                        new ARM64Instruction("LDR {dst}, {local:src}", returnReg, retMachineValue));
                 }
             }
 
-            selector.addEmittedInstruction(new ARM64Instruction("RET"));
+            // 添加这里让返回指令假装使用了返回寄存器，方便活跃性分析和活跃区间的计算
+            selector.addEmittedInstruction(new ARM64Instruction("RET // iuse: {implicit:ret}", selector.getMachineFunction().getReturnRegister(IceType.I32)));
             return null;
         }
 
@@ -107,7 +115,8 @@ public class ControlInstructionPattern {
                 );
             }
 
-            selector.addEmittedInstruction(new ARM64Instruction("RET"));
+            // 添加这里让返回指令假装使用了返回寄存器，方便活跃性分析和活跃区间的计算
+            selector.addEmittedInstruction(new ARM64Instruction("RET // iuse: {implicit:ret}", selector.getMachineFunction().getReturnRegister(IceType.F32)));
             return null;
         }
 
@@ -156,6 +165,8 @@ public class ControlInstructionPattern {
             super(intrinsicCost);
         }
 
+        protected record ArgumentInfo(String argTemplate, List<RegisterView> argumentRegisters) {}
+
         @Override
         public int getCost(InstructionSelector selector, IceCallInstruction value) {
             return getIntrinsicCost() + value.getArguments()
@@ -165,15 +176,34 @@ public class ControlInstructionPattern {
         @Override
         public IceMachineValue emit(InstructionSelector selector, IceCallInstruction value) {
             selector.getMachineFunction().setHasCall(true);
-            emitArguments(selector, value);
-            selector.addEmittedInstruction(new ARM64Instruction("BL " + value.getTarget().getName()));
+             var argumentsInfo = emitArguments(selector, value);
+            if (value.getUsers().isEmpty() || value.getType().isVoid()) {
+                // 如果没有用户使用这个调用的返回值，或者返回值是void类型
+                // 在 BL 指令中附加隐式的返回寄存器
+                var targetFunction = value.getTarget();
+                var funcName = targetFunction.getName();
+                selector.addEmittedInstruction(new ARM64Instruction(
+                        "BL " + funcName + " // iuse: [ " + argumentsInfo.argTemplate + "]", argumentsInfo.argumentRegisters.toArray(new RegisterView[0])));
+            } else {
+                // 在 BL 指令中附加隐式的返回寄存器
+                var returnReg = selector.getMachineFunction().getReturnRegister(value.getType());
+                var targetFunction = value.getTarget();
+                var funcName = targetFunction.getName();
+                argumentsInfo.argumentRegisters.addFirst(returnReg);
+                selector.addEmittedInstruction(new ARM64Instruction(
+                        "BL " + funcName + " // idef: {implicit:dst} iuse: [ " + argumentsInfo.argTemplate + "]", argumentsInfo.argumentRegisters.toArray(new RegisterView[0])));
+
+            }
             return handleFunctionReturn(selector, value);
         }
 
         /**
          * 处理函数参数的共同逻辑
          */
-        protected void emitArguments(InstructionSelector selector, IceCallInstruction value) {
+        protected ArgumentInfo emitArguments(InstructionSelector selector, IceCallInstruction value) {
+            var argumentTemplateBuilder = new StringBuilder();
+            var argumentRegisters = new ArrayList<RegisterView>();
+
             var arguments = value.getArguments();
             int intArgCount = 0;
             int floatArgCount = 0;
@@ -182,12 +212,17 @@ public class ControlInstructionPattern {
                 var arg = arguments.get(i);
                 boolean isFloat = arg.getType().isFloat();
                 
-                if (arg instanceof IceConstantInt argInt && isImm12(argInt)) {
+                if (arg instanceof IceConstantInt argInt) {
                     // 立即数参数 (只能是整数)
                     if (intArgCount < 8) {
                         var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount)
                                 .createView(IceType.I32);
-                        selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {imm12:src}", paramReg, argInt));
+                        // 使用ImmediateLoader处理任意整数常量
+                        for (var instruction : LoadAndStorePattern.ImmediateLoader.loadImmediate32(paramReg, (int)argInt.getValue())) {
+                            selector.addEmittedInstruction(instruction);
+                        }
+                        argumentTemplateBuilder.append("{implicit:iarg").append(intArgCount).append("} ");
+                        argumentRegisters.add(paramReg);
                     } else {
                         var valueReg = selector.emit(argInt);
                         var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
@@ -204,6 +239,8 @@ public class ControlInstructionPattern {
                                 var paramReg = selector.getMachineFunction().getPhysicalRegister("v" + floatArgCount)
                                         .createView(argReg.getType());
                                 selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", paramReg, argReg));
+                                argumentTemplateBuilder.append("{implicit:farg").append(floatArgCount).append("} ");
+                                argumentRegisters.add(paramReg);
                             } else {
                                 var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
                                 selector.addEmittedInstruction(
@@ -216,6 +253,8 @@ public class ControlInstructionPattern {
                                 var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount)
                                         .createView(argReg.getType());
                                 selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
+                                argumentTemplateBuilder.append("{implicit:iarg").append(intArgCount).append("} ");
+                                argumentRegisters.add(paramReg);
                             } else {
                                 var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
                                 selector.addEmittedInstruction(
@@ -231,6 +270,8 @@ public class ControlInstructionPattern {
                             var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
                             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlotPointer));
                             selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, tmpReg));
+                            argumentTemplateBuilder.append("{implicit:iarg").append(intArgCount).append("} ");
+                            argumentRegisters.add(paramReg);
                         } else {
                             var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
                             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlotPointer));
@@ -244,6 +285,8 @@ public class ControlInstructionPattern {
                     }
                 }
             }
+
+            return new ArgumentInfo(argumentTemplateBuilder.toString(), argumentRegisters);
         }
 
         /**
@@ -296,11 +339,15 @@ public class ControlInstructionPattern {
 
         @Override
         protected RegisterView handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
-            var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
-            var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
-            return selector
-                    .addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", virtualReg, resultReg))
-                    .getResultReg();
+            if (!value.getUsers().isEmpty()) {
+                var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
+                var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
+                return selector
+                        .addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", virtualReg, resultReg))
+                        .getResultReg();
+            } else {
+                return null; // 未使用的值返回null也不会影响
+            }
         }
 
         @Override
@@ -319,11 +366,16 @@ public class ControlInstructionPattern {
 
         @Override
         protected RegisterView handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
-            var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
-            var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
-            return selector
-                    .addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", virtualReg, resultReg))
-                    .getResultReg();
+            if (!value.getUsers().isEmpty()) {
+                // 如果有用户使用这个返回值，那么需要将其转换为虚拟寄存器
+                var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
+                var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
+                return selector
+                        .addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", virtualReg, resultReg))
+                        .getResultReg();
+            } else {
+                return null; // 未使用的值返回null也不会影响
+            }
         }
 
         @Override
@@ -332,6 +384,10 @@ public class ControlInstructionPattern {
         }
     }
 
+    /**
+     * 处理可变参数的函数调用，和标准的AAPCS64标准是一样的只是浮点参数在需要作为double传递，但是已经在IR中处理过了，直接就能用VoidCall FloatCall IntCall 处理
+     */
+    @Deprecated
     public static class VoidVACall extends AbstractCallPattern {
         public VoidVACall() {
             super(0);

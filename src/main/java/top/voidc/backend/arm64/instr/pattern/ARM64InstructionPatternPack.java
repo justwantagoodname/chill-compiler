@@ -16,12 +16,16 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ArithmaticInstructionPattern.ADDTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.ADDImm());
         patternSet.add(new ArithmaticInstructionPattern.MULTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.PowerMulPattern());
 //        patternSet.add(new ArithmaticInstructionPattern.MULImm());
         patternSet.add(new ArithmaticInstructionPattern.MADDInstruction());
         patternSet.add(new ArithmaticInstructionPattern.MSUBInstruction());
+//       patternSet.add(new ArithmaticInstructionPattern.FMADDInstruction()); // 样例本身就不对 这个等价于 GCC -ffast-math 的指令 没法用
+//        patternSet.add(new ArithmaticInstructionPattern.FMSUBInstruction());
         patternSet.add(new ArithmaticInstructionPattern.SUBTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.SUBImm());
         patternSet.add(new ArithmaticInstructionPattern.SDIVTwoReg());
+        patternSet.add(new ArithmaticInstructionPattern.PowerDivPattern());
         patternSet.add(new ArithmaticInstructionPattern.NEGReg());
         patternSet.add(new ArithmaticInstructionPattern.SMODTwoReg());
         patternSet.add(new ArithmaticInstructionPattern.FADDTwoReg());
@@ -67,6 +71,8 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ConditionPatterns.FCMPReg());
         patternSet.add(new ConditionPatterns.FCMPZ());
         patternSet.add(new ConditionPatterns.CondBranch());
+        patternSet.add(new ConditionPatterns.CBZPattern());
+        patternSet.add(new ConditionPatterns.CBNZPattern());
 
         patternSet.add(new MemoryAllocationPattern.SimpleAlloca());
 //        patternSet.add(new MemoryAllocationPattern.SimpleAllocaPointer());
@@ -80,6 +86,8 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new MemoryAccessPatterns.LoadRegisterPointerPattern());
         patternSet.add(new MemoryAccessPatterns.StoreRegisterPointerPattern());
         patternSet.add(new MemoryAccessPatterns.LoadGlobalPointer());
+        patternSet.add(new MemoryAccessPatterns.LoadGlobalVariablePattern());
+        patternSet.add(new MemoryAccessPatterns.StoreGlobalVariablePattern());
         patternSet.add(new MemoryAccessPatterns.GEPLoadGlobalPointer());
         patternSet.add(new MemoryAccessPatterns.GEPLoadLocalPointer());
         patternSet.add(new MemoryAccessPatterns.GEPLoadArgumentPointer());

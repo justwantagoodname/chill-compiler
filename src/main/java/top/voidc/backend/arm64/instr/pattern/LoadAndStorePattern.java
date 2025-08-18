@@ -11,9 +11,102 @@ import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.misc.Tool;
 
+import java.util.ArrayList;
+import java.util.List;
+import top.voidc.ir.machine.IceMachineFunction;
+
 import static top.voidc.ir.machine.InstructionSelectUtil.*;
 
 public class LoadAndStorePattern {
+    public static class ImmediateLoader {
+        /**
+         * 检查是否可以使用单条指令加载32位立即数
+         */
+        public static boolean canEncodeInSingleInstruction(int value) {
+            // 检查是否可以用MOVZ编码（16位无符号数）
+            if ((value & 0xFFFF) == value) {
+                return true;
+            }
+            
+            // 检查是否可以用MOVN编码（16位按位取反）
+            if ((~value & 0xFFFF) == ~value) {
+                return true;
+            }
+            
+            // 检查是否可以用MOVZ + LSL #16编码
+            if ((value & 0xFFFF0000) == value && (value >>> 16) != 0) {
+                return true;
+            }
+            
+            // 检查是否可以用MOVN + LSL #16编码
+            if ((~value & 0xFFFF0000) == ~value) {
+                return true;
+            }
+            
+            return false;
+        }
+        
+        /**
+         * 生成加载32位立即数的指令序列
+         */
+        public static List<ARM64Instruction> loadImmediate32(IceMachineRegister.RegisterView dstRegView, int constValue) {
+            List<ARM64Instruction> instructions = new ArrayList<>();
+            
+            // 检查可以用单条指令编码的情况
+            if ((constValue & 0xFFFF) == constValue) {
+                // 可以用MOVZ直接加载低16位
+                instructions.add(new ARM64Instruction("MOVZ {dst}, {imm16:x}", dstRegView, IceConstantData.create(constValue)));
+            } else if ((~constValue & 0xFFFF) == ~constValue) {
+                // 可以用MOVN加载按位取反的低16位
+                instructions.add(new ARM64Instruction("MOVN {dst}, {imm16:x}", dstRegView, IceConstantData.create(~constValue & 0xFFFF)));
+            } else if ((constValue & 0xFFFF0000) == constValue && (constValue >>> 16) != 0) {
+                // 可以用MOVZ LSL #16加载高16位
+                instructions.add(new ARM64Instruction("MOVZ {dst}, {imm16:x}, lsl #16", dstRegView, IceConstantData.create(constValue >>> 16)));
+            } else if ((~constValue & 0xFFFF0000) == ~constValue) {
+                // 可以用MOVN LSL #16加载按位取反的高16位
+                instructions.add(new ARM64Instruction("MOVN {dst}, {imm16:x}, lsl #16", dstRegView, IceConstantData.create(~(constValue >>> 16) & 0xFFFF)));
+            } else {
+                // 需要两条指令: 检查是否可以用MOVN+MOVK更高效
+                int lowBits = constValue & 0xFFFF;
+                int highBits = (constValue >>> 16) & 0xFFFF;
+                
+                if (Integer.bitCount(~lowBits & 0xFFFF) + Integer.bitCount(highBits) < 
+                    Integer.bitCount(lowBits) + Integer.bitCount(~highBits & 0xFFFF)) {
+                    // MOVN + MOVK 更高效
+                    instructions.add(new ARM64Instruction("MOVN {dst}, {imm16:x}", dstRegView, IceConstantData.create(~lowBits & 0xFFFF)));
+                    instructions.add(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #16", dstRegView, IceConstantData.create(highBits)));
+                } else {
+                    // MOVZ + MOVK 更高效
+                    instructions.add(new ARM64Instruction("MOVZ {dst}, {imm16:x}", dstRegView, IceConstantData.create(lowBits)));
+                    instructions.add(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #16", dstRegView, IceConstantData.create(highBits)));
+                }
+            }
+            
+            return instructions;
+        }
+        
+        /**
+         * 生成加载12位立即数的指令
+         */
+        public static ARM64Instruction loadImm12(IceMachineRegister.RegisterView dstRegView, int value) {
+            return new ARM64Instruction("MOV {dst}, {imm12:src}", dstRegView, IceConstantData.create(value));
+        }
+        
+        /**
+         * 生成加载左移12位的立即数的指令
+         */
+        public static ARM64Instruction loadImmLsl12(IceMachineRegister.RegisterView dstRegView, int value) {
+            return new ARM64Instruction("MOV {dst}, {imm12:src}, lsl #12", dstRegView, IceConstantData.create(value));
+        }
+        
+        /**
+         * 生成加载0的指令
+         */
+        public static IceMachineRegister.RegisterView loadZero(IceMachineFunction machineFunction, IceType type) {
+            return machineFunction.getZeroRegister(type);
+        }
+    }
+
     public static class LoadRegFuncParam extends InstructionPattern<IceFunction.IceFunctionParameter> {
         /**
          * 匹配函数参数 然后从物理寄存器移动到虚拟寄存器
@@ -47,28 +140,20 @@ public class LoadAndStorePattern {
 
         @Override
         public int getCost(InstructionSelector selector, IceConstantData value) {
-            if (isImm16(value)) {
-                return 2;
-            } else {
-                return 1;
-            }
+            final var constValue = ((IceConstantInt) value.castTo(IceType.I32)).getValue();
+            return ImmediateLoader.canEncodeInSingleInstruction(constValue) ? 1 : 2;
         }
 
         @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConstantData value) {
-            // TODO：充分利用movz movz
             final var constValue = ((IceConstantInt) value.castTo(IceType.I32)).getValue();
             final var dstRegView = selector.getMachineFunction().allocateVirtualRegister(IceType.I32);
-            if (!isImm16(value)) {
-                var lowBit = constValue & 0xFFFF;
-                var highBit = constValue >> 16;
-                selector.addEmittedInstruction(new ARM64Instruction("MOVZ {dst}, {imm16:x}", dstRegView, IceConstantData.create(lowBit)));
-                selector.addEmittedInstruction(new ARM64Instruction("MOVK {dst}, {imm16:x}, lsl #16", dstRegView, IceConstantData.create(highBit)));
-                return dstRegView;
-            } else {
-                final var mov = new ARM64Instruction("MOVZ {dst}, {imm16:x}", dstRegView, value);
-                selector.addEmittedInstruction(mov);
+            
+            // 使用ImmediateLoader生成指令序列并添加到selector
+            for (var instruction : ImmediateLoader.loadImmediate32(dstRegView, constValue)) {
+                selector.addEmittedInstruction(instruction);
             }
+            
             return dstRegView;
         }
 
@@ -196,7 +281,7 @@ public class LoadAndStorePattern {
 
         @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceConstantData value) {
-            return selector.getMachineFunction().getZeroRegister(value.getType());
+            return ImmediateLoader.loadZero(selector.getMachineFunction(), value.getType());
         }
 
         @Override
@@ -259,6 +344,11 @@ public class LoadAndStorePattern {
         }
 
         @Override
+        public int getCost(InstructionSelector selector, IceCopyInstruction value) {
+            return getIntrinsicCost() + selector.select(value.getDestination()).cost();
+        }
+
+        @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCopyInstruction value) {
             assert value.getDestination() instanceof IcePHINode;// 一般目标是PHINode
             // 目标寄存器一般是PHINode，为了防止没有被选择过，先选择一下
@@ -299,16 +389,23 @@ public class LoadAndStorePattern {
         }
 
         @Override
+        public int getCost(InstructionSelector selector, IceCopyInstruction value) {
+            return getIntrinsicCost() + selector.select(value.getDestination()).cost();
+        }
+
+        @Override
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceCopyInstruction value) {
             assert value.getDestination() instanceof IcePHINode;// 一般目标是PHINode
             // 目标寄存器一般是PHINode，为了防止没有被选择过，先选择一下
             if (selector.select(value.getDestination()) == null) {
                 throw new IllegalStateException("phi指令应该可以被选择");
             }
-            var dstReg = selector.emit(value.getDestination());
+            var dstReg = (IceMachineRegister.RegisterView) selector.emit(value.getDestination());
             var imm = (IceConstantInt) ((IceConstantData) value.getSource()).castTo(IceType.I32);
+            
+            // 使用ImmediateLoader的loadImm12方法
             return selector.addEmittedInstruction(
-                    new ARM64Instruction("MOV {dst}, {imm12:src}", dstReg, imm)).getResultReg();
+                    ImmediateLoader.loadImm12(dstReg, (int)imm.getValue())).getResultReg();
         }
 
         @Override

@@ -18,14 +18,14 @@ public class IceRetInstruction extends IceInstruction {
     }
 
     public Optional<IceValue> getReturnValue() {
-        if (getOperandsList().isEmpty()) {
+        if (getOperands().isEmpty()) {
             return Optional.empty();
         }
         return Optional.ofNullable(getOperand(0));
     }
 
     public boolean isReturnVoid() {
-        return getOperandsList().isEmpty();
+        return getOperands().isEmpty();
     }
 
     @Override

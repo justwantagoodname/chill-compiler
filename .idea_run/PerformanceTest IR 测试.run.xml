@@ -1,0 +1,23 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PerformanceTest IR 测试" type="JUnit" factoryName="JUnit">
+    <module name="chillcompiler" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="top.voidc.e2e.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="PACKAGE_NAME" value="top.voidc.e2e" />
+    <option name="MAIN_CLASS_NAME" value="top.voidc.e2e.CompilerTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <option name="VM_PARAMETERS" value="-ea -Dchill.timeout=30s" />
+    <envs>
+      <env name="ENABLE_SSH" value="true" />
+      <env name="TESTCASE_DIR" value="testcases/2025_arm_performance;testcases/performance;testcases/h_performance" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

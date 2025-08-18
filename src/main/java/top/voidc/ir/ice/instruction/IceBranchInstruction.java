@@ -68,4 +68,18 @@ public class IceBranchInstruction extends IceInstruction {
     public boolean isTerminal() {
         return true;
     }
+
+    @Override
+    public void destroy() {
+        for (var operand : getOperands()) {
+            if (operand instanceof IceBlock block) {
+                block.safeForEach(instr -> {
+                    if (instr instanceof IcePHINode phi) {
+                        phi.removeValueByBranch(this.getParent()); // 从 phi 节点中删除当前分支
+                    }
+                });
+            }
+        }
+        super.destroy();
+    }
 }

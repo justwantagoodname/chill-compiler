@@ -26,14 +26,14 @@ public class ARM64Instruction extends IceMachineInstruction implements IceArchit
     }
 
     @Override
-    public int getBitSize() {
+    public int getArchitectureBitSize() {
         return 64;
     }
 
     @Override
     public boolean isTerminal() {
         if (getOpcode().startsWith("B.")) return true;
-        return Set.of("RET", "B").contains(getOpcode());
+        return Set.of("RET", "B", "CBZ", "CBNZ").contains(getOpcode());
     }
 
     @Override

@@ -1,0 +1,27 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="AArch64 CompilerTest 树莓派RPI 后端" type="JUnit" factoryName="JUnit">
+    <module name="chillcompiler" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="top.voidc.e2e.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="PACKAGE_NAME" value="top.voidc.e2e" />
+    <option name="MAIN_CLASS_NAME" value="top.voidc.e2e.CompilerTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <option name="VM_PARAMETERS" value="-ea -Dchill.timeout=1s -Dchill.runner=SSHARM64ASMRunner -Dchill.ci=true" />
+    <envs>
+      <env name="ENABLE_SSH" value="true" />
+      <env name="SSH_BASE_DIR" value="/home/pi/null-chill-e2e" />
+      <env name="SSH_HOST" value="runner.voidc.top" />
+      <env name="SSH_PORT" value="2222" />
+      <env name="SSH_USERNAME" value="pi" />
+      <env name="TESTCASE_DIR" value="testcases/custom;testcases/functional;testcases/h_functional" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

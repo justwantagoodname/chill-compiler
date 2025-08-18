@@ -1,5 +1,6 @@
 package top.voidc.backend;
 
+import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceUnit;
 import top.voidc.ir.ice.constant.*;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
@@ -15,6 +16,8 @@ import top.voidc.optimizer.pass.CompilePass;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 输出最终的汇编代码
@@ -23,13 +26,16 @@ import java.io.IOException;
 public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecification {
     private final String outputPath;
     private final File sourceFile;
+    private final Map<IceMachineFunction, List<IceBlock>> blockLists;
 
     public OutputARMASM(
             @Qualifier("outputPath") String outputPath,
-            @Qualifier("sourceFile") File sourceFile
-    ) {
+            @Qualifier("sourceFile") File sourceFile,
+            @Qualifier("functionBlocks") Map<IceMachineFunction, List<IceBlock>> blockLists
+            ) {
         this.outputPath = outputPath;
         this.sourceFile = sourceFile;
+        this.blockLists = blockLists;
     }
 
 
@@ -118,7 +124,18 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
             if (func instanceof IceExternFunction) continue; // 外部函数在汇编中不用声明 由连接器处理
             assert func instanceof IceMachineFunction;
 
-            assemblyBuilder.writeRaw(func.getTextIR())
+
+            var builder = new StringBuilder();
+            var blocks = blockLists.get(func);
+            builder.append("\t.global ").append(func.getName()).append("\n")
+                    .append("\t.type ").append(func.getName()).append(", %function\n")
+                    .append("\t.align ").append(Tool.log2(func.getAlignment())).append("\n")
+                    .append(func.getName()).append(":\n");
+            blocks.forEach(block -> {
+                block.getTextIR(builder);
+                builder.append("\n");
+            });
+            assemblyBuilder.writeRaw(builder.toString())
                     .writeLine();
         }
     }
@@ -161,7 +178,7 @@ public class OutputARMASM implements CompilePass<IceUnit>, IceArchitectureSpecif
     }
 
     @Override
-    public int getBitSize() {
+    public int getArchitectureBitSize() {
         return 64;
     }
 }
