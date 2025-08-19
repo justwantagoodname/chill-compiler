@@ -118,7 +118,7 @@ public class IceBlock extends IceUser implements List<IceInstruction> {
 
     public List<IceBlock> getPredecessors() {
         return getUsers().stream()
-                .filter(iceUser -> iceUser instanceof IceInstruction)
+                .filter(iceUser -> iceUser instanceof IceInstruction inst && inst.isTerminal())
                 .map(inst -> ((IceInstruction) inst).getParent()).toList();
     }
 
