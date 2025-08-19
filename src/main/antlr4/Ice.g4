@@ -156,10 +156,14 @@ constant
 // Operators
 binOp
     : 'add'
+    | 'fadd'
     | 'sub'
+    | 'fsub'
     | 'mul'
+    | 'fmul'
     | 'udiv'
     | 'sdiv'
+    | 'fdiv'
     | 'urem'
     | 'srem'
     | 'and'
