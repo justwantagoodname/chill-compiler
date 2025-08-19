@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class IceUser extends IceValue {
-    private final List<IceValue> operands;
+public class IceUser extends IceValue implements Cloneable {
+    private List<IceValue> operands;
 
     public IceUser() {
         super();
@@ -22,6 +22,14 @@ public class IceUser extends IceValue {
     public void addOperand(IceValue operand) {
         operand.addUse(this);
         operands.add(operand);
+    }
+
+    public void addOperand(int index, IceValue operand) {
+        if (index < 0 || index > operands.size()) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + operands.size());
+        }
+        operand.addUse(this);
+        operands.add(index, operand);
     }
 
     protected void removeAllOperands() {
@@ -79,6 +87,14 @@ public class IceUser extends IceValue {
 
     public List<IceValue> getOperands() {
         return operands;
+    }
+
+    @Override
+    public IceUser clone() {
+        IceUser clone = (IceUser) super.clone();
+        // 创建新的operands列表，但保持对操作数的引用
+        clone.operands = new ArrayList<>(this.operands);
+        return clone;
     }
 
     @Override

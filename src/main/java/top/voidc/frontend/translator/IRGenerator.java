@@ -7,7 +7,6 @@ import top.voidc.frontend.translator.exception.CompilationException;
 import top.voidc.ir.IceContext;
 import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.ir.ice.constant.IceFunction;
-import top.voidc.ir.IceUnit;
 import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
 

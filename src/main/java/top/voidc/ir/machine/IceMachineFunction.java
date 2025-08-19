@@ -42,9 +42,11 @@ public abstract class IceMachineFunction extends IceFunction implements IceArchi
     /**
      * 给 MachineFunction 分配虚拟寄存器单元
      */
-    protected abstract IceMachineRegister allocateVirtualRegister(String name, IceType type);
+    protected abstract IceMachineRegister allocateVirtualRegister(String name, IceType type, IceMachineRegister boundRegister);
 
     public abstract IceMachineRegister.RegisterView allocateVirtualRegister(IceType type);
+
+    public abstract IceMachineRegister.RegisterView allocateBoundVirtualRegister(IceType type, IceMachineRegister boundRegister);
 
     public abstract IceMachineRegister getPhysicalRegister(String name);
 

@@ -6,6 +6,8 @@ import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.ir.ice.interfaces.IceArchitectureSpecification;
 
+import java.util.Optional;
+
 /**
  * 机器寄存器抽象，在寄存器分配后变为真实的物理寄存器
  * 默认为虚拟寄存器
@@ -35,14 +37,17 @@ public abstract class IceMachineRegister extends IceUser implements IceArchitect
     }
 
     private boolean isVirtualize = true;
+    private boolean isReadOnly = false; // 是否只读寄存器
+    private IceMachineRegister bindRegister = null; // 绑定的物理寄存器
 
-    public IceMachineRegister(String name, IceType type) {
-        super(name, type);
-    }
-
-    public IceMachineRegister(String name, IceType type, boolean isVirtualize) {
+    public IceMachineRegister(String name, IceType type, boolean isVirtualize, IceMachineRegister bindRegister) {
         super(name, type);
         setVirtualize(isVirtualize);
+        this.bindRegister = bindRegister;
+
+        if (bindRegister != null) {
+            this.setReadOnly(bindRegister.isReadOnly());
+        }
     }
 
     public int getBitwidth() {
@@ -55,6 +60,22 @@ public abstract class IceMachineRegister extends IceUser implements IceArchitect
 
     public void setVirtualize(boolean virtualize) {
         isVirtualize = virtualize;
+    }
+
+    public boolean isReadOnly() {
+        return isReadOnly;
+    }
+
+    public void setReadOnly(boolean readOnly) {
+        isReadOnly = readOnly;
+    }
+
+    public boolean isBound() {
+        return bindRegister != null;
+    }
+
+    public Optional<IceMachineRegister> getBindRegister() {
+        return Optional.ofNullable(bindRegister);
     }
 
     public abstract RegisterView createView(IceType type);

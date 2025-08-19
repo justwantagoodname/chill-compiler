@@ -2,7 +2,6 @@ package top.voidc.ir.ice.constant;
 
 import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.type.IceType;
-import top.voidc.misc.Tool;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;

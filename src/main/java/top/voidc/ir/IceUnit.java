@@ -3,7 +3,6 @@ package top.voidc.ir;
 import top.voidc.ir.ice.constant.IceConstant;
 import top.voidc.ir.ice.constant.IceExternFunction;
 import top.voidc.ir.ice.constant.IceFunction;
-import top.voidc.ir.ice.constant.IceGlobalVariable;
 import top.voidc.ir.ice.type.IceType;
 
 import java.util.ArrayList;
@@ -34,6 +33,12 @@ public class IceUnit extends IceValue {
             throw new RuntimeException("Duplicate global variable declaration: " + decl.getName());
         }
         globalVariables.add(decl);
+    }
+
+    public void removeGlobalDecl(IceConstant decl) {
+        if (!globalVariables.remove(decl)) {
+            throw new RuntimeException("Global variable not found: " + decl.getName());
+        }
     }
 
     public void addFunction(IceFunction function) {

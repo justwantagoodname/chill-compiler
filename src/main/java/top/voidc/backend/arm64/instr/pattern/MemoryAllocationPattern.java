@@ -104,9 +104,9 @@ public class MemoryAllocationPattern {
             // TODO len 小于 8 的直接换成NEON STR wzr
 
             // 第四位是 volatile 位直接不管了
-            var x0 = selector.getMachineFunction().getPhysicalRegister("x0").createView(IceType.I64); // 第一个参数是地址
-            var x1 = selector.getMachineFunction().getPhysicalRegister("x1").createView(IceType.I8); // 第二个参数是值
-            var x2 = selector.getMachineFunction().getPhysicalRegister("x2").createView(IceType.I32); // 第三个参数是长度
+            var x0 = selector.getMachineFunction().allocateBoundVirtualRegister(IceType.I64, selector.getMachineFunction().getPhysicalRegister("x0")); // 第一个参数是地址
+            var x1 = selector.getMachineFunction().allocateBoundVirtualRegister(IceType.I8, selector.getMachineFunction().getPhysicalRegister("x1")); // 第二个参数是值
+            var x2 = selector.getMachineFunction().allocateBoundVirtualRegister(IceType.I32, selector.getMachineFunction().getPhysicalRegister("x2")); // 第三个参数是长度
             var slot = (IceStackSlot) selector.emit(value.getParameters().get(0));
             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", x0, slot));
             assert value.getParameters().get(1) instanceof IceConstantByte : "目前只支持常量其他不管了";
@@ -154,9 +154,10 @@ public class MemoryAllocationPattern {
             // 第四位是 volatile 位直接不管了
 
             var addrReg = selector.getMachineFunction().allocateVirtualRegister(src.getType());
-            var x0 = selector.getMachineFunction().getPhysicalRegister("x0").createView(IceType.I64); // 第一个参数是地址
-            var x1 = selector.getMachineFunction().getPhysicalRegister("x1").createView(IceType.I64); // 第二个参数是值
-            var x2 = selector.getMachineFunction().getPhysicalRegister("x2").createView(IceType.I32); // 第三个参数是长度
+
+            var x0 = selector.getMachineFunction().allocateBoundVirtualRegister(IceType.I64, selector.getMachineFunction().getPhysicalRegister("x0")); // 第一个参数是地址
+            var x1 = selector.getMachineFunction().allocateBoundVirtualRegister(IceType.I64, selector.getMachineFunction().getPhysicalRegister("x1")); // 第二个参数是值
+            var x2 = selector.getMachineFunction().allocateBoundVirtualRegister(IceType.I32, selector.getMachineFunction().getPhysicalRegister("x2")); // 第三个参数是长度
 
             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:offset}", x0, slot)); // dst
 

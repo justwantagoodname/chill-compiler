@@ -1,10 +1,7 @@
 package top.voidc.ir.ice.type;
 
 
-import top.voidc.ir.IceValue;
 import top.voidc.misc.Flag;
-
-import java.util.List;
 
 public class IcePtrType <T extends IceType> extends IceType {
 

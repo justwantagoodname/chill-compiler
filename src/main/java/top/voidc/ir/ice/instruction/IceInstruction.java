@@ -4,7 +4,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceUser;
 import top.voidc.ir.ice.type.IceType;
 
-public abstract class IceInstruction extends IceUser {
+public abstract class IceInstruction extends IceUser implements Cloneable {
     public IceBlock getParent() {
         return parent;
     }
@@ -65,5 +65,13 @@ public abstract class IceInstruction extends IceUser {
     @Override
     public String toString() {
         return getTextIR();
+    }
+
+    @Override
+    public IceInstruction clone() {
+        IceInstruction clone = (IceInstruction) super.clone();
+        // parent初始化为null，需要调用者在适当时机设置
+        clone.parent = null;
+        return clone;
     }
 }

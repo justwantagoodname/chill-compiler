@@ -8,7 +8,7 @@ import top.voidc.ir.ice.instruction.IceInstruction;
 
 import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.optimizer.pass.CompilePass;
-import top.voidc.optimizer.pass.DominatorTree;
+import top.voidc.misc.ds.DominatorTree;
 
 import top.voidc.misc.annotation.Pass;
 

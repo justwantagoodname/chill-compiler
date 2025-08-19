@@ -2,13 +2,8 @@ package top.voidc.ir.machine;
 
 import top.voidc.backend.instr.InstructionSelector;
 import top.voidc.ir.IceValue;
-import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
-import top.voidc.ir.ice.constant.IceConstantLong;
-import top.voidc.ir.ice.instruction.IceAllocaInstruction;
 import top.voidc.ir.ice.instruction.IceBinaryInstruction;
-import top.voidc.ir.ice.instruction.IceInstruction;
-import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.Tool;
 
 import java.util.function.BiConsumer;

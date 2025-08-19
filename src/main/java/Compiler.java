@@ -15,6 +15,8 @@ import top.voidc.misc.Flag;
 import top.voidc.misc.Log;
 import top.voidc.optimizer.PassManager;
 import top.voidc.optimizer.pass.function.*;
+import top.voidc.optimizer.pass.unit.CallGraphAnalyzer;
+import top.voidc.optimizer.pass.unit.FunctionPureness;
 import top.voidc.optimizer.pass.unit.ShowIR;
 
 import java.io.File;
@@ -63,7 +65,7 @@ public class Compiler {
         context.addPassResult(new ARM64InstructionPatternPack());
 
         // TODO: 后续添加O0 O1的组
-//        passManager.addDisableGroup("needfix");
+        passManager.addDisableGroup("needfix");
         Boolean hasO1 = Flag.get("-O1");
         if (Boolean.FALSE.equals(hasO1)) {
 //            passManager.addDisableGroup("O1");
@@ -89,30 +91,30 @@ public class Compiler {
             pm.runPass(ScalarReplacementOfAggregates.class);
             pm.runPass(Mem2Reg.class);
             pm.runPass(SmartChilletSimplifyCFG.class);
+            pm.runPass(FunctionPureness.class);
             pm.untilStable(
                     GlobalValueNumbering.class,
                     SparseConditionalConstantPropagation.class,
+                    ShowIR.class,
                     SmartChilletDeleteUnusedValue.class,
                     SmartChilletSimplifyCFG.class
             );
             pm.runPass(RenameVariable.class);
-            pm.runPass(LoopInvariantCodeMotion.class);
-            pm.runPass(RenameVariable.class);
-            pm.runPass(LoopClosedFormOptimization.class);
-//            pm.runPass(DumpIR.class);
+            pm.runPass(CallGraphAnalyzer.class);
+            pm.runPass(DumpIR.class);
 
             // 后端相关
-//            pm.runPass(SSADestruction.class);
-//            pm.runPass(InstructionSelectionPass.class);
-//            pm.runPass(LivenessAnalysis.class);
+            pm.runPass(SSADestruction.class);
+            pm.runPass(InstructionSelectionPass.class);
+            pm.runPass(LivenessAnalysis.class);
 //            pm.runPass(SillyChilletAllocateRegister.class);
-//            pm.runPass(LinearScanAllocator.class);
-//            pm.runPass(ShowIR.class);
-//            pm.runPass(RegSaver.class);
-//            pm.runPass(AlignFramePass.class);
-//            pm.runPass(FixStackOffset.class);
-//            pm.runPass(PeepholeOptimization.class);
-//            pm.runPass(OutputARMASM.class);
+            pm.runPass(LinearScanAllocator.class);
+            pm.runPass(ShowIR.class);
+            pm.runPass(RegSaver.class);
+            pm.runPass(AlignFramePass.class);
+            pm.runPass(FixStackOffset.class);
+            pm.runPass(PeepholeOptimization.class);
+            pm.runPass(OutputARMASM.class);
         });
         return passManager;
     }

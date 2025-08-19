@@ -41,6 +41,7 @@ instruction
     | phiInstr
     | compareInstr
     | convertInstr
+    | fnegInstr
     ;
 
 terminatorInstr
@@ -94,6 +95,10 @@ compareInstr
 
 convertInstr
     : IDENTIFIER '=' convertOp type value 'to' type
+    ;
+
+fnegInstr
+    : IDENTIFIER '=' 'fneg' 'float' value
     ;
 
 unreachableInstr
@@ -151,10 +156,14 @@ constant
 // Operators
 binOp
     : 'add'
+    | 'fadd'
     | 'sub'
+    | 'fsub'
     | 'mul'
+    | 'fmul'
     | 'udiv'
     | 'sdiv'
+    | 'fdiv'
     | 'urem'
     | 'srem'
     | 'and'
@@ -176,6 +185,11 @@ cmpOp
     | 'sge'
     | 'slt'
     | 'sle'
+    | 'oeq'
+    | 'olt'
+    | 'one'
+    | 'oge'
+    | 'ogt'
     ;
 
 convertOp
@@ -206,6 +220,6 @@ NAME: [a-zA-Z_][a-zA-Z_0-9.]*;
 IDENTIFIER : '%' (NAME|NUMBER);
 GLOBAL_IDENTIFIER : '@' NAME;
 NUMBER : ('+'|'-')?[0-9]+;
-FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+;
+FLOAT : ('0X'|'0x')[0-9A-Fa-f]+;
 WS : [ \t\r\n]+ -> skip;
 LINE_COMMENT : ';' .*? '\r'? '\n' -> skip;

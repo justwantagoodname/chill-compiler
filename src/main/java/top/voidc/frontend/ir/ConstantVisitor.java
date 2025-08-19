@@ -25,6 +25,11 @@ public class ConstantVisitor extends IceBaseVisitor<IceConstantData> {
             }
             
             if (ctx.FLOAT() != null) {
+                if (ctx.FLOAT().getText().startsWith("0x") || ctx.FLOAT().getText().startsWith("0X")) {
+                    var value = Long.decode(ctx.FLOAT().getText());
+                    var floatValue = Double.longBitsToDouble(value);
+                    return IceConstantData.create((float) floatValue);
+                }
                 return IceConstantData.create(Float.parseFloat(ctx.FLOAT().getText()));
             }
             

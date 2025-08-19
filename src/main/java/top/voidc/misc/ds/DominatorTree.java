@@ -1,6 +1,5 @@
-package top.voidc.optimizer.pass;
+package top.voidc.misc.ds;
 
-import top.voidc.misc.ds.ChilletGraph;
 import java.util.*;
 
 /**
