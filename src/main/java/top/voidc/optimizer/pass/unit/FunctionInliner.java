@@ -130,6 +130,7 @@ public class FunctionInliner implements CompilePass<IceUnit> {
                 var clonedInst = inst.clone();
                 assert clonedInst != inst;
                 clonedInst.setParent(cloneBlock);
+                clonedInst.setName(callerFunction.generateLocalValueName());
                 cloneBlock.add(clonedInst);
                 clonedMapping.put(inst, clonedInst);
 
@@ -212,7 +213,7 @@ public class FunctionInliner implements CompilePass<IceUnit> {
                 if (exitBlocks.size() > 1) {
                     // 需要使用 phi 函数
                     var phi = new IcePHINode(newSuccBlock, callerFunction.generateLocalValueName(), function.getReturnType());
-                    phi.setValueToBeMerged(call);
+                    phi.setValueToBeMerged(null);
                     for (var exitBlock : exitBlocks) {
                         var exitInst = (IceRetInstruction) exitBlock.getLast();
                         var exitValue = exitInst.getReturnValue().orElseThrow();

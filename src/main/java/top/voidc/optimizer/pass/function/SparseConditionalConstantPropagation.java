@@ -334,7 +334,7 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
                         case IceBranchInstruction _ -> {}
                         case IceLoadInstruction _, IceStoreInstruction _ -> {} // 不做别名分析动不了这俩
                         case IceRetInstruction _ -> {} // 返回的操作数如果是常量早就被替换了
-                        case IcePHINode phi -> phi.getBranches().forEach(phiBranch -> {
+                        case IcePHINode phi -> List.copyOf(phi.getBranches()).forEach(phiBranch -> {
                             if (deadBlocks.contains(phiBranch.block())) {
                                 phi.removeOperand(phiBranch.block());
                             }

@@ -99,8 +99,9 @@ public class IcePHINode extends IceInstruction implements Cloneable {
                 lastIter.next().removeUse(this);
                 lastIter.remove();
             }
+
+            this.destroy();
         }
-        this.destroy();
     }
 
     /**
