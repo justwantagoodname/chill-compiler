@@ -499,4 +499,20 @@ public class MemoryAccessPatterns {
             return gep.getBasePtr() instanceof IceFunction.IceFunctionParameter;
         }
     }
+
+    public static class GEPNestedPointer extends AbstractGEPLoadPattern {
+        public GEPNestedPointer() {
+            super(10);
+        }
+
+        @Override
+        protected IceMachineValue getBasePointer(InstructionSelector selector, IceGEPInstruction gep) {
+            return selector.emit(gep.getBasePtr());
+        }
+
+        @Override
+        protected boolean testBasePointer(InstructionSelector selector, IceGEPInstruction gep) {
+            return gep.getBasePtr() instanceof IceGEPInstruction;
+        }
+    }
 }

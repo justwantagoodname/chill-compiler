@@ -101,7 +101,7 @@ public class Compiler {
             );
             pm.runPass(RenameVariable.class);
             pm.runPass(CallGraphAnalyzer.class);
-//            pm.runPass(FunctionInliner.class);
+            pm.runPass(FunctionInliner.class);
             pm.untilStable(
                     GlobalValueNumbering.class,
                     SparseConditionalConstantPropagation.class,

@@ -91,6 +91,7 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new MemoryAccessPatterns.GEPLoadGlobalPointer());
         patternSet.add(new MemoryAccessPatterns.GEPLoadLocalPointer());
         patternSet.add(new MemoryAccessPatterns.GEPLoadArgumentPointer());
+        patternSet.add(new MemoryAccessPatterns.GEPNestedPointer());
     }
 
     @Override
