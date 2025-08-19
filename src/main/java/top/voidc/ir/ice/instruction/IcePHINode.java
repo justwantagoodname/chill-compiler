@@ -12,7 +12,7 @@ import java.util.ArrayList;
  * Update 将分支和值均作为操作数
  * 按照(block, value), (block, value)的顺序存储
  */
-public class IcePHINode extends IceInstruction {
+public class IcePHINode extends IceInstruction implements Cloneable {
     public record IcePHIBranch(IceBlock block, IceValue value) {}
 
     private boolean isEliminated = false; // 是否已经被消除还原成复制指令
@@ -198,5 +198,13 @@ public class IcePHINode extends IceInstruction {
      */
     public boolean isEliminated() {
         return isEliminated;
+    }
+
+    @Override
+    public IcePHINode clone() {
+        IcePHINode clone = (IcePHINode) super.clone();
+        clone.isEliminated = this.isEliminated;
+        clone.valueToBeMerged = this.valueToBeMerged; // 保持引用
+        return clone;
     }
 }

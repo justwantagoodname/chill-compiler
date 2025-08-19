@@ -9,7 +9,7 @@ import top.voidc.misc.Log;
 
 import java.util.List;
 
-public class IceGEPInstruction extends IceInstruction {
+public class IceGEPInstruction extends IceInstruction implements Cloneable {
     private boolean isInBounds = false;
 
     public IceGEPInstruction(IceBlock block, IceValue basePtr, List<IceValue> indices) {
@@ -28,6 +28,15 @@ public class IceGEPInstruction extends IceInstruction {
 
     public List<IceValue> getIndices() {
         return this.getOperands().subList(1, this.getOperands().size());
+    }
+
+    /**
+     * 在GEP指令中添加索引
+     * @param x 索引位置
+     * @param value 索引值
+     */
+    public void addIndexAt(int x, IceValue value) {
+        this.addOperand(x + 1, value); // +1是因为第一个操作数是基址指针
     }
 
     /**
@@ -81,5 +90,12 @@ public class IceGEPInstruction extends IceInstruction {
         for (int i = 1; i < getOperands().size(); i++) {
             builder.append(", ").append(getOperand(i).getReferenceName());
         }
+    }
+
+    @Override
+    public IceGEPInstruction clone() {
+        IceGEPInstruction clone = (IceGEPInstruction) super.clone();
+        clone.isInBounds = this.isInBounds;
+        return clone;
     }
 }

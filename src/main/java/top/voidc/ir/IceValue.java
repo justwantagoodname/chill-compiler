@@ -1,6 +1,7 @@
 package top.voidc.ir;
 
 import org.antlr.v4.runtime.CharStreams;
+import java.util.HashSet;
 import org.antlr.v4.runtime.CommonTokenStream;
 import top.voidc.frontend.parser.IceLexer;
 import top.voidc.frontend.parser.IceParser;
@@ -8,13 +9,13 @@ import top.voidc.ir.ice.type.IceType;
 
 import java.util.*;
 
-public class IceValue {
+public class IceValue implements Cloneable {
     private String name;
 
     protected IceType type;
 
     // 使用者使用集合确保虽然某个操作数被同个指令使用多次的情况下其使用者唯一，使用者的操作数可能会重复多次且有序所以使用List
-    private final Set<IceUser> users;
+    private Set<IceUser> users;
 
     public IceValue() {
         this.name = null;
@@ -123,5 +124,16 @@ public class IceValue {
         var tokenStream = new CommonTokenStream(new IceLexer(irStream));
         return new IceParser(tokenStream);
     }
-}
 
+    @Override
+    public IceValue clone() {
+        try {
+            IceValue clone = (IceValue) super.clone();
+            // users集合需要新建，因为新对象还没有使用者
+            clone.users = new HashSet<>();
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError(); // 不应该发生
+        }
+    }
+}
