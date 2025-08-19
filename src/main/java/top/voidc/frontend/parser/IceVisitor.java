@@ -143,6 +143,12 @@ public interface IceVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitConvertInstr(IceParser.ConvertInstrContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link IceParser#fnegInstr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFnegInstr(IceParser.FnegInstrContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link IceParser#unreachableInstr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
