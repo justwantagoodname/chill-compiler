@@ -5,10 +5,12 @@ import top.voidc.ir.ice.type.IceVecType;
 import top.voidc.ir.machine.IceMachineRegister;
 
 public class ARM64Register extends IceMachineRegister {
+    public ARM64Register(String name, IceType type) {
+        super(name, type);
+    }
 
-    public ARM64Register(String name, IceType type, boolean isVirtualize, IceMachineRegister boundRegister) {
-        super(name, type, isVirtualize, boundRegister);
-        assert boundRegister == null || boundRegister instanceof ARM64Register;
+    public ARM64Register(String name, IceType type, boolean isVirtualize) {
+        super(name, type, isVirtualize);
     }
 
 

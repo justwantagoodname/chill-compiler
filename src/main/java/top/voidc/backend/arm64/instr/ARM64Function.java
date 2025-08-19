@@ -19,7 +19,6 @@ public class ARM64Function extends IceMachineFunction {
 
     public ARM64Function(IceFunction function) {
         super(function.getName());
-        this.zeroRegister.setReadOnly(true);
         setReturnType(function.getReturnType());
         initMachineBlocks(function);
         setEntryBlock(getMachineBlock("entry"));
@@ -42,7 +41,6 @@ public class ARM64Function extends IceMachineFunction {
                     if (intParamReg < 8) {
                         if (parameterUsed) {
                             var reg = getPhysicalRegister("x" + intParamReg).createView(parameter.getType());
-                            reg = allocateBoundVirtualRegister(parameter.getType(), reg.getRegister());
                             var vreg = allocateVirtualRegister(parameter.getType());
                             getEntryBlock().addInstruction(new ARM64Instruction("MOV {dst}, {src}", vreg, reg));
                             machineValueMap.put(parameter, vreg);
@@ -62,7 +60,6 @@ public class ARM64Function extends IceMachineFunction {
                     if (floatParamReg < 8) {
                         if (parameterUsed) {
                             var reg = getPhysicalRegister("v" + floatParamReg).createView(parameter.getType());
-                            reg = allocateBoundVirtualRegister(parameter.getType(), reg.getRegister());
                             var vreg = allocateVirtualRegister(parameter.getType());
                             getEntryBlock().addInstruction(new ARM64Instruction("FMOV {dst}, {src}", vreg, reg));
                             machineValueMap.put(parameter, vreg);
@@ -153,7 +150,7 @@ public class ARM64Function extends IceMachineFunction {
 
     @Override
     protected IceMachineRegister allocatePhysicalRegister(String name, IceType type) {
-        return physicalRegisters.computeIfAbsent(type + "|" + name, _ -> new ARM64Register(name, type, false, null));
+        return physicalRegisters.computeIfAbsent(type + "|" + name, _ -> new ARM64Register(name, type, false));
     }
 
     @Override
@@ -175,23 +172,15 @@ public class ARM64Function extends IceMachineFunction {
     }
 
     @Override
-    protected IceMachineRegister allocateVirtualRegister(String name, IceType type, IceMachineRegister boundRegister) {
-        return virtualRegisters.computeIfAbsent(type + "|" + name, _ -> new ARM64Register(name, type, true, boundRegister));
+    protected IceMachineRegister allocateVirtualRegister(String name, IceType type) {
+        return virtualRegisters.computeIfAbsent(type + "|" + name, _ -> new ARM64Register(name, type));
     }
 
     @Override
     public IceMachineRegister.RegisterView allocateVirtualRegister(IceType type) {
         return switch (type.getTypeEnum()) {
-            case I8, I32, I64, PTR -> allocateVirtualRegister(String.valueOf(integerVRegCount++), IceType.I64, null).createView(type);
-            case F32, F64 -> allocateVirtualRegister(String.valueOf(floatVRegCount++), IceVecType.VEC128, null).createView(type);
-            default -> throw new IllegalArgumentException("Wrong type!");
-        };
-    }
-
-    public IceMachineRegister.RegisterView allocateBoundVirtualRegister(IceType type, IceMachineRegister boundRegister) {
-        return switch (type.getTypeEnum()) {
-            case I8, I32, I64, PTR -> allocateVirtualRegister(String.valueOf(integerVRegCount++), IceType.I64, boundRegister).createView(type);
-            case F32, F64 -> allocateVirtualRegister(String.valueOf(floatVRegCount++), IceVecType.VEC128, boundRegister).createView(type);
+            case I32, I64, PTR -> allocateVirtualRegister(String.valueOf(integerVRegCount++), IceType.I64).createView(type);
+            case F32, F64 -> allocateVirtualRegister(String.valueOf(floatVRegCount++), IceVecType.VEC128).createView(type);
             default -> throw new IllegalArgumentException("Wrong type!");
         };
     }
@@ -208,6 +197,7 @@ public class ARM64Function extends IceMachineFunction {
 
     @Override
     public IceMachineRegister.RegisterView getZeroRegister(IceType type) {
+        // TODO: 根据浮点类型返回对应的零寄存器
         if (type.isFloat()) return null;
         return zeroRegister.createView(type);
     }

@@ -57,27 +57,26 @@ public class ControlInstructionPattern {
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceRetInstruction value) {
             assert value.getReturnValue().isPresent();
             var returnValue = value.getReturnValue().get();
-            var returnReg = selector.getMachineFunction().getReturnRegister(returnValue.getType());
-            var virtualReturnReg = selector.getMachineFunction().allocateBoundVirtualRegister(returnValue.getType(), returnReg.getRegister());
+            var returnReg = selector.getMachineFunction().getReturnRegister(IceType.I32);
             
             if (returnValue instanceof IceConstantInt constInt) {
                 // 如果是常量整数，使用ImmediateLoader处理
-                for (var instruction : LoadAndStorePattern.ImmediateLoader.loadImmediate32(virtualReturnReg, constInt.getValue())) {
+                for (var instruction : LoadAndStorePattern.ImmediateLoader.loadImmediate32(returnReg, (int)constInt.getValue())) {
                     selector.addEmittedInstruction(instruction);
                 }
             } else {
                 var retMachineValue = selector.emit(returnValue);
                 if (retMachineValue instanceof IceMachineRegister.RegisterView) {
                     selector.addEmittedInstruction(
-                        new ARM64Instruction("MOV {dst}, {x}", virtualReturnReg, retMachineValue));
+                        new ARM64Instruction("MOV {dst}, {x}", returnReg, retMachineValue));
                 } else {
                     selector.addEmittedInstruction(
-                        new ARM64Instruction("LDR {dst}, {local:src}", virtualReturnReg, retMachineValue));
+                        new ARM64Instruction("LDR {dst}, {local:src}", returnReg, retMachineValue));
                 }
             }
 
             // 添加这里让返回指令假装使用了返回寄存器，方便活跃性分析和活跃区间的计算
-            selector.addEmittedInstruction(new ARM64Instruction("RET // iuse: {implicit:ret}", virtualReturnReg));
+            selector.addEmittedInstruction(new ARM64Instruction("RET // iuse: {implicit:ret}", selector.getMachineFunction().getReturnRegister(IceType.I32)));
             return null;
         }
 
@@ -105,19 +104,17 @@ public class ControlInstructionPattern {
         public IceMachineRegister.RegisterView emit(InstructionSelector selector, IceRetInstruction value) {
             assert value.getReturnValue().isPresent();
             var retMachineValue = selector.emit(value.getReturnValue().orElseThrow());
-            var virtualReturnReg = selector.getMachineFunction().allocateBoundVirtualRegister(value.getReturnValue().get().getType(),
-                    selector.getMachineFunction().getReturnRegister(value.getReturnValue().get().getType()).getRegister());
             if (retMachineValue instanceof IceMachineRegister.RegisterView) {
                 selector.addEmittedInstruction(
-                        new ARM64Instruction("FMOV {dst}, {x}", virtualReturnReg, retMachineValue));
+                        new ARM64Instruction("FMOV {dst}, {x}", selector.getMachineFunction().getReturnRegister(IceType.F32), retMachineValue));
             } else {
                 selector.addEmittedInstruction(
-                        new ARM64Instruction("LDR {dst}, {local:src}", virtualReturnReg, retMachineValue)
+                        new ARM64Instruction("LDR {dst}, {local:src}", selector.getMachineFunction().getReturnRegister(IceType.F32), retMachineValue)
                 );
             }
 
             // 添加这里让返回指令假装使用了返回寄存器，方便活跃性分析和活跃区间的计算
-            selector.addEmittedInstruction(new ARM64Instruction("RET // iuse: {implicit:ret}", virtualReturnReg));
+            selector.addEmittedInstruction(new ARM64Instruction("RET // iuse: {implicit:ret}", selector.getMachineFunction().getReturnRegister(IceType.F32)));
             return null;
         }
 
@@ -188,10 +185,9 @@ public class ControlInstructionPattern {
             } else {
                 // 在 BL 指令中附加隐式的返回寄存器
                 var returnReg = selector.getMachineFunction().getReturnRegister(value.getType());
-                var virtualReturnReg = selector.getMachineFunction().allocateBoundVirtualRegister(value.getType(), returnReg.getRegister());
                 var targetFunction = value.getTarget();
                 var funcName = targetFunction.getName();
-                argumentsInfo.argumentRegisters.addFirst(virtualReturnReg);
+                argumentsInfo.argumentRegisters.addFirst(returnReg);
                 selector.addEmittedInstruction(new ARM64Instruction(
                         "BL " + funcName + " // idef: {implicit:dst} iuse: [ " + argumentsInfo.argTemplate + "]", argumentsInfo.argumentRegisters.toArray(new RegisterView[0])));
 
@@ -217,14 +213,14 @@ public class ControlInstructionPattern {
                 if (arg instanceof IceConstantInt argInt) {
                     // 立即数参数 (只能是整数)
                     if (intArgCount < 8) {
-                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount);
-                        var virtualParamReg = selector.getMachineFunction().allocateBoundVirtualRegister(argInt.getType(), paramReg);
+                        var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount)
+                                .createView(IceType.I32);
                         // 使用ImmediateLoader处理任意整数常量
-                        for (var instruction : LoadAndStorePattern.ImmediateLoader.loadImmediate32(virtualParamReg, argInt.getValue())) {
+                        for (var instruction : LoadAndStorePattern.ImmediateLoader.loadImmediate32(paramReg, (int)argInt.getValue())) {
                             selector.addEmittedInstruction(instruction);
                         }
                         argumentTemplateBuilder.append("{implicit:iarg").append(intArgCount).append("} ");
-                        argumentRegisters.add(virtualParamReg);
+                        argumentRegisters.add(paramReg);
                     } else {
                         var valueReg = selector.emit(argInt);
                         var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
@@ -238,11 +234,11 @@ public class ControlInstructionPattern {
                         if (isFloat) {
                             // 浮点数参数使用s寄存器
                             if (floatArgCount < 8) {
-                                var paramReg = selector.getMachineFunction().getPhysicalRegister("v" + floatArgCount);
-                                var virtualParamReg = selector.getMachineFunction().allocateBoundVirtualRegister(argReg.getType(), paramReg);
-                                selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", virtualParamReg, argReg));
+                                var paramReg = selector.getMachineFunction().getPhysicalRegister("v" + floatArgCount)
+                                        .createView(argReg.getType());
+                                selector.addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", paramReg, argReg));
                                 argumentTemplateBuilder.append("{implicit:farg").append(floatArgCount).append("} ");
-                                argumentRegisters.add(virtualParamReg);
+                                argumentRegisters.add(paramReg);
                             } else {
                                 var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
                                 selector.addEmittedInstruction(
@@ -252,11 +248,11 @@ public class ControlInstructionPattern {
                         } else {
                             // 整数参数使用x寄存器
                             if (intArgCount < 8) {
-                                var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount);
-                                var virtualParamReg = selector.getMachineFunction().allocateBoundVirtualRegister(argReg.getType(), paramReg);
-                                selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", virtualParamReg, argReg));
+                                var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount)
+                                        .createView(argReg.getType());
+                                selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, argReg));
                                 argumentTemplateBuilder.append("{implicit:iarg").append(intArgCount).append("} ");
-                                argumentRegisters.add(virtualParamReg);
+                                argumentRegisters.add(paramReg);
                             } else {
                                 var argStackSlot = selector.getMachineFunction().allocateArgumentStackSlot(value, i, value.getType());
                                 selector.addEmittedInstruction(
@@ -267,11 +263,13 @@ public class ControlInstructionPattern {
                     } else if (resultArg instanceof IceStackSlot argStackSlotPointer) {
                         // 栈上的参数作为指针加载到x寄存器
                         if (intArgCount < 8) {
-                            var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount);
-                            var virtualParamReg = selector.getMachineFunction().allocateBoundVirtualRegister(IceType.I64, paramReg);
-                            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", virtualParamReg, argStackSlotPointer));
+                            var paramReg = selector.getMachineFunction().getPhysicalRegister("x" + intArgCount)
+                                    .createView(IceType.I64);
+                            var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
+                            selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlotPointer));
+                            selector.addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", paramReg, tmpReg));
                             argumentTemplateBuilder.append("{implicit:iarg").append(intArgCount).append("} ");
-                            argumentRegisters.add(virtualParamReg);
+                            argumentRegisters.add(paramReg);
                         } else {
                             var tmpReg = selector.getMachineFunction().allocateVirtualRegister(IceType.I64);
                             selector.addEmittedInstruction(new ARM64Instruction("ADD {dst}, sp, {local-offset:slot}", tmpReg, argStackSlotPointer));
@@ -341,10 +339,9 @@ public class ControlInstructionPattern {
         protected RegisterView handleFunctionReturn(InstructionSelector selector, IceCallInstruction value) {
             if (!value.getUsers().isEmpty()) {
                 var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
-                var virtualResultReg = selector.getMachineFunction().allocateBoundVirtualRegister(value.getType(), resultReg.getRegister());
                 var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
                 return selector
-                        .addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", virtualReg, virtualResultReg))
+                        .addEmittedInstruction(new ARM64Instruction("MOV {dst}, {src}", virtualReg, resultReg))
                         .getResultReg();
             } else {
                 return null; // 未使用的值返回null也不会影响
@@ -370,10 +367,9 @@ public class ControlInstructionPattern {
             if (!value.getUsers().isEmpty()) {
                 // 如果有用户使用这个返回值，那么需要将其转换为虚拟寄存器
                 var resultReg = selector.getMachineFunction().getReturnRegister(value.getType());
-                var virtualResultReg = selector.getMachineFunction().allocateBoundVirtualRegister(value.getType(), resultReg.getRegister());
-                var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getType());
+                var virtualReg = selector.getMachineFunction().allocateVirtualRegister(value.getTarget().getReturnType());
                 return selector
-                        .addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", virtualReg, virtualResultReg))
+                        .addEmittedInstruction(new ARM64Instruction("FMOV {dst}, {src}", virtualReg, resultReg))
                         .getResultReg();
             } else {
                 return null; // 未使用的值返回null也不会影响
