@@ -7,7 +7,7 @@ public class SCEVFloatConst extends SCEVConst{
     private final float value;
 
     public SCEVFloatConst(float value) {
-        Log.d("创建了float常量：" + value);
+//        Log.d("创建了float常量：" + value);
         this.value = value;
     }
 

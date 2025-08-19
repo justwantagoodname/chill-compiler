@@ -1,5 +1,7 @@
 package top.voidc.misc.scev;
 
+import top.voidc.ir.IceBlock;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,10 +32,6 @@ public class SCEVLoopIterator extends SCEVValue{
     @Override
     public String toString() {
         return "<" +  loop + ">";
-    }
-
-    public String getLoop(){
-        return loop;
     }
 
     public boolean equals(SCEVLoopIterator iter){

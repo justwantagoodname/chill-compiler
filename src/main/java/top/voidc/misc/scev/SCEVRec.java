@@ -1,5 +1,8 @@
 package top.voidc.misc.scev;
 
+import top.voidc.ir.IceBlock;
+import top.voidc.ir.IceValue;
+
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +23,8 @@ public abstract class SCEVRec extends SCEVValue{
         this.step = step;
         this.iter = iter;
     }
+
+
 
 //    @Override
 //    SCEVValue evaluate(Map<String, LoopInfo> context) {

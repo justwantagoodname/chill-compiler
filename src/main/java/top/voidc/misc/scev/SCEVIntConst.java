@@ -8,7 +8,7 @@ public class SCEVIntConst extends SCEVConst{
     private final int value;
 
     public SCEVIntConst(int value) {
-        Log.d("创建了int常量：" + value);
+//        Log.d("创建了int常量：" + value);
         this.value = value;
     }
 

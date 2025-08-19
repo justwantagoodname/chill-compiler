@@ -9,6 +9,7 @@ import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
+import top.voidc.misc.scev.*;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
@@ -202,7 +203,15 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
             Log.d("  " + var.getTextIR());
         }
 
-        // TODO 2.获取每个循环变量的计算环，产生
+        // 获取每个循环变量的计算环，产生SCEV表达式
+        Map<IceValue, SCEVValue> scevMap = buildSCEVs(header, latch, modifiedVars);
+
+        Log.d("===== SCEV表达式结果 =====");
+        for (Map.Entry<IceValue, SCEVValue> entry : scevMap.entrySet()) {
+            IceValue var = entry.getKey();
+            SCEVValue scev = entry.getValue();
+            Log.d("  " + var.getName() + " = " + scev);
+        }
 
         // TODO 3.获得每个变量在一次循环中的计算式，注意计算顺序（如j = j + i;i++;与i++;j = j + i;是不一样的，j = j + i;i++;j = j + i;实际为j = j + 2*i + 1这样（请考虑更加通用和复杂的情况））
 
@@ -380,6 +389,205 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
                 n,
                 IceConstantData.create(finalValue)
         );
+    }
+
+    // 构建SCEV的方法
+    private Map<IceValue, SCEVValue> buildSCEVs(
+            IceBlock header,
+            IceBlock latch,
+            Set<IceValue> modifiedVars
+    ) {
+        Map<IceValue, SCEVValue> scevMap = new HashMap<>();
+        List<IcePHINode> phiNodes = new ArrayList<>();
+
+        // 收集所有phi节点
+        for (IceInstruction inst : header) {
+            if (inst instanceof IcePHINode phi) {
+                phiNodes.add(phi);
+            }
+        }
+
+        // 为每个phi节点构建递归表达式
+        for (IcePHINode phi : phiNodes) {
+            SCEVValue start = null;
+            SCEVValue recurrence = null;
+            IceBlock startBlock = null;
+
+            // 查找初始值和递推值
+            for (IcePHINode.IcePHIBranch branch : phi.getBranches()) {
+                IceBlock source = branch.block();
+                IceValue value = branch.value();
+
+                // 来自非回边分支的是初始值
+                if (source != latch) {
+                    start = createSCEVFromValue(value, scevMap, header, modifiedVars);
+                    startBlock = source;
+                } else {
+                    // 回边分支：来自回边块
+                    recurrence = createRecurrenceSCEV(phi, value, scevMap, header, modifiedVars);
+                }
+            }
+
+            Log.d(recurrence + "正在被处理phi》》");
+
+            if (start != null && recurrence != null) {
+                // 如果是加法递归
+                if (recurrence instanceof SCEVAdd) {
+                    SCEVAdd add = (SCEVAdd) recurrence;
+                    SCEVValue lhs = add.getOperands().get(0);
+                    SCEVValue rhs = add.getOperands().get(1);
+                    if (lhs instanceof SCEVVariable &&
+                            ((SCEVVariable) lhs).getVariable() == phi) {
+                        scevMap.put(phi, new SCEVAddRec(start, rhs, header.getTextIR()));
+                    } else if (rhs instanceof SCEVVariable &&
+                            ((SCEVVariable) rhs).getVariable() == phi) {
+                        scevMap.put(phi, new SCEVAddRec(start, lhs, header.getTextIR()));
+                    }
+                }
+                // TODO 如果是乘法递归
+//                else if (recurrence instanceof SCEVMultiply) {
+//                    SCEVMultiply mul = (SCEVMultiply) recurrence;
+//                    SCEVValue lhs = mul.getOperands().get(0);
+//                    SCEVValue rhs = mul.getOperands().get(1);
+//                    if (lhs instanceof SCEVVariable &&
+//                            ((SCEVVariable) lhs).getVariable() == phi) {
+//                        scevMap.put(phi, new SCEVMultiplyRec(start, rhs, header.getTextIR()));
+//                    } else if (rhs instanceof SCEVVariable &&
+//                            ((SCEVVariable) rhs).getVariable() == phi) {
+//                        scevMap.put(phi, new SCEVMultiplyRec(start, lhs, header.getTextIR()));
+//                    }
+//                }
+            }
+
+            // 如果无法构建递归表达式，使用初始值
+            if (scevMap.get(phi) == null && start != null) {
+                scevMap.put(phi, start);
+            }
+        }
+        // 迭代处理其他指令
+        boolean changed;
+        do {
+            changed = false;
+            for (IceValue var : modifiedVars) {
+                if (scevMap.containsKey(var)) continue;
+
+                if (var instanceof IceInstruction inst) {
+                    SCEVValue scev = createSCEVFromInstruction(inst, scevMap, header, modifiedVars);
+                    if (scev != null) {
+                        scevMap.put(var, scev);
+                        changed = true;
+                    }
+                }
+            }
+        } while (changed);
+
+        return scevMap;
+    }
+
+    //处理递归
+    private SCEVValue createRecurrenceSCEV(
+            IcePHINode phi,
+            IceValue value,
+            Map<IceValue, SCEVValue> scevMap,
+            IceBlock loopHeader,
+            Set<IceValue> modifiedVars
+    ) {
+        Log.d("正在处理表达式：" + value );
+        // 处理加法递归
+        if (value instanceof IceBinaryInstruction.Add add) {
+            SCEVValue lhs = createSCEVFromValue(add.getOperand(0), scevMap, loopHeader, modifiedVars);
+            SCEVValue rhs = createSCEVFromValue(add.getOperand(1), scevMap, loopHeader, modifiedVars);
+
+            if (lhs != null && rhs != null) {
+                // 检查是否包含phi节点自身
+                if ((lhs instanceof SCEVVariable && ((SCEVVariable)lhs).getVariable() == phi) ||
+                        (rhs instanceof SCEVVariable && ((SCEVVariable)rhs).getVariable() == phi)) {
+                    return new SCEVAdd(lhs, rhs);
+                }
+            }
+        }
+        // 处理乘法递归
+        else if (value instanceof IceBinaryInstruction.Mul mul) {
+            SCEVValue lhs = createSCEVFromValue(mul.getOperand(0), scevMap, loopHeader, modifiedVars);
+            SCEVValue rhs = createSCEVFromValue(mul.getOperand(1), scevMap, loopHeader, modifiedVars);
+
+            if (lhs != null && rhs != null) {
+                // 检查是否包含phi节点自身
+                if ((lhs instanceof SCEVVariable && ((SCEVVariable)lhs).getVariable() == phi) ||
+                        (rhs instanceof SCEVVariable && ((SCEVVariable)rhs).getVariable() == phi)) {
+                    return new SCEVMultiply(lhs, rhs);
+                }
+            }
+        }
+        // 处理减法（转换为加法）
+        else if (value instanceof IceBinaryInstruction.Sub sub) {
+            SCEVValue lhs = createSCEVFromValue(sub.getOperand(0), scevMap, loopHeader, modifiedVars);
+            SCEVValue rhs = createSCEVFromValue(sub.getOperand(1), scevMap, loopHeader, modifiedVars);
+
+            if (lhs != null && rhs != null) {
+                // 创建负值表达式
+                SCEVValue negRhs = new SCEVMultiply(new SCEVIntConst(-1), rhs);
+                return new SCEVAdd(lhs, negRhs);
+            }
+        }
+
+        return null;
+    }
+
+    //处理常量
+    private SCEVValue createSCEVFromValue(
+            IceValue value,
+            Map<IceValue, SCEVValue> scevMap,
+            IceBlock loopHeader,
+            Set<IceValue> modifiedVars
+    ) {
+        // 如果已在SCEV映射中
+        SCEVValue existing = scevMap.get(value);
+        if (existing != null) {
+            return existing;
+        }
+
+        // 如果是常量
+        if (value instanceof IceConstantInt constant) {
+            return new SCEVIntConst(constant.getValue());
+        }
+
+        // 如果是循环不变的值
+        if (!modifiedVars.contains(value)) {
+            return new SCEVVariable(value);
+        }
+
+        return null;
+    }
+
+    private SCEVValue createSCEVFromInstruction(
+            IceInstruction inst,
+            Map<IceValue, SCEVValue> scevMap,
+            IceBlock loopHeader,
+            Set<IceValue> modifiedVars
+    ) {
+        if (inst instanceof IceBinaryInstruction.Add add) {
+            SCEVValue lhs = createSCEVFromValue(add.getOperand(0), scevMap, loopHeader, modifiedVars);
+            SCEVValue rhs = createSCEVFromValue(add.getOperand(1), scevMap, loopHeader, modifiedVars);
+            if (lhs != null && rhs != null) {
+                return new SCEVAdd(lhs, rhs);
+            }
+        } else if (inst instanceof IceBinaryInstruction.Mul mul) {
+            SCEVValue lhs = createSCEVFromValue(mul.getOperand(0), scevMap, loopHeader, modifiedVars);
+            SCEVValue rhs = createSCEVFromValue(mul.getOperand(1), scevMap, loopHeader, modifiedVars);
+            if (lhs != null && rhs != null) {
+                return new SCEVMultiply(lhs, rhs);
+            }
+        } else if (inst instanceof IceBinaryInstruction.Sub sub) {
+            // 减法转换为加法：a - b = a + (-1 * b)
+            SCEVValue lhs = createSCEVFromValue(sub.getOperand(0), scevMap, loopHeader, modifiedVars);
+            SCEVValue rhs = createSCEVFromValue(sub.getOperand(1), scevMap, loopHeader, modifiedVars);
+            if (lhs != null && rhs != null) {
+                SCEVValue negRhs = new SCEVMultiply(new SCEVIntConst(-1), rhs);
+                return new SCEVAdd(lhs, negRhs);
+            }
+        }
+        return null;
     }
 
     @Override
