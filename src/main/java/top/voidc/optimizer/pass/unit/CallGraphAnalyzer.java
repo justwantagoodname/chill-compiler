@@ -5,7 +5,6 @@ import top.voidc.ir.IceUnit;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.IceCallInstruction;
 import top.voidc.misc.Log;
-import top.voidc.misc.algorithm.ReverseGraph;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.misc.ds.ChilletGraph;
 import top.voidc.optimizer.pass.CompilePass;
@@ -43,7 +42,7 @@ public class CallGraphAnalyzer implements CompilePass<IceUnit> {
         for (IceFunction function : target.getFunctions()) {
             analyzeCalls(function);
         }
-        Log.d("\n" + ReverseGraph.reverse(callGraph).getGraphEditorString());
+        Log.d("\n" + callGraph.getGraphEditorString());
         return false;
     }
 }
