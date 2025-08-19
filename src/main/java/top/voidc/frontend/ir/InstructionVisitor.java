@@ -290,7 +290,7 @@ public class InstructionVisitor extends IceBaseVisitor<IceInstruction> {
             var cmpType = IceCmpInstruction.Icmp.Type.valueOf(opStr);
             cmpInst = new IceCmpInstruction.Icmp(block, getPureName(resultReg), cmpType, lhs, rhs);
         } else {
-            var cmpType = IceCmpInstruction.Fcmp.Type.valueOf("O" + opStr); // Add O prefix for ordered float comparison
+            var cmpType = IceCmpInstruction.Fcmp.Type.valueOf(opStr); // Add O prefix for ordered float comparison
             cmpInst = new IceCmpInstruction.Fcmp(block, getPureName(resultReg), cmpType, lhs, rhs);
         }
 
@@ -307,6 +307,15 @@ public class InstructionVisitor extends IceBaseVisitor<IceInstruction> {
         IceConvertInstruction convertInst = new IceConvertInstruction(block, getPureName(resultReg), toType, value);
         putValue(resultReg, convertInst);
         return convertInst;
+    }
+
+    @Override
+    public IceInstruction visitFnegInstr(IceParser.FnegInstrContext ctx) {
+        String resultReg = ctx.IDENTIFIER().getText();
+        IceValue operand = getValue(ctx.value());
+        IceNegInstruction negInst = new IceNegInstruction(block, getPureName(resultReg), operand.getType(), operand);
+        putValue(resultReg, negInst);
+        return negInst;
     }
 
     @Override
