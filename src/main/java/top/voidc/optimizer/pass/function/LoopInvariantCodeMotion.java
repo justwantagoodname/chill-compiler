@@ -5,8 +5,10 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstant;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
+import top.voidc.misc.ds.ChilletGraph;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.misc.annotation.Pass;
+import top.voidc.optimizer.pass.DominatorTree;
 
 import java.util.*;
 
@@ -73,41 +75,31 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
     }
 
     private Map<IceBlock, Set<IceBlock>> computeDominators(IceFunction function) {
-        Map<IceBlock, Set<IceBlock>> dominators = new HashMap<>();
-        IceBlock entry = function.getEntryBlock();
+
         List<IceBlock> blocks = function.getBlocks();
 
-        // 初始化
-        for (IceBlock block : blocks) {
-            dominators.put(block, new HashSet<>(blocks));
+        ChilletGraph<IceBlock> graph = function.getControlFlowGraph();
+        // 构建支配树
+        DominatorTree<IceBlock> domTree = new DominatorTree<>(graph, graph.getNodeId(function.getEntryBlock()));
+        // 构建支配者集合
+        Map<IceBlock, Set<IceBlock>> dominators = new HashMap<>();
+
+        for(IceBlock block :blocks)
+        {
+            dominators.put(block, new HashSet<>());
         }
-        dominators.get(entry).clear();
-        dominators.get(entry).add(entry);
 
-        boolean changed;
-        do {
-            changed = false;
-            for (IceBlock block : blocks) {
-                if (block == entry) continue;
-
-                Set<IceBlock> newDoms = new HashSet<>();
-                boolean firstPred = true;
-                for (IceBlock pred : block.getPredecessors()) {
-                    if (firstPred) {
-                        newDoms.addAll(dominators.get(pred));
-                        firstPred = false;
-                    } else {
-                        newDoms.retainAll(dominators.get(pred));
-                    }
-                }
-                newDoms.add(block);
-
-                if (!newDoms.equals(dominators.get(block))) {
-                    dominators.put(block, newDoms);
-                    changed = true;
-                }
+        // 填充支配者集合
+        for(IceBlock block :blocks)
+        {
+            IceBlock current = block;
+            while (current != null) {
+                dominators.get(block).add(current);
+                // 获取当前块的直接支配者
+                IceBlock idom = domTree.getDominator(current);
+                current = idom;
             }
-        } while (changed);
+        }
 
         return dominators;
     }
