@@ -102,6 +102,10 @@ public class Compiler {
             pm.runPass(RenameVariable.class);
 //            pm.runPass(IfConversionPass.class);
 //            pm.runPass(SmartChilletSimplifyCFG.class);
+            pm.runPass(ShowIR.class);
+            pm.runPass(LoopInvariantCodeMotion.class);
+            pm.runPass(RenameVariable.class);
+//            pm.runPass(LoopClosedFormOptimization.class);
             pm.runPass(CallGraphAnalyzer.class);
             pm.runPass(FunctionInliner.class);
             pm.untilStable(
@@ -118,8 +122,8 @@ public class Compiler {
             pm.runPass(InstructionSelectionPass.class);
             pm.runPass(LivenessAnalysis.class);
 //            pm.runPass(SillyChilletAllocateRegister.class);
-            pm.runPass(ShowIR.class);
             pm.runPass(LinearScanAllocator.class);
+            pm.runPass(ShowIR.class);
             pm.runPass(RegSaver.class);
             pm.runPass(AlignFramePass.class);
             pm.runPass(FixStackOffset.class);

@@ -238,4 +238,48 @@ public class DominatorTree<T> {
         }
         return dominatees;
     }
+
+    /**
+     * Checks if node A dominates node B.
+     * @param A Node A
+     * @param B Node B
+     * @return true if A dominates B, false otherwise.
+     */
+    public boolean dominates(T A, T B) {
+        int idA = graph.getNodeId(A);
+        int idB = graph.getNodeId(B);
+
+        // A node always dominates itself.
+        if (idA == idB) {
+            return true;
+        }
+
+        // If B is not reachable from the entry, no other node can dominate it.
+        // The dominator algorithm only considers reachable nodes.
+        // dfsNumber > 0 indicates reachability.
+        if (dfsNumber[idB] == 0) {
+            return false;
+        }
+
+        // Similarly, if A is not reachable (and A != B), it cannot dominate B.
+        if (dfsNumber[idA] == 0) {
+            return false;
+        }
+
+        // Traverse up the dominator tree from B towards the entry node.
+        int currentId = idB;
+        // The loop terminates when we reach the root of the dominator tree,
+        // whose dominator is -1.
+        while (currentId != -1 && currentId != entryNodeId) {
+            currentId = finalIdom[currentId];
+            if (currentId == idA) {
+                // We have found A in the dominator path of B.
+                return true;
+            }
+        }
+
+        // If we've reached the root of the dominator tree without finding A,
+        // then A does not dominate B.
+        return false;
+    }
 }
