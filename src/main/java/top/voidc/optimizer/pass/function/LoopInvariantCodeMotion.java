@@ -5,10 +5,13 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstant;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
+import top.voidc.misc.Log;
+import top.voidc.misc.annotation.Qualifier;
 import top.voidc.misc.ds.ChilletGraph;
 import top.voidc.misc.ds.DominatorTree;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.misc.annotation.Pass;
+import top.voidc.optimizer.pass.unit.FunctionPureness;
 
 import java.util.*;
 
@@ -17,14 +20,36 @@ import java.util.*;
 )
 public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
 
+    private final Map<IceFunction, FunctionPureness.PurenessInfo> functionPurenessInfo;
+
+    public LoopInvariantCodeMotion(@Qualifier("functionPureness") Map<IceFunction, FunctionPureness.PurenessInfo> functionPurenessInfo) {
+        // 将函数纯性信息传递给当前优化器
+        this.functionPurenessInfo = functionPurenessInfo;
+
+    }
+
     private static class LoopInfo {
         final IceBlock header;
         final Set<IceBlock> blocks = new HashSet<>();
         final List<IceBlock> latches = new ArrayList<>();
+        List<IceBlock> exits;
 
         LoopInfo(IceBlock header) {
             this.header = header;
             blocks.add(header);
+        }
+
+        public List<IceBlock> getExits() {
+            exits = new ArrayList<>();
+            for (IceBlock block : blocks) {
+                for (IceBlock succ : block.successors()) {
+                    if (!blocks.contains(succ)) {
+                        exits.add(succ);
+                        break;
+                    }
+                }
+            }
+            return exits;
         }
     }
 
@@ -41,32 +66,51 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
     }
 
     private List<LoopInfo> findLoops(IceFunction function) {
-        Map<IceBlock, Set<IceBlock>> dominators = computeDominators(function);
-        List<LoopInfo> loops = new ArrayList<>();
+        ChilletGraph<IceBlock> graph = function.getControlFlowGraph();
+        DominatorTree<IceBlock> domTree = new DominatorTree<>(graph, graph.getNodeId(function.getEntryBlock()));
+        Map<IceBlock, LoopInfo> headerToLoopMap = new HashMap<>();
 
-        for (IceBlock block : function.getBlocks()) {
+        for (IceBlock block : function) {
             for (IceBlock succ : block.getSuccessors()) {
                 // 回边: block -> succ 且 succ 支配 block
-                if (dominators.get(block).contains(succ)) {
-                    LoopInfo loop = new LoopInfo(succ);
+                if (domTree.dominates(succ, block)) {
+                    var loop = headerToLoopMap.computeIfAbsent(succ, LoopInfo::new);
                     loop.latches.add(block);
-                    findLoopBlocks(loop, block);
-                    loops.add(loop);
                 }
             }
+        }
+
+        // 为每个独一无二的循环填充其循环体
+        var loops = List.copyOf(headerToLoopMap.values());
+        for (var loop : loops) {
+            // 现在loop.latches包含了所有回边的源节点
+            findLoopBlocks(loop);
         }
         return loops;
     }
 
-    private void findLoopBlocks(LoopInfo loop, IceBlock latch) {
+    private void findLoopBlocks(LoopInfo loop) {
+        // 确保header本身在循环体内
+        loop.blocks.add(loop.header);
+
         Stack<IceBlock> stack = new Stack<>();
-        stack.push(latch);
+        // 将所有的latch块作为遍历的起点
+        for (IceBlock latch : loop.latches) {
+            stack.push(latch);
+        }
 
         while (!stack.isEmpty()) {
             IceBlock current = stack.pop();
-            if (!loop.blocks.add(current)) continue;
+            // 如果块已经处理过，则跳过 (add方法会返回false)
+            if (!loop.blocks.add(current)) {
+                continue;
+            }
 
-            for (IceBlock pred : current.getPredecessors()) {
+            // 遍历前驱
+            for (IceBlock pred : current.predecessors()) {
+                // 不需要检查 pred 是否已在blocks中，因为下一轮循环的
+                // if (!loop.blocks.add(pred)) 会处理重复问题。
+                // 实际上，为了防止栈的无意义增长，检查一下更好。
                 if (!loop.blocks.contains(pred)) {
                     stack.push(pred);
                 }
@@ -74,39 +118,13 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
         }
     }
 
-    private Map<IceBlock, Set<IceBlock>> computeDominators(IceFunction function) {
-
-        List<IceBlock> blocks = function.getBlocks();
-
-        ChilletGraph<IceBlock> graph = function.getControlFlowGraph();
-        // 构建支配树
-        DominatorTree<IceBlock> domTree = new DominatorTree<>(graph, graph.getNodeId(function.getEntryBlock()));
-        // 构建支配者集合
-        Map<IceBlock, Set<IceBlock>> dominators = new HashMap<>();
-
-        for(IceBlock block :blocks)
-        {
-            dominators.put(block, new HashSet<>());
-        }
-
-        // 填充支配者集合
-        for(IceBlock block :blocks)
-        {
-            IceBlock current = block;
-            while (current != null) {
-                dominators.get(block).add(current);
-                // 获取当前块的直接支配者
-                IceBlock idom = domTree.getDominator(current);
-                current = idom;
-            }
-        }
-
-        return dominators;
-    }
-
     private boolean processLoop(LoopInfo loop, IceFunction function) {
-        IceBlock preheader = createPreheader(loop, function);
-        if (preheader == null) return false;
+        var preHeader = createPreheader(loop, function);
+        assert preHeader != null;
+
+        var graph = function.getControlFlowGraph();
+        var entryId = graph.getNodeId(function.getEntryBlock());
+        var domTree = new DominatorTree<>(graph, entryId);
 
         boolean changed = false;
         boolean moved;
@@ -119,7 +137,7 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
             for (IceBlock block : loop.blocks) {
                 for (IceInstruction inst : block) {
                     if (inst instanceof IcePHINode || inst.isTerminal()) continue;
-                    if (isLoopInvariant(inst, loop)) {
+                    if (isLoopInvariant(invariants, inst, loop, domTree)) {
                         invariants.add(inst);
                     }
                 }
@@ -144,24 +162,25 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
                 }
             }
 
+
             // 外提指令：批量移动到前置块（保持终结指令在末尾）
             if (!toMove.isEmpty()) {
-                IceInstruction term = preheader.getLast();
+                IceInstruction term = preHeader.getLast();
                 // 确保终结指令被正确处理
                 if (term != null && term.isTerminal()) {
-                    preheader.remove(term);
+                    preHeader.remove(term);
                     for (IceInstruction inst : toMove) {
                         IceBlock parent = inst.getParent();
                         parent.remove(inst);
-                        preheader.addInstruction(inst);
+                        preHeader.addInstruction(inst);
                     }
-                    preheader.addInstruction(term);
+                    preHeader.addInstruction(term);
                 } else {
                     // 如果没有终结指令则直接添加
                     for (IceInstruction inst : toMove) {
                         IceBlock parent = inst.getParent();
                         parent.remove(inst);
-                        preheader.addInstruction(inst);
+                        preHeader.addInstruction(inst);
                     }
                 }
                 moved = true;
@@ -172,12 +191,12 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
         return changed;
     }
 
-    private boolean isLoopInvariant(IceInstruction inst, LoopInfo loop) {
+    private boolean isLoopInvariant(List<IceInstruction> invariant, IceInstruction inst, LoopInfo loop, DominatorTree<IceBlock> domTree) {
         // 检查所有操作数
         for (IceValue operand : inst.getOperands()) {
             if (operand instanceof IceInstruction defInst) {
                 // 如果定义在循环内且不是循环不变式
-                if (loop.blocks.contains(defInst.getParent()) && !isLoopInvariant(defInst, loop)) {
+                if (loop.blocks.contains(defInst.getParent()) && !invariant.contains(defInst)) {
                     return false;
                 }
             } else if (!(operand instanceof IceConstant)) {
@@ -187,79 +206,81 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
         }
 
         // 检查指令是否有副作用
-        return !hasSideEffects(inst);
+        if (hasSideEffects(inst)) return false;
+
+        // 外提指令应该支配所有循环块的出口
+        return loop.getExits().stream()
+                .allMatch(exit -> domTree.dominates(inst.getParent(), exit));
     }
 
     private boolean hasSideEffects(IceInstruction inst) {
-        return inst instanceof IceStoreInstruction ||
-                inst instanceof IceCallInstruction ||
-                inst instanceof IceLoadInstruction;
+        if (inst instanceof IceCallInstruction call) {
+            return functionPurenessInfo.get(call.getTarget()).getPureness() == FunctionPureness.Pureness.IMPURE;
+        }
+        return inst instanceof IceStoreInstruction || inst instanceof IceLoadInstruction;
     }
 
     private IceBlock createPreheader(LoopInfo loop, IceFunction function) {
         IceBlock header = loop.header;
         List<IceBlock> preds = new ArrayList<>(header.getPredecessors());
-        preds.removeAll(loop.latches); // 移出回边
+        preds.removeAll(loop.latches); // 移除回边
 
-        if (preds.size() != 1) {
-            // 只处理只有一个前驱的情况
-            return null;
+        if (preds.size() == 1) {
+            // 仅有一个前驱块，直接使用该前驱块作为 preheader
+            return preds.getFirst();
         }
 
-        IceBlock originalPred = preds.getFirst();
-        if (originalPred.getSuccessors().size() != 1) {
-            // 前驱有多个后继，需要创建新的前置块
-            IceBlock preheader = new IceBlock(function, "preheader_" + header.getName());
-            int index = function.getBlocks().indexOf(header);
-            function.getBlocks().add(index, preheader);
+        var preHeader = new IceBlock(function, "preheader_" + header.getName());
 
-            // 重定向分支
-            IceInstruction term = originalPred.getLast();
-            if (term instanceof IceBranchInstruction br) {
+        // 维护 CFG 结构
+        var brInst = new IceBranchInstruction(preHeader, header);
+        brInst.setParent(preHeader);
+        preHeader.addInstruction(brInst);
 
-                // 移除原分支指令
-                originalPred.remove(term);
-                term.destroy();
+        for (var pred : preds) {
+            var termInst = pred.getLast();
+            termInst.replaceOperand(header, preHeader);
+        }
 
-                if (br.isConditional()) {
-                    IceValue condition = br.getCondition();
-                    IceBlock trueBlock = br.getTrueBlock();
-                    IceBlock falseBlock = br.getFalseBlock();
+        // 维护 PHI 节点
+        var phiList = header.stream().filter(inst -> inst instanceof IcePHINode)
+                .map(inst -> (IcePHINode) inst).toList();
 
-                    // 替换目标块
-                    if (trueBlock == header) {
-                        trueBlock = preheader;
-                    }
-                    if (falseBlock == header) {
-                        falseBlock = preheader;
-                    }
+        for (var phi : phiList) {
+            var outsideMerges = phi.getBranches().stream()
+                    .filter(b -> preds.contains(b.block())).toList();
 
-                    // 创建新的条件分支指令
-                    IceBranchInstruction newBr = new IceBranchInstruction(
-                            originalPred, condition, trueBlock, falseBlock);
-                    originalPred.addInstruction(newBr);
-                } else {
-                    IceBlock target = br.getTargetBlock();
+            if (outsideMerges.isEmpty()) continue;
 
-                    // 替换目标块
-                    if (target == header) {
-                        target = preheader;
-                    }
+            // 在 preheader 中创建新的 PHI 节点
+            var newPhi = new IcePHINode(preHeader, function.generateLocalValueName(), phi.getType());
 
-                    // 创建新的无条件分支指令
-                    IceBranchInstruction newBr = new IceBranchInstruction(
-                            originalPred, target);
-                    originalPred.addInstruction(newBr);
-                }
+            newPhi.setValueToBeMerged(phi.getValueToBeMerged());
+
+            for (var branch : outsideMerges) {
+                // 将外部分支添加到新的 PHI 节点
+                newPhi.addBranch(branch.block(), branch.value());
             }
 
-            // 添加前置块到header的跳转
-            IceBranchInstruction jump = new IceBranchInstruction(preheader, header);
-            preheader.addInstruction(jump);
-            return preheader;
+            // 将新的 PHI 节点添加到 preheader
+            preHeader.addFirst(newPhi);
+
+            // 删除原 PHI 节点中的外部分支
+            for (var branch : outsideMerges) {
+                phi.removeValueByBranch(branch.block());
+            }
+
+            // 如果原 PHI 节点没有分支了，则将其替换为 preheader 中的 PHI 节点
+            if (phi.getBranches().isEmpty()) {
+                phi.replaceAllUsesWith(newPhi);
+                phi.destroy();
+            } else {
+                // 将 preheader 中的 PHI 节点添加到原 PHI 节点的 branch 中
+                phi.addBranch(preHeader, newPhi);
+            }
         }
 
-        return originalPred;
+        return preHeader;
     }
 
     @Override

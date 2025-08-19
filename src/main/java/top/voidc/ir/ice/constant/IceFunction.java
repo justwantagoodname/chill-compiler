@@ -112,11 +112,7 @@ public class IceFunction extends IceConstant implements Iterable<IceBlock>, IceA
         final var result = new ArrayList<IceBlock>();
         listBlocks(blockSet, result, getEntryBlock());
         Collections.reverse(result);
-        return result;
-    }
-
-    public int getBlocksSize() {
-        return blocks().size();
+        return Collections.unmodifiableList(result);
     }
 
     public IceBlock getEntryBlock() {
@@ -157,7 +153,7 @@ public class IceFunction extends IceConstant implements Iterable<IceBlock>, IceA
             }
         }
 
-        return result;
+        return Collections.unmodifiableList(result);
     }
 
     @Override

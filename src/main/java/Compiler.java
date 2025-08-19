@@ -65,7 +65,7 @@ public class Compiler {
         context.addPassResult(new ARM64InstructionPatternPack());
 
         // TODO: 后续添加O0 O1的组
-        passManager.addDisableGroup("needfix");
+//        passManager.addDisableGroup("needfix");
         Boolean hasO1 = Flag.get("-O1");
         if (Boolean.FALSE.equals(hasO1)) {
 //            passManager.addDisableGroup("O1");
@@ -95,26 +95,29 @@ public class Compiler {
             pm.untilStable(
                     GlobalValueNumbering.class,
                     SparseConditionalConstantPropagation.class,
-                    ShowIR.class,
                     SmartChilletDeleteUnusedValue.class,
                     SmartChilletSimplifyCFG.class
             );
             pm.runPass(RenameVariable.class);
+            pm.runPass(ShowIR.class);
+            pm.runPass(LoopInvariantCodeMotion.class);
+            pm.runPass(RenameVariable.class);
+//            pm.runPass(LoopClosedFormOptimization.class);
             pm.runPass(CallGraphAnalyzer.class);
             pm.runPass(DumpIR.class);
 
             // 后端相关
-            pm.runPass(SSADestruction.class);
-            pm.runPass(InstructionSelectionPass.class);
-            pm.runPass(LivenessAnalysis.class);
+//            pm.runPass(SSADestruction.class);
+//            pm.runPass(InstructionSelectionPass.class);
+//            pm.runPass(LivenessAnalysis.class);
 //            pm.runPass(SillyChilletAllocateRegister.class);
-            pm.runPass(LinearScanAllocator.class);
-            pm.runPass(ShowIR.class);
-            pm.runPass(RegSaver.class);
-            pm.runPass(AlignFramePass.class);
-            pm.runPass(FixStackOffset.class);
-            pm.runPass(PeepholeOptimization.class);
-            pm.runPass(OutputARMASM.class);
+//            pm.runPass(LinearScanAllocator.class);
+//            pm.runPass(ShowIR.class);
+//            pm.runPass(RegSaver.class);
+//            pm.runPass(AlignFramePass.class);
+//            pm.runPass(FixStackOffset.class);
+//            pm.runPass(PeepholeOptimization.class);
+//            pm.runPass(OutputARMASM.class);
         });
         return passManager;
     }
