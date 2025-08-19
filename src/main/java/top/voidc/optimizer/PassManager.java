@@ -13,6 +13,7 @@ import top.voidc.misc.annotation.Qualifier;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.optimizer.pass.unit.Feeler;
 
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.function.Consumer;

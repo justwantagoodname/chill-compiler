@@ -1,5 +1,6 @@
 package top.voidc.ir.ice.constant;
 
+import top.voidc.ir.ice.type.IcePtrType;
 import top.voidc.ir.ice.type.IceType;
 
 import java.util.Objects;

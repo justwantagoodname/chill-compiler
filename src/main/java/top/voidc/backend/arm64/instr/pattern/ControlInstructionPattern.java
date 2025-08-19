@@ -18,6 +18,8 @@ import top.voidc.ir.machine.IceMachineRegister.RegisterView;
 import java.util.ArrayList;
 import java.util.List;
 
+import static top.voidc.ir.machine.InstructionSelectUtil.*;
+
 public class ControlInstructionPattern {
     public static class RetVoid extends InstructionPattern<IceRetInstruction> {
 

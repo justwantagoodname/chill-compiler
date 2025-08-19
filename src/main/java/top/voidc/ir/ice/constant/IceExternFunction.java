@@ -5,6 +5,8 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.type.IceType;
 import top.voidc.misc.ds.ChilletGraph;
 
+import java.util.List;
+
 public class IceExternFunction extends IceFunction {
     private boolean isVArgs = false;
 

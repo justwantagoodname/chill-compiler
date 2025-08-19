@@ -7,6 +7,7 @@ import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.machine.IceMachineFunction;
 import top.voidc.ir.machine.IceMachineInstruction;
 import top.voidc.ir.machine.IceMachineRegister;
+import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.misc.ds.BiMap;
 import top.voidc.optimizer.pass.CompilePass;

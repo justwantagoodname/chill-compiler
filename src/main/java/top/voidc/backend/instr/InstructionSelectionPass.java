@@ -9,10 +9,12 @@ import top.voidc.ir.ice.instruction.IceAllocaInstruction;
 import top.voidc.ir.ice.instruction.IcePHINode;
 import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.machine.IceMachineFunction;
+import top.voidc.misc.Log;
 import top.voidc.misc.annotation.Pass;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.misc.ds.DominatorTree;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;

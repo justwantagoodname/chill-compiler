@@ -1,9 +1,16 @@
 package top.voidc.optimizer.pass.function;
 
 import org.junit.jupiter.api.Disabled;
+import top.voidc.ir.IceBlock;
+import top.voidc.ir.ice.type.IceType;
+import top.voidc.ir.ice.type.IceArrayType;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.ir.ice.constant.IceConstantInt;
+import top.voidc.ir.ice.instruction.*;
 
 import top.voidc.misc.Log;
+
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;

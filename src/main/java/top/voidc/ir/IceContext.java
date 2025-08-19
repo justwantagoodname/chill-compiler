@@ -3,6 +3,7 @@ package top.voidc.ir;
 import top.voidc.frontend.helper.SymbolTable;
 import top.voidc.frontend.parser.SysyParser;
 import top.voidc.ir.ice.constant.IceFunction;
+import top.voidc.optimizer.pass.CompilePass;
 
 import java.io.File;
 import java.util.*;

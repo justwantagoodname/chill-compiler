@@ -8,6 +8,7 @@ import top.voidc.ir.IceBlock;
 import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.misc.ds.DominatorTree;
+import top.voidc.misc.Log;
 
 import java.util.Comparator;
 

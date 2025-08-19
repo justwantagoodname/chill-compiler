@@ -3,6 +3,7 @@ package top.voidc.backend;
 import top.voidc.backend.arm64.instr.ARM64Instruction;
 import top.voidc.ir.ice.constant.IceConstantData;
 import top.voidc.ir.machine.IceMachineInstruction;
+import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.machine.IceStackSlot;
 
 import java.util.ArrayList;
