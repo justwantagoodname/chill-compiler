@@ -6,9 +6,9 @@ import top.voidc.ir.ice.constant.IceConstant;
 import top.voidc.ir.ice.constant.IceFunction;
 import top.voidc.ir.ice.instruction.*;
 import top.voidc.misc.ds.ChilletGraph;
+import top.voidc.misc.ds.DominatorTree;
 import top.voidc.optimizer.pass.CompilePass;
 import top.voidc.misc.annotation.Pass;
-import top.voidc.optimizer.pass.DominatorTree;
 
 import java.util.*;
 
