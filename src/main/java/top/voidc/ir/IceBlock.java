@@ -118,7 +118,7 @@ public class IceBlock extends IceUser implements List<IceInstruction> {
 
     public List<IceBlock> getPredecessors() {
         return getUsers().stream()
-                .filter(iceUser -> iceUser instanceof IceInstruction)
+                .filter(iceUser -> iceUser instanceof IceInstruction inst && inst.isTerminal()) // 只考虑终结指令的使用，因为只有终结指令才会有CFG上的边
                 .map(inst -> ((IceInstruction) inst).getParent()).toList();
     }
 
