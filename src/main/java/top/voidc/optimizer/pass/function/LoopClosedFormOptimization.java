@@ -210,7 +210,7 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
         for (Map.Entry<IceValue, SCEVValue> entry : scevMap.entrySet()) {
             IceValue var = entry.getKey();
             SCEVValue scev = entry.getValue();
-            Log.d("  " + var.getName() + " = " + scev);
+            Log.d("  %" + var.getName() + " = " + scev);
         }
 
         // TODO 3.获得每个变量在一次循环中的计算式，注意计算顺序（如j = j + i;i++;与i++;j = j + i;是不一样的，j = j + i;i++;j = j + i;实际为j = j + 2*i + 1这样（请考虑更加通用和复杂的情况））
@@ -444,7 +444,7 @@ public class LoopClosedFormOptimization implements CompilePass<IceFunction> {
                         scevMap.put(phi, new SCEVAddRec(start, lhs, header.getTextIR()));
                     }
                 }
-                // TODO 如果是乘法递归
+                // 如果是乘法递归
 //                else if (recurrence instanceof SCEVMultiply) {
 //                    SCEVMultiply mul = (SCEVMultiply) recurrence;
 //                    SCEVValue lhs = mul.getOperands().get(0);
