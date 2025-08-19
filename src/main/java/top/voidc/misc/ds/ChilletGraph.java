@@ -77,7 +77,7 @@ public class ChilletGraph<T> {
         if (uId == null || vId == null) {
             throw new IllegalArgumentException("One or both nodes do not exist in the graph.");
         }
-        addEdge(uId, vId);
+        addEdgeById(uId, vId);
     }
 
     /**
@@ -85,7 +85,7 @@ public class ChilletGraph<T> {
      * @param u 节点 1 的 ID
      * @param v 节点 2 的 ID
      */
-    public void addEdge(int u, int v) {
+    public void addEdgeById(int u, int v) {
         if (u < 0 || u >= nodeMap.size() || v < 0 || v >= nodeMap.size()) {
             throw new IllegalArgumentException("Invalid node ID.");
         }
@@ -110,7 +110,7 @@ public class ChilletGraph<T> {
         }
         
         int[] toIds = getNodeIds(to);
-        addEdges(fromId, toIds);
+        addEdgesById(fromId, toIds);
     }
 
     /**
@@ -118,7 +118,7 @@ public class ChilletGraph<T> {
      * @param from 起始节点ID
      * @param toNodes 目标节点ID数组
      */
-    public void addEdges(int from, int[] toNodes) {
+    public void addEdgesById(int from, int[] toNodes) {
         if (from < 0 || from >= nodeMap.size()) {
             throw new IllegalArgumentException("Invalid source node ID.");
         }
@@ -245,9 +245,14 @@ public class ChilletGraph<T> {
      */
     public String getGraphEditorString() {
         var sb = new StringBuilder();
+        for (var i = 0; i < getNodeCount(); i++) {
+            sb.append(getNodeValue(i).toString().replaceAll("\\s+", "")).append('\n');
+        }
         for (var i = 0; i < adjacencyList.size(); i++) {
             for (var neighbor : adjacencyList.get(i)) {
-                sb.append(i).append(" ").append(neighbor).append("\n");
+                var uName = getNodeValue(i).toString().replaceAll("\\s+", "");
+                var vName = getNodeValue(neighbor).toString().replaceAll("\\s+", "");
+                sb.append(uName).append(" ").append(vName).append("\n");
             }
         }
         
