@@ -24,6 +24,16 @@ public abstract class IceInstruction extends IceUser implements Cloneable {
         }
     }
 
+    public void moveTo(IceBlock parent, int index) {
+        if (this.parent != null) {
+            this.parent.remove(this);
+        }
+        this.parent = parent;
+        if (parent != null) {
+            parent.add(index, this);
+        }
+    }
+
     /**
      * 删除当前指令，迭代时删除请用block迭代器的remove方法
      * @apiNote 由父节点调用
