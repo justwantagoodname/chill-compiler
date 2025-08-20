@@ -336,7 +336,7 @@ public class ConditionPatterns {
             selector.emit(value.getCondition());
             var conditionCode = Tool.mapToArm64Condition((IceCmpInstruction) value.getCondition());
             var resultReg = selector.getMachineFunction().allocateVirtualRegister(value.getType());
-            var inst = new ARM64Instruction("CSEL {x}, {true}, {false}, " + conditionCode
+            var inst = new ARM64Instruction("CSEL {dst}, {true}, {false}, " + conditionCode
                     , resultReg, trueReg, falseReg);
             selector.addEmittedInstruction(inst);
             return resultReg; // 返回选择的寄存器
@@ -364,7 +364,7 @@ public class ConditionPatterns {
             selector.emit(value.getCondition());
             var conditionCode = Tool.mapToArm64Condition((IceCmpInstruction) value.getCondition());
             var resultReg = selector.getMachineFunction().allocateVirtualRegister(value.getType());
-            var inst = new ARM64Instruction("FCSEL {x}, {true}, {false}, " + conditionCode
+            var inst = new ARM64Instruction("FCSEL {dst}, {true}, {false}, " + conditionCode
                     , resultReg, trueReg, falseReg);
             selector.addEmittedInstruction(inst);
             return resultReg; // 返回选择的寄存器
