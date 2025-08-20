@@ -45,6 +45,6 @@ public class IceSelectInstruction extends IceInstruction {
                .append(" = select ")
                .append(getCondition().getReferenceName(true)).append(", ")
                .append(getTrueValue().getReferenceName(true)).append(", ")
-               .append(getFalseValue().getReferenceName(false));
+               .append(getFalseValue().getReferenceName(true));
     }
 }

@@ -8,6 +8,7 @@ import top.voidc.optimizer.pass.CompilePass;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Pass
 public class IfConversionPass implements CompilePass<IceFunction> {
@@ -38,17 +39,17 @@ public class IfConversionPass implements CompilePass<IceFunction> {
             var mergeBlock = trueBr.getSuccessors().getFirst();
             
             // 移动分支块中的非终结指令到select之前
-            int insertIndex = block.size() - 1; // 在br指令之前插入
-            for (var instr : trueBr) {
-                if (!instr.isTerminal()) {
-                    instr.moveTo(block, insertIndex++);
+            AtomicInteger insertIndex = new AtomicInteger(block.size() - 1); // 在br指令之前插入
+            trueBr.safeForEach(inst -> {
+                if (!inst.isTerminal()) {
+                    inst.moveTo(block, insertIndex.getAndIncrement());
                 }
-            }
-            for (var instr : falseBr) {
-                if (!instr.isTerminal()) {
-                    instr.moveTo(block, insertIndex++);
+            });
+            falseBr.safeForEach(inst -> {
+                if (!inst.isTerminal()) {
+                    inst.moveTo(block, insertIndex.getAndIncrement());
                 }
-            }
+            });
 
             // 获取true和false值
             var trueValue = phi.getIncomingValue(trueBr);
@@ -121,18 +122,29 @@ public class IfConversionPass implements CompilePass<IceFunction> {
                     continue;
                 }
 
+                // 检查两个分支块是否适合转换
+                if (isNotSafeToConvert(trueBr) || isNotSafeToConvert(falseBr)) {
+                    continue;
+                }
+
+                // 检查转换成本是否太高
+                if (isTooExpensive(trueBr, falseBr)) {
+                    continue;
+                }
+
                 // 移动分支块中的非终结指令到select之前
-                int insertIndex = block.size() - 1; // 在br指令之前插入
-                for (var instr : trueBr) {
-                    if (!instr.isTerminal()) {
-                        instr.moveTo(block, insertIndex++);
+                AtomicInteger insertIndex = new AtomicInteger(block.size() - 1); // 在br指令之前插入
+                trueBr.safeForEach(inst -> {
+                    if (!inst.isTerminal()) {
+                        inst.moveTo(block, insertIndex.getAndIncrement());
                     }
-                }
-                for (var instr : falseBr) {
+                });
+
+                falseBr.safeForEach(instr -> {
                     if (!instr.isTerminal()) {
-                        instr.moveTo(block, insertIndex++);
+                        instr.moveTo(block, insertIndex.getAndIncrement());
                     }
-                }
+                });
 
                 // 获取返回值
                 var trueVal = trueRetInstr.getReturnValue().get();
@@ -244,8 +256,7 @@ public class IfConversionPass implements CompilePass<IceFunction> {
 
     private boolean hasSideEffects(IceInstruction instr) {
         return switch (instr) {
-            case IceStoreInstruction store -> true;
-            case IceCallInstruction call -> true;
+            case IceStoreInstruction _, IceCallInstruction _ -> true;
             default -> false;
         };
     }
