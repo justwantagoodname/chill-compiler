@@ -210,16 +210,24 @@ public class GlobalMem2Reg implements CompilePass<IceFunction> {
                         valueStack.get(value).push(store.getValue());
 
                         // 删除 store 指令
-                        blockInstruction.remove();
-                        store.destroy();
+//                        blockInstruction.remove();
+//                        store.destroy();
                     }
                 }
                 case IceCallInstruction call -> {
                     var info = purenessInfoMap.get(call.getTarget());
-                    if(info.)
+                    for(var v : info.writeGlobals){
+                        if(valueStack.containsKey(v)){
+                            // 如果该函数有修改某值，下次重新读取
+                            valueStack.get(v).push(call);
+                        }
+                    }
                 }
                 case IceRetInstruction ret -> {
-                    // store最后单独值
+                    //
+                }
+                case IcePHINode phi -> {
+                    // 这个不知道怎么做
                 }
                 case null -> throw new IllegalStateException(); // This should never happen
                 default -> {
