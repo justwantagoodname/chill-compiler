@@ -68,17 +68,14 @@ public class InstructionSelector {
         }
 
         // 2. 寻找根节点
-        Set<IceValue> allOperands = new HashSet<>();
-        for (IceInstruction instruction : block) {
-            allOperands.addAll(instruction.getOperands());
-        }
 
         // emit内部会使用valueToVRegMap来防止重复生成
         var copyList = new ArrayList<IceCopyInstruction>();
         var termList = new ArrayList<IceInstruction>();
         for (IceInstruction instruction : block) {
             // 如果一个指令本身没有被用作操作数（并且它有副作用，如store, ret），它就是根
-            if (!allOperands.contains(instruction) || hasSideEffect(instruction)) {
+            // 当前虽然经过SSA消融了，但是仍然保持了SSA的形式仅仅插入copy，所以定义点天然支配使用点，直接判断有无使用即可
+            if (hasSideEffect(instruction) || instruction.getUsers().isEmpty()) {
                 if (instruction instanceof IceCopyInstruction copyInstruction) {
                     // 处理并行复制 我们先不翻译 复制语义而是先计算所有的 source
                     if (!(copyInstruction.getSource() instanceof IceConstantData)) {

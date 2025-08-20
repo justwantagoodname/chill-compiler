@@ -17,7 +17,7 @@ import top.voidc.optimizer.pass.CompilePass;
 
 import java.util.*;
 
-@Pass(group = {"O0", "backend"}, parallel = true)
+@Pass(group = {"O0", "backend"})
 public class LinearScanAllocator implements CompilePass<IceMachineFunction>, IceArchitectureSpecification {
 
     private static final int INSTRUCTION_ID_STEP = 2; // 每条指令的ID步长
