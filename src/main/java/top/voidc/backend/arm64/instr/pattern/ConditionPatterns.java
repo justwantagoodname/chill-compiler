@@ -377,4 +377,76 @@ public class ConditionPatterns {
                     && select.getType().isFloat();
         }
     }
+
+    public static class IntAbs extends InstructionPattern<IceSelectInstruction> {
+
+        public IntAbs() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineValue emit(InstructionSelector selector, IceSelectInstruction value) {
+            var icmp = (IceCmpInstruction.Icmp) value.getCondition();
+            var reg = selector.emit(icmp.getLhs());
+            var resultReg = selector.getMachineFunction().allocateVirtualRegister(value.getType());
+            selector.addEmittedInstruction(new ARM64Instruction("CMP {x}, #0", reg));
+            selector.addEmittedInstruction(new ARM64Instruction("CSNEG {x}, {y}, {z}, GE", resultReg, reg, reg));
+            return resultReg;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            if (!(value instanceof IceSelectInstruction select)) {
+                return false;
+            }
+            if (!(select.getCondition() instanceof IceCmpInstruction.Icmp icmp)) {
+                return false;
+            }
+            if (icmp.getCmpType() != IceCmpInstruction.Icmp.Type.SGE && icmp.getCmpType() != IceCmpInstruction.Icmp.Type.SGT) {
+                return false;
+            }
+            if (!(icmp.getRhs() instanceof IceConstantInt rhs && rhs.getValue() == 0)) {
+                return false;
+            }
+            if (!(select.getTrueValue().equals(icmp.getLhs()))) {
+                return false;
+            }
+            return true;
+        }
+    }
+
+    public static class FloatAbs extends InstructionPattern<IceSelectInstruction> {
+
+        public FloatAbs() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineValue emit(InstructionSelector selector, IceSelectInstruction value) {
+            var reg = selector.emit(value.getTrueValue());
+            var resultReg = selector.getMachineFunction().allocateVirtualRegister(value.getType());
+            selector.addEmittedInstruction(new ARM64Instruction("FABS {x}, {y}", resultReg, reg));
+            return resultReg;
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            if (!(value instanceof IceSelectInstruction select)) {
+                return false;
+            }
+            if (!(select.getCondition() instanceof IceCmpInstruction.Fcmp fcmp)) {
+                return false;
+            }
+            if (fcmp.getCmpType() != IceCmpInstruction.Fcmp.Type.OGE && fcmp.getCmpType() != IceCmpInstruction.Fcmp.Type.OGT) {
+                return false;
+            }
+            if (!(fcmp.getRhs() instanceof IceConstantFloat rhs && rhs.getValue() == 0)) {
+                return false;
+            }
+            if (!(select.getTrueValue().equals(fcmp.getLhs()))) {
+                return false;
+            }
+            return true;
+        }
+    }
 }

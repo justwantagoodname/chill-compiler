@@ -13,8 +13,7 @@ import java.util.*;
 
 
 @Pass(
-        group = {"O0"}, // O0 吧因为有些 10 / 5 这种常量除法会被优化掉
-        parallel = true
+        group = {"O0"} // O0 吧因为有些 10 / 5 这种常量除法会被优化掉
 )
 public class SparseConditionalConstantPropagation implements CompilePass<IceFunction> {
 
@@ -136,6 +135,7 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
                 case IcePHINode phiNode -> visitPHI(phiNode);
                 case IceNegInstruction neg -> visitUnary(neg);
                 case IceConvertInstruction convert -> visitConvert(convert);
+                case IceSelectInstruction select -> visitSelect(select);
                 default -> {
                     if (!inst.getType().isVoid()) {
                         getLattice(inst).markOverdefined();
@@ -164,6 +164,27 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
                 convertLat.markConstant(sourceConstant.castTo(toType));
             } else {
                 convertLat.markOverdefined(); // 如果源操作数不是常量，则转换结果也是 overdefined
+            }
+        }
+
+        private void visitSelect(IceSelectInstruction select) {
+            ValueLatticeElement condLat = getLattice(select.getCondition());
+            var selectLat = getLattice(select);
+            if (condLat.isConstant()) {
+                IceConstantBoolean cond = (IceConstantBoolean) condLat.getConstant().orElseThrow();
+                // 条件是常量，所以只有一条路径是可执行的
+                if (cond.getValue() == 1) {
+                    var trueLat = getLattice(select.getTrueValue());
+                    if (trueLat.isOverdefined()) selectLat.markOverdefined();
+                     else selectLat.markConstant(trueLat.getConstant().orElseThrow());
+                } else {
+                    var falseLat = getLattice(select.getFalseValue());
+                    if (falseLat.isOverdefined()) selectLat.markOverdefined();
+                    else selectLat.markConstant(falseLat.getConstant().orElseThrow());
+                }
+            } else {
+                // 条件不是常量，两个分支都可能是可执行的
+                selectLat.markOverdefined();
             }
         }
 
@@ -339,6 +360,27 @@ public class SparseConditionalConstantPropagation implements CompilePass<IceFunc
                                 phi.removeOperand(phiBranch.block());
                             }
                         });
+                        case IceSelectInstruction select -> {
+                            ValueLatticeElement lat = getLattice(select);
+                            if (lat.isConstant()) {
+                                // 从 user 里替换这个常量
+                                final var constant = lat.getConstant().orElseThrow();
+                                instruction.replaceAllUsesWith(constant);
+                                block.remove(instruction);
+                                changed = true;
+                            } else {
+                                // select 的条件如果是常量也可以替换
+                                ValueLatticeElement condLat = getLattice(select.getCondition());
+                                if (condLat.isConstant()) {
+                                    IceConstantBoolean cond = (IceConstantBoolean) condLat.getConstant().orElseThrow();
+                                    IceValue replacement = cond.getValue() == 1 ? select.getTrueValue() : select.getFalseValue();
+                                    instruction.replaceAllUsesWith(replacement);
+
+                                    block.remove(instruction);
+                                    changed = true;
+                                }
+                            }
+                        }
                         default -> {
                             ValueLatticeElement lat = getLattice(instruction);
                             if (lat.isConstant()) {

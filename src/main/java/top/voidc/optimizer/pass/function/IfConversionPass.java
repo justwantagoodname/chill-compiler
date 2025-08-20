@@ -256,7 +256,7 @@ public class IfConversionPass implements CompilePass<IceFunction> {
 
     private boolean hasSideEffects(IceInstruction instr) {
         return switch (instr) {
-            case IceStoreInstruction _, IceCallInstruction _ -> true;
+            case IceStoreInstruction _, IceCallInstruction _, IceGEPInstruction _ -> true;
             default -> false;
         };
     }

@@ -22,12 +22,11 @@ import java.util.List;
 @Pass(group = {"O1"})
 public class FunctionInliner implements CompilePass<IceUnit> {
 
-    private static int INLINE_THRESHOLD = 300;
+    private static int INLINE_THRESHOLD = 50;
 
     private final ChilletGraph<IceFunction> callGraph;
     private final ChilletGraph<IceFunction> revCallGraph;
     private List<IceFunction> inlineWorkList;
-    private IceUnit currentUnit;
 
     public FunctionInliner(@Qualifier("callGraph") ChilletGraph<IceFunction> callGraph) {
         this.callGraph = callGraph;
@@ -75,7 +74,7 @@ public class FunctionInliner implements CompilePass<IceUnit> {
 
         // Single Call Site
         if (revCallGraph.getNeighbors(revCallGraph.getNodeId(function)).size() == 1) {
-            result += 250;
+            result += 50; // 单一调用点
         }
         return result;
     }
@@ -181,8 +180,8 @@ public class FunctionInliner implements CompilePass<IceUnit> {
             var preCallInsts = List.copyOf(callSiteBlock.subList(0, callIndex));
             var postCallInsts = List.copyOf(callSiteBlock.subList(callIndex + 1, callSiteBlock.size()));
 
-            Log.d(preCallInsts.toString());
-            Log.d(postCallInsts.toString());
+//            Log.d(preCallInsts.toString());
+//            Log.d(postCallInsts.toString());
 
             // Step 2: 新建后继块
             var newSuccBlock = new IceBlock(callerFunction, callerFunction.generateLabelName(callSiteBlock.getName() + "_split"));
@@ -192,7 +191,7 @@ public class FunctionInliner implements CompilePass<IceUnit> {
             for (var callSiteBlockUser : callSiteBlock.getUsers()) {
                 if (callSiteBlockUser instanceof IcePHINode phi) {
                     phi.replaceOperand(callSiteBlock, newSuccBlock);
-                    Log.d("Replace PHI" + phi.getTextIR());
+//                    Log.d("Replace PHI" + phi.getTextIR());
                 }
             }
 
@@ -253,7 +252,6 @@ public class FunctionInliner implements CompilePass<IceUnit> {
 
     @Override
     public boolean run(IceUnit target) {
-        this.currentUnit = target;
         buildInlineWorklist();
         inlineFunction();
         return false;
