@@ -22,7 +22,7 @@ import java.util.List;
 @Pass(group = {"O1"})
 public class FunctionInliner implements CompilePass<IceUnit> {
 
-    private static int INLINE_THRESHOLD = 50;
+    private static int INLINE_THRESHOLD = 20;
 
     private final ChilletGraph<IceFunction> callGraph;
     private final ChilletGraph<IceFunction> revCallGraph;
@@ -74,7 +74,7 @@ public class FunctionInliner implements CompilePass<IceUnit> {
 
         // Single Call Site
         if (revCallGraph.getNeighbors(revCallGraph.getNodeId(function)).size() == 1) {
-            result += 50; // 单一调用点
+            result += 20; // 单一调用点
         }
         return result;
     }
