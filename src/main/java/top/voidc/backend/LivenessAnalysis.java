@@ -64,7 +64,7 @@ public class LivenessAnalysis implements CompilePass<IceMachineFunction> {
 
         public LivenessAnalyzer(IceMachineFunction function) {
             this.function = function;
-            this.blocks = function.blocks();
+            this.blocks = new ArrayList<>(function.blocks());
             Collections.reverse(this.blocks);
         }
 
