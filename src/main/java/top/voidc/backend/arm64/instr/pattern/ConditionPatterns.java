@@ -7,6 +7,8 @@ import top.voidc.ir.IceValue;
 import top.voidc.ir.ice.constant.IceConstantInt;
 import top.voidc.ir.ice.instruction.IceBranchInstruction;
 import top.voidc.ir.ice.instruction.IceCmpInstruction;
+import top.voidc.ir.ice.instruction.IceSelectInstruction;
+import top.voidc.ir.ice.interfaces.IceMachineValue;
 import top.voidc.ir.machine.IceMachineRegister;
 import top.voidc.ir.ice.constant.IceConstantFloat;
 import top.voidc.misc.Tool;
@@ -317,6 +319,62 @@ public class ConditionPatterns {
                     && canBeReg(selector, fcmp.getLhs())
                     && fcmp.getRhs() instanceof IceConstantFloat constantFloat
                     && constantFloat.getValue() == 0.0f;
+        }
+    }
+
+    public static class IntSelect extends InstructionPattern<IceSelectInstruction> {
+
+        public IntSelect() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineValue emit(InstructionSelector selector, IceSelectInstruction value) {
+            var trueReg = selector.emit(value.getTrueValue());
+            var falseReg = selector.emit(value.getFalseValue());
+
+            selector.emit(value.getCondition());
+            var conditionCode = Tool.mapToArm64Condition((IceCmpInstruction) value.getCondition());
+            var resultReg = selector.getMachineFunction().allocateVirtualRegister(value.getType());
+            var inst = new ARM64Instruction("CSEL {x}, {true}, {false}, " + conditionCode
+                    , resultReg, trueReg, falseReg);
+            selector.addEmittedInstruction(inst);
+            return resultReg; // 返回选择的寄存器
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceSelectInstruction select
+                    && select.getCondition() instanceof IceCmpInstruction
+                    && select.getType().isInteger();
+        }
+    }
+
+    public static class FloatSelect extends InstructionPattern<IceSelectInstruction> {
+
+        public FloatSelect() {
+            super(1);
+        }
+
+        @Override
+        public IceMachineValue emit(InstructionSelector selector, IceSelectInstruction value) {
+            var trueReg = selector.emit(value.getTrueValue());
+            var falseReg = selector.emit(value.getFalseValue());
+
+            selector.emit(value.getCondition());
+            var conditionCode = Tool.mapToArm64Condition((IceCmpInstruction) value.getCondition());
+            var resultReg = selector.getMachineFunction().allocateVirtualRegister(value.getType());
+            var inst = new ARM64Instruction("FCSEL {x}, {true}, {false}, " + conditionCode
+                    , resultReg, trueReg, falseReg);
+            selector.addEmittedInstruction(inst);
+            return resultReg; // 返回选择的寄存器
+        }
+
+        @Override
+        public boolean test(InstructionSelector selector, IceValue value) {
+            return value instanceof IceSelectInstruction select
+                    && select.getCondition() instanceof IceCmpInstruction
+                    && select.getType().isFloat();
         }
     }
 }

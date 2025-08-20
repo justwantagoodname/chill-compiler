@@ -73,6 +73,8 @@ public class ARM64InstructionPatternPack implements InstructionPack {
         patternSet.add(new ConditionPatterns.CondBranch());
         patternSet.add(new ConditionPatterns.CBZPattern());
         patternSet.add(new ConditionPatterns.CBNZPattern());
+        patternSet.add(new ConditionPatterns.IntSelect());
+        patternSet.add(new ConditionPatterns.FloatSelect());
 
         patternSet.add(new MemoryAllocationPattern.SimpleAlloca());
 //        patternSet.add(new MemoryAllocationPattern.SimpleAllocaPointer());
