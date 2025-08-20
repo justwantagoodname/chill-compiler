@@ -141,7 +141,7 @@ public class FunctionPureness implements CompilePass<IceUnit> {
                             currentPureness.readGlobals.add(globalVariable);
                         } else if (source instanceof IceFunction.IceFunctionParameter parameter) {
                             // 数组参数读取说明函数是pure的但是不是const，因为有可能相同的数组地址内容不同
-                            if (parameter.getType().isArray()) {
+                            if (parameter.getType().isArray() || parameter.getType().isPointer()) {
                                 currentPureness.setPureness(Pureness.PURE);
                             }
                         }

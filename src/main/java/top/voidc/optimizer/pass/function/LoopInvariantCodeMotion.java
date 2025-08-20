@@ -172,16 +172,11 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
                     for (IceInstruction inst : toMove) {
                         IceBlock parent = inst.getParent();
                         parent.remove(inst);
-                        preHeader.addInstruction(inst);
+                        preHeader.add(inst);
                     }
                     preHeader.addInstruction(term);
                 } else {
-                    // 如果没有终结指令则直接添加
-                    for (IceInstruction inst : toMove) {
-                        IceBlock parent = inst.getParent();
-                        parent.remove(inst);
-                        preHeader.addInstruction(inst);
-                    }
+                    throw new IllegalStateException();
                 }
                 moved = true;
                 changed = true;
@@ -215,9 +210,10 @@ public class LoopInvariantCodeMotion implements CompilePass<IceFunction> {
 
     private boolean hasSideEffects(IceInstruction inst) {
         if (inst instanceof IceCallInstruction call) {
-            return functionPurenessInfo.get(call.getTarget()).getPureness() == FunctionPureness.Pureness.IMPURE;
+            assert functionPurenessInfo.containsKey(call.getTarget());
+            return functionPurenessInfo.get(call.getTarget()).getPureness() != FunctionPureness.Pureness.CONST;
         }
-        return inst instanceof IceStoreInstruction || inst instanceof IceLoadInstruction;
+        return inst instanceof IceStoreInstruction || inst instanceof IceLoadInstruction || inst instanceof IceBinaryInstruction.SDiv;
     }
 
     private IceBlock createPreheader(LoopInfo loop, IceFunction function) {

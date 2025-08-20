@@ -103,7 +103,7 @@ public class Compiler {
             pm.runPass(IfConversionPass.class);
             pm.runPass(SmartChilletSimplifyCFG.class);
             pm.runPass(ShowIR.class);
-//            pm.runPass(LoopInvariantCodeMotion.class);
+            pm.runPass(LoopInvariantCodeMotion.class);
             pm.runPass(RenameVariable.class);
             pm.runPass(CallGraphAnalyzer.class);
             pm.runPass(FunctionInliner.class);
